@@ -59,4 +59,11 @@ public class SchuelerleistungsDatensatz {
     public boolean istMuendlichePruefung() {
         return "4".equals(abiturfach);
     }
+
+    public boolean istAbiturfach() {
+        return switch (abiturfach) {
+            case "1", "2", "3", "4" -> true;
+            default -> false;
+        };
+    }
 }
