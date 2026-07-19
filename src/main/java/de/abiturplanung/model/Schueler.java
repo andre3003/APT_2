@@ -1,15 +1,23 @@
 package de.abiturplanung.model;
 
+import de.abiturplanung.importer.SchuelerDatensatz;
+
+import java.time.LocalDate;
 import java.util.Objects;
 
 public class Schueler {
+    private String schildId;
+    private String nachname;
+    private String vorname;
+    private LocalDate geburtsdatum;
+    private Geschlecht geschlecht;
 
-    private final String nachname;
-    private final String vorname;
+    public Schueler(String schildID) {
+        this.schildId = schildID;
+    }
 
-    public Schueler(String nachname, String vorname) {
-        this.nachname = nachname;
-        this.vorname = vorname;
+    public String getSchildId() {
+        return schildId;
     }
 
     public String getNachname() {
@@ -18,6 +26,13 @@ public class Schueler {
 
     public String getVorname() {
         return vorname;
+    }
+
+    public void aktualisiereStammdaten(SchuelerDatensatz datensatz) {
+        nachname = datensatz.getNachname();
+        vorname = datensatz.getVorname();
+        geburtsdatum = datensatz.getGeburtsdatum();
+        geschlecht = datensatz.getGeschlecht();
     }
 
     @Override

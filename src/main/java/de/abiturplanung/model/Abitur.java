@@ -30,4 +30,11 @@ public class Abitur {
     public List<Pruefung> getPruefungen() {
         return pruefungen;
     }
+
+    public void fuegeSchuelerHinzu(Schueler schueler) {
+        this.schueler.add(schueler);
+    }
+
+
+
 }

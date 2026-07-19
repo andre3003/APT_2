@@ -1,47 +1,23 @@
 package de.abiturplanung;
-
-import de.abiturplanung.importer.SchuelerleistungsdatenImporter;
 import de.abiturplanung.model.Abitur;
-import de.abiturplanung.model.Pruefung;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import de.abiturplanung.service.*;
 
 public class Abiturplanung {
 
-    public static void main(String[] args) {
-        Path datei = Path.of("Schuelerleistungsdaten.dat");
+    public static void main(String[] args) throws IOException {
+        Abitur abitur = new Abitur();
+        ImportService service = new ImportService(abitur);
+        Path.of("Schueler.csv");
+        service.importiereSchueler(Path.of("Schueler.csv"));
+        System.out.println("Schüler: " + abitur.getSchueler().size());
+        System.out.println(abitur.getSchueler().get(0).getNachname());
 
-        SchuelerleistungsdatenImporter importer =
-                new SchuelerleistungsdatenImporter();
-
-        try {
-            Abitur abitur = importer.importiere(datei);
-
-            System.out.println("Schüler: " + abitur.getSchueler().size());
-            System.out.println("Lehrer: " + abitur.getLehrer().size());
-            System.out.println("Fächer: " + abitur.getFaecher().size());
-            System.out.println("Kurse: " + abitur.getKurse().size());
-            System.out.println(
-                    "Mündliche Prüfungen: "
-                            + abitur.getPruefungen().size()
-            );
-
-            for (Pruefung pruefung : abitur.getPruefungen()) {
-                System.out.printf(
-                        "%s, %s – %s – %s – Prüfer: %s%n",
-                        pruefung.getPruefling().getNachname(),
-                        pruefung.getPruefling().getVorname(),
-                        pruefung.getKurs().getFach().getKuerzel(),
-                        pruefung.getKurs().getBezeichnung(),
-                        pruefung.getPruefer().getKuerzel()
-                );
-            }
-
-        } catch (IOException | IllegalArgumentException exception) {
-            System.err.println(
-                    "Import fehlgeschlagen: " + exception.getMessage()
-            );
-        }
+        Path.of("Lehrer.csv");
+        service.importiereLehrer(Path.of("Lehrer.csv"));
+        System.out.println("Lehrer: " + abitur.getLehrer().size());
+        System.out.println(abitur.getLehrer().get(0).getNachname());
     }
 }
