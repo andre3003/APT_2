@@ -1,45 +1,33 @@
 package de.abiturplanung.model;
 
-import java.util.Objects;
+import de.abiturplanung.model.Lehrer;
 
 public class Kurs {
 
     private final String bezeichnung;
-    private final String kursart;
-    private final Fach fach;
-    private final Lehrer kurslehrer;
+    private final String fach;
 
-    public Kurs(String bezeichnung, String kursart, Fach fach, Lehrer kurslehrer) {
+    private Lehrer fachlehrer;
+
+    public Kurs(String bezeichnung,
+                String fach,
+                Lehrer fachlehrer) {
+
         this.bezeichnung = bezeichnung;
-        this.kursart = kursart;
         this.fach = fach;
-        this.kurslehrer = kurslehrer;
+        this.fachlehrer = fachlehrer;
     }
 
     public String getBezeichnung() {
         return bezeichnung;
     }
 
-    public String getKursart() {
-        return kursart;
-    }
-
-    public Fach getFach() {
+    public String getFach() {
         return fach;
     }
 
-    public Lehrer getKurslehrer() {
-        return kurslehrer;
+    public Lehrer getFachlehrer() {
+        return fachlehrer;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (!(o instanceof Kurs kurs)) return false;
-        return Objects.equals(bezeichnung, kurs.bezeichnung);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(bezeichnung);
-    }
 }

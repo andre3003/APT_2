@@ -1,19 +1,43 @@
 package de.abiturplanung.model;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class Pruefung {
 
-    private final Schueler pruefling;
+    private final Schueler schueler;
+
     private final Kurs kurs;
+
     private Lehrer pruefer;
 
-    public Pruefung(Schueler pruefling, Kurs kurs) {
-        this.pruefling = pruefling;
+    private final Abiturfach abiturfach;
+
+    private final Pruefungsform pruefungsform;
+
+    public Pruefung(
+            Schueler schueler,
+            Kurs kurs,
+            Lehrer pruefer,
+            Abiturfach abiturfach) {
+
+        this.schueler = schueler;
         this.kurs = kurs;
-        this.pruefer = kurs.getKurslehrer();
+        this.pruefer = pruefer;
+        this.abiturfach = abiturfach;
+
+        if (abiturfach == Abiturfach.AB4)
+            pruefungsform = Pruefungsform.MUENDLICH;
+        else
+            pruefungsform = Pruefungsform.SCHRIFTLICH;
     }
 
-    public Schueler getPruefling() {
-        return pruefling;
+    public Abiturfach getAbiturfach() {
+        return abiturfach;
+    }
+
+    public Schueler getSchueler() {
+        return schueler;
     }
 
     public Kurs getKurs() {
@@ -22,5 +46,9 @@ public class Pruefung {
 
     public Lehrer getPruefer() {
         return pruefer;
+    }
+
+    public Pruefungsform getPruefungsform() {
+        return pruefungsform;
     }
 }

@@ -3,6 +3,9 @@ package de.abiturplanung.model;
 import de.abiturplanung.importer.SchuelerDatensatz;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
 public class Schueler {
@@ -11,6 +14,7 @@ public class Schueler {
     private String vorname;
     private LocalDate geburtsdatum;
     private Geschlecht geschlecht;
+    private ArrayList<Pruefung> pruefungen = new ArrayList<>();
 
     public Schueler(String schildID) {
         this.schildId = schildID;
@@ -26,6 +30,26 @@ public class Schueler {
 
     public String getVorname() {
         return vorname;
+    }
+
+    public void addPruefung(Pruefung pruefung) {
+        pruefungen.add(pruefung);
+    }
+
+    public List<Pruefung> getPruefungen() {
+        return Collections.unmodifiableList(pruefungen);
+    }
+
+    public Pruefung getPruefung(Abiturfach abiturfach) {
+        for (Pruefung p : pruefungen) {
+            if (p.getAbiturfach() == abiturfach)
+                return p;
+        }
+        return null;
+    }
+
+    public LocalDate getGeburtsdatum() {
+        return geburtsdatum;
     }
 
     public void aktualisiereStammdaten(SchuelerDatensatz datensatz) {

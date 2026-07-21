@@ -1,9 +1,6 @@
 package de.abiturplanung.service;
 
-import de.abiturplanung.importer.LehrerDatensatz;
-import de.abiturplanung.importer.LehrerImporter;
-import de.abiturplanung.importer.SchuelerDatensatz;
-import de.abiturplanung.importer.SchuelerImporter;
+import de.abiturplanung.importer.*;
 import de.abiturplanung.model.*;
 
 import java.io.IOException;
@@ -21,52 +18,61 @@ public class ImportService {
         LehrerImporter importer = new LehrerImporter();
         List<LehrerDatensatz> datensaetze = importer.lese(datei);
         for (LehrerDatensatz datensatz : datensaetze) {
-            Lehrer lehrer = findeLehrer(datensatz.getKuerzel());
+            Lehrer lehrer = abitur.findeLehrer(datensatz.getKuerzel());
             if (lehrer == null) {
                 lehrer = new Lehrer(datensatz.getKuerzel());
-                abitur.getLehrer().add(lehrer);
+                abitur.addLehrer(lehrer);
             }
             lehrer.aktualisiereStammdaten(datensatz);
         }
     }
 
-
     public void importiereSchueler(Path datei) throws IOException {
-
         SchuelerImporter importer = new SchuelerImporter();
-
         List<SchuelerDatensatz> datensaetze = importer.lese(datei);
-
         for (SchuelerDatensatz datensatz : datensaetze) {
-
-            Schueler schueler = findeSchueler(datensatz.getSchildId());
-
+            Schueler schueler = abitur.findeSchueler(datensatz.getNachname(), datensatz.getVorname(), datensatz.getGeburtsdatum());
             if (schueler == null) {
-
                 schueler = new Schueler(datensatz.getSchildId());
-
-                abitur.getSchueler().add(schueler);
-
+                abitur.addSchueler(schueler);
             }
             schueler.aktualisiereStammdaten(datensatz);
         }
     }
 
-    private Schueler findeSchueler(String schildId) {
-        for (Schueler schueler : abitur.getSchueler()) {
-            if (schueler.getSchildId().equals(schildId)) {
-                return schueler;
-            }
-        }
-        return null;
+    private void importiereLeistungsdatensatz(
+            SchuelerleistungsDatensatz ds) {
+        Schueler schueler =
+                abitur.findeSchueler(
+                        ds.getNachname(),
+                        ds.getVorname(),
+                        ds.getGeburtsdatum());
+
+        Lehrer lehrer =
+                abitur.findeLehrer(
+                        ds.getLehrerkuerzel());
+
+        Kurs kurs =
+                abitur.findeOderErzeugeKurs(
+                        ds.getKursbezeichnung(),
+                        ds.getFach(),
+                        lehrer);
+
+        Pruefung pruefung =
+                new Pruefung(
+                        schueler,
+                        kurs,
+                        lehrer,
+                        ds.getAbiturfach());
+        abitur.addPruefung(pruefung);
     }
 
-    private Lehrer findeLehrer(String kuerzel) {
-        for (Lehrer lehrer : abitur.getLehrer()) {
-            if (lehrer.getKuerzel().equals(kuerzel)) {
-                return lehrer;
-            }
+    public void importiereLeistungsdaten(Path datei) throws IOException {
+        LeistungsdatenImporter importer = new LeistungsdatenImporter();
+        List<SchuelerleistungsDatensatz> datensaetze = importer.lese(datei);
+
+        for (SchuelerleistungsDatensatz datensatz : datensaetze) {
+            importiereLeistungsdatensatz(datensatz);
         }
-        return null;
     }
 }

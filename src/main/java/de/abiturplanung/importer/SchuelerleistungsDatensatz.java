@@ -1,30 +1,40 @@
 package de.abiturplanung.importer;
 
+import de.abiturplanung.model.Abiturfach;
+
+import java.time.LocalDate;
+
 public class SchuelerleistungsDatensatz {
 
     private final String nachname;
     private final String vorname;
+    private final LocalDate geburtsdatum;
+
     private final String fach;
-    private final String fachlehrer;
-    private final String kursart;
-    private final String kurs;
-    private final String abiturfach;
+    private final String kursbezeichnung;
+
+    private final String lehrerkuerzel;
+
+    private final Abiturfach abiturfach;
 
     public SchuelerleistungsDatensatz(
             String nachname,
             String vorname,
+            LocalDate geburtsdatum,
             String fach,
-            String fachlehrer,
-            String kursart,
-            String kurs,
-            String abiturfach) {
+            String kursbezeichnung,
+            String lehrerkuerzel,
+            Abiturfach abiturfach) {
 
         this.nachname = nachname;
         this.vorname = vorname;
+        this.geburtsdatum = geburtsdatum;
+
         this.fach = fach;
-        this.fachlehrer = fachlehrer;
-        this.kursart = kursart;
-        this.kurs = kurs;
+        this.kursbezeichnung = kursbezeichnung;
+
+        this.lehrerkuerzel = lehrerkuerzel;
+
         this.abiturfach = abiturfach;
     }
 
@@ -36,34 +46,23 @@ public class SchuelerleistungsDatensatz {
         return vorname;
     }
 
+    public LocalDate getGeburtsdatum() {
+        return geburtsdatum;
+    }
+
     public String getFach() {
         return fach;
     }
 
-    public String getFachlehrer() {
-        return fachlehrer;
+    public String getKursbezeichnung() {
+        return kursbezeichnung;
     }
 
-    public String getKursart() {
-        return kursart;
+    public String getLehrerkuerzel() {
+        return lehrerkuerzel;
     }
 
-    public String getKurs() {
-        return kurs;
-    }
-
-    public String getAbiturfach() {
+    public Abiturfach getAbiturfach() {
         return abiturfach;
-    }
-
-    public boolean istMuendlichePruefung() {
-        return "4".equals(abiturfach);
-    }
-
-    public boolean istAbiturfach() {
-        return switch (abiturfach) {
-            case "1", "2", "3", "4" -> true;
-            default -> false;
-        };
     }
 }
