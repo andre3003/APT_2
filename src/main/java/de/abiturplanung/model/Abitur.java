@@ -15,6 +15,8 @@ public class Abitur {
 
     private final List<Pruefung> pruefungen = new ArrayList<>();
 
+    private final List<Raum> raeume = new ArrayList<>();
+
 
     /*--------------------------------------------------
      * Hinzufügen
@@ -30,6 +32,15 @@ public class Abitur {
 
     public void addKurs(Kurs kurs) {
         this.kurse.add(kurs);
+    }
+
+    public void addRaum(Raum raum) {
+        raeume.add(raum);
+    }
+
+    public void addPruefung(Pruefung pruefung) {
+        pruefungen.add(pruefung);
+        pruefung.getSchueler().addPruefung(pruefung);
     }
 
     /*--------------------------------------------------
@@ -50,6 +61,10 @@ public class Abitur {
 
     public List<Pruefung> getPruefungen() {
         return Collections.unmodifiableList(pruefungen);
+    }
+
+    public List<Raum> getRaeume() {
+        return Collections.unmodifiableList(raeume);
     }
 
 
@@ -114,19 +129,16 @@ public class Abitur {
         return kurs;
     }
 
-    public void addPruefung(Pruefung pruefung) {
-
-        pruefungen.add(pruefung);
-
-        pruefung.getSchueler().addPruefung(pruefung);
-
+    public Raum findeRaum(String bezeichnung) {
+        for (Raum raum: raeume) {
+            if (raum.getBezeichnung().equalsIgnoreCase(bezeichnung)) {
+                return raum;
+            }
+        }
+        return null;
     }
-
 
     private String normalisiere(String text) {
-
         return text.trim().replaceAll("\\s+", " ");
-
     }
-
 }

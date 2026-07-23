@@ -75,4 +75,16 @@ public class ImportService {
             importiereLeistungsdatensatz(datensatz);
         }
     }
+
+    public void importiereRaeume(Path datei) throws IOException {
+        RaumImporter importer = new RaumImporter();
+        List<RaumDatensatz> datensaetze = importer.lese(datei);
+        for (RaumDatensatz datensatz: datensaetze) {
+            Raum raum = abitur.findeRaum(datensatz.getBezeichnung());
+            if (raum == null) {
+                raum = new Raum(datensatz.getBezeichnung(), datensatz.getKapazitaet());
+                abitur.addRaum(raum);
+            }
+        }
+    }
 }

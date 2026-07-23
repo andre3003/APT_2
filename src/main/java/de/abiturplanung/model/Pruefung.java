@@ -1,19 +1,21 @@
 package de.abiturplanung.model;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 public class Pruefung {
-
     private final Schueler schueler;
-
     private final Kurs kurs;
-
     private Lehrer pruefer;
-
+    Lehrer schriftfuehrer;
+    Lehrer vorsitz;
     private final Abiturfach abiturfach;
-
     private final Pruefungsform pruefungsform;
+    private LocalDate pruefungstag;
+    private LocalTime beginn;
+    private Raum raum;
 
     public Pruefung(
             Schueler schueler,
@@ -50,5 +52,17 @@ public class Pruefung {
 
     public Pruefungsform getPruefungsform() {
         return pruefungsform;
+    }
+
+    public LocalDate getPruefungstag() {
+        return pruefungstag;
+    }
+
+    public LocalTime getBeginn() {
+        return beginn;
+    }
+
+    public Raum getRaum() {
+        return raum;
     }
 }

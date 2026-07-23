@@ -26,6 +26,7 @@ public class Abiturplanung {
         service.importiereSchueler( Path.of("Schueler.csv"));
         service.importiereLehrer(Path.of("Lehrer.csv"));
         service.importiereLeistungsdaten(Path.of("SchuelerLeistungsdaten.dat"));
+        service.importiereRaeume(Path.of("Raumliste.csv"));
         MainFrame mainFrame = new MainFrame(abitur);
         mainFrame.setVisible(true);
     }

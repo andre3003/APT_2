@@ -30,7 +30,7 @@ public class MainFrame extends JFrame {
                     if (zeile >= 0) {
                         zeile = pruefungstabelle.convertRowIndexToModel(zeile);
                         PruefungsTableModel model = (PruefungsTableModel) pruefungstabelle.getModel();
-                        new PruefungsDialog(MainFrame.this, model.getPruefung(zeile)).setVisible(true);
+                        new PruefungsDialog(MainFrame.this, abitur, model.getPruefung(zeile)).setVisible(true);
                     }
                 }
             }
