@@ -1,28 +1,26 @@
 package de.abiturplanung.model;
+
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 public class Pruefung {
+
     private final Schueler schueler;
     private final Kurs kurs;
+
     private Lehrer pruefer;
-    Lehrer schriftfuehrer;
-    Lehrer vorsitz;
+    private Lehrer schriftfuehrer;
+    private Lehrer vorsitz;
+
     private final Abiturfach abiturfach;
     private final Pruefungsform pruefungsform;
+
     private LocalDate pruefungstag;
     private LocalTime beginn;
     private Raum raum;
+    private Integer planungsspalte;
 
-    public Pruefung(
-            Schueler schueler,
-            Kurs kurs,
-            Lehrer pruefer,
-            Abiturfach abiturfach) {
-
+    public Pruefung(Schueler schueler, Kurs kurs, Lehrer pruefer, Abiturfach abiturfach) {
         this.schueler = schueler;
         this.kurs = kurs;
         this.pruefer = pruefer;
@@ -32,6 +30,14 @@ public class Pruefung {
             pruefungsform = Pruefungsform.MUENDLICH;
         else
             pruefungsform = Pruefungsform.SCHRIFTLICH;
+    }
+
+    public Integer getPlanungsspalte() {
+        return planungsspalte;
+    }
+
+    public void setPlanungsspalte(Integer planungsspalte) {
+        this.planungsspalte = planungsspalte;
     }
 
     public Abiturfach getAbiturfach() {
@@ -50,6 +56,26 @@ public class Pruefung {
         return pruefer;
     }
 
+    public void setPruefer(Lehrer pruefer) {
+        this.pruefer = pruefer;
+    }
+
+    public Lehrer getSchriftfuehrer() {
+        return schriftfuehrer;
+    }
+
+    public void setSchriftfuehrer(Lehrer schriftfuehrer) {
+        this.schriftfuehrer = schriftfuehrer;
+    }
+
+    public Lehrer getVorsitz() {
+        return vorsitz;
+    }
+
+    public void setVorsitz(Lehrer vorsitz) {
+        this.vorsitz = vorsitz;
+    }
+
     public Pruefungsform getPruefungsform() {
         return pruefungsform;
     }
@@ -58,11 +84,35 @@ public class Pruefung {
         return pruefungstag;
     }
 
+    public void setPruefungstag(LocalDate pruefungstag) {
+        this.pruefungstag = pruefungstag;
+    }
+
     public LocalTime getBeginn() {
         return beginn;
     }
 
+    public void setBeginn(LocalTime beginn) {
+        this.beginn = beginn;
+    }
+
     public Raum getRaum() {
         return raum;
+    }
+
+    public void setRaum(Raum raum) {
+        this.raum = raum;
+    }
+
+    public boolean istTerminiert() {
+        return pruefungstag != null && beginn != null;
+    }
+
+    public boolean istKommissionVollstaendig() {
+        return pruefer != null && schriftfuehrer != null && vorsitz != null;
+    }
+
+    public boolean istVollstaendigGeplant() {
+        return istTerminiert() && istKommissionVollstaendig() && raum != null;
     }
 }

@@ -1,23 +1,30 @@
 package de.abiturplanung.gui.model;
+
+import de.abiturplanung.model.Abiturfach;
 import de.abiturplanung.model.Pruefung;
+
 import javax.swing.table.AbstractTableModel;
+import java.util.ArrayList;
 import java.util.List;
 
 public class PruefungsTableModel extends AbstractTableModel {
 
-    private static final String[] SPALTENNAMEN = {
-            "Schüler",
-            "Abiturfach",
-            "Fach",
-            "Kurs",
-            "Prüfer",
-            "Prüfungsform"
-    };
+    public static final int SPALTE_SCHUELER = 0;
+    public static final int SPALTE_FACH = 1;
+    public static final int SPALTE_KURS = 2;
+    public static final int SPALTE_PRUEFER = 3;
+    public static final int SPALTE_STATUS = 4;
 
-    private final List<Pruefung> pruefungen;
+    private static final String[] SPALTENNAMEN = {"Schüler", "Fach", "Kurs", "Prüfer", "Status"};
 
-    public PruefungsTableModel(List<Pruefung> pruefungen) {
-        this.pruefungen = pruefungen;
+    private final List<Pruefung> pruefungen = new ArrayList<>();
+
+    public PruefungsTableModel(List<Pruefung> allePruefungen) {
+        for (Pruefung pruefung : allePruefungen) {
+            if (pruefung.getAbiturfach() == Abiturfach.AB4) {
+                pruefungen.add(pruefung);
+            }
+        }
     }
 
     @Override
@@ -40,30 +47,16 @@ public class PruefungsTableModel extends AbstractTableModel {
         Pruefung pruefung = pruefungen.get(rowIndex);
 
         return switch (columnIndex) {
-            case 0 -> schuelername(pruefung);
-            case 1 -> pruefung.getAbiturfach();
-            case 2 -> pruefung.getKurs().getFach();
-            case 3 -> pruefung.getKurs().getBezeichnung();
-            case 4 -> pruefername(pruefung);
-            case 5 -> pruefung.getPruefungsform();
+            case SPALTE_SCHUELER -> pruefung.getSchueler().getNachname() + ", " + pruefung.getSchueler().getVorname();
+            case SPALTE_FACH -> pruefung.getKurs().getFach();
+            case SPALTE_KURS -> pruefung.getKurs().getBezeichnung();
+            case SPALTE_PRUEFER -> pruefung.getPruefer() == null ? "---" : pruefung.getPruefer().getKuerzel();
+            case SPALTE_STATUS -> pruefung.istVollstaendigGeplant() ? "vollständig" : "unvollständig";
             default -> "";
         };
     }
 
     public Pruefung getPruefung(int modelRow) {
         return pruefungen.get(modelRow);
-    }
-
-    private String schuelername(Pruefung pruefung) {
-        return pruefung.getSchueler().getNachname()
-                + ", "
-                + pruefung.getSchueler().getVorname();
-    }
-
-    private String pruefername(Pruefung pruefung) {
-        if (pruefung.getPruefer() == null) {
-            return "";
-        }
-        return pruefung.getPruefer().getNachname() + " (" + pruefung.getPruefer().getKuerzel() + ")";
     }
 }

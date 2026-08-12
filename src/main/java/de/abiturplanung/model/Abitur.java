@@ -17,10 +17,20 @@ public class Abitur {
 
     private final List<Raum> raeume = new ArrayList<>();
 
+    private final List<Pruefungstag> pruefungstage = new ArrayList<>();
+
 
     /*--------------------------------------------------
      * Hinzufügen
      *--------------------------------------------------*/
+
+    public List<Pruefungstag> getPruefungstage() {
+        return Collections.unmodifiableList(pruefungstage);
+    }
+
+    public void addPruefungstag(Pruefungstag pruefungstag) {
+        pruefungstage.add(pruefungstag);
+    }
 
     public void addSchueler(Schueler schueler) {
         this.schueler.add(schueler);
