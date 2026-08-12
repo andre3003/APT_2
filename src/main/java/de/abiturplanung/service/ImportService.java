@@ -42,28 +42,14 @@ public class ImportService {
 
     private void importiereLeistungsdatensatz(
             SchuelerleistungsDatensatz ds) {
-        Schueler schueler =
-                abitur.findeSchueler(
-                        ds.getNachname(),
-                        ds.getVorname(),
-                        ds.getGeburtsdatum());
+        Schueler schueler = abitur.findeSchueler(ds.getNachname(), ds.getVorname(), ds.getGeburtsdatum());
 
         Lehrer lehrer =
-                abitur.findeLehrer(
-                        ds.getLehrerkuerzel());
+                abitur.findeLehrer(ds.getLehrerkuerzel());
 
-        Kurs kurs =
-                abitur.findeOderErzeugeKurs(
-                        ds.getKursbezeichnung(),
-                        ds.getFach(),
-                        lehrer);
+        Kurs kurs = abitur.findeOderErzeugeKurs(ds.getKursbezeichnung(), ds.getFach(), lehrer);
 
-        Pruefung pruefung =
-                new Pruefung(
-                        schueler,
-                        kurs,
-                        lehrer,
-                        ds.getAbiturfach());
+        Pruefung pruefung = new Pruefung(schueler, kurs, lehrer, ds.getAbiturfach());
         abitur.addPruefung(pruefung);
     }
 

@@ -151,4 +151,26 @@ public class Abitur {
     private String normalisiere(String text) {
         return text.trim().replaceAll("\\s+", " ");
     }
+
+
+    public void removePruefungstag(Pruefungstag pruefungstag, boolean kommissionenBehalten) {
+        LocalDate datum = pruefungstag.getDatum();
+
+        for (Pruefung pruefung : pruefungen) {
+            if (datum.equals(pruefung.getPruefungstag())) {
+                pruefung.setPruefungstag(null);
+                pruefung.setBeginn(null);
+                pruefung.setPlanungsspalte(null);
+                pruefung.setRaum(null);
+
+                if (!kommissionenBehalten) {
+                    pruefung.setPruefer(null);
+                    pruefung.setSchriftfuehrer(null);
+                    pruefung.setVorsitz(null);
+                }
+            }
+        }
+
+        pruefungstage.remove(pruefungstag);
+    }
 }

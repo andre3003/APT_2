@@ -32,6 +32,10 @@ public class Schueler {
         return vorname;
     }
 
+    public Geschlecht getGeschlecht() {
+        return geschlecht;
+    }
+
     public void addPruefung(Pruefung pruefung) {
         pruefungen.add(pruefung);
     }

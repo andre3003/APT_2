@@ -6,7 +6,6 @@ public class Kurs {
 
     private final String bezeichnung;
     private final String fach;
-
     private Lehrer fachlehrer;
 
     public Kurs(String bezeichnung,

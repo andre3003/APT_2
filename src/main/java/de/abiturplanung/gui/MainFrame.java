@@ -15,9 +15,12 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.awt.datatransfer.Transferable;
+import java.awt.event.ActionEvent;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
@@ -26,10 +29,12 @@ public class MainFrame extends JFrame {
 
     private final Abitur abitur;
     List<PlanungsMatrixPanel> matrixPanels = new ArrayList<>();
+    private final JTabbedPane planungsTabs = new JTabbedPane();
+    private PruefungsTableModel tableModel;
 
     public MainFrame(Abitur abitur) {
         this.abitur = abitur;
-
+        tableModel = new PruefungsTableModel(abitur.getPruefungen());
         setTitle("Abiturplanung");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1400, 750);
@@ -245,24 +250,7 @@ public class MainFrame extends JFrame {
 // Matrix
 // ----------------------------------------------------------
 
-        JTabbedPane planungsTabs = new JTabbedPane();
 
-        for (Pruefungstag pruefungstag : abitur.getPruefungstage()) {
-            PlanungsMatrixPanel matrixPanel = new PlanungsMatrixPanel(abitur, pruefungstag);
-            matrixPanels.add(matrixPanel);
-            planungsTabs.addTab(pruefungstag.getDatum().format(DateTimeFormatter.ofPattern("dd.MM.yyyy")), matrixPanel);
-        }
-
-        Runnable ansichtAktualisieren = () -> {
-            tableModel.fireTableDataChanged();
-            for (PlanungsMatrixPanel matrixPanel : matrixPanels) {
-                matrixPanel.aktualisieren();
-            }
-        };
-
-        for (PlanungsMatrixPanel matrixPanel : matrixPanels) {
-            matrixPanel.setNachBearbeitung(ansichtAktualisieren);
-        }
 
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, pruefungsPanel, planungsTabs);
         splitPane.setResizeWeight(0.32);
@@ -271,9 +259,37 @@ public class MainFrame extends JFrame {
 
         JLabel statusleiste = new JLabel(tableModel.getRowCount() + " Prüfungen im 4. Abiturfach");
         statusleiste.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
-
+        planungsTabsAktualisieren();
         add(splitPane, BorderLayout.CENTER);
         add(statusleiste, BorderLayout.SOUTH);
+    }
+
+
+
+    private void planungsTabsAktualisieren() {
+        planungsTabs.removeAll();
+        matrixPanels.clear();
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+
+        for (Pruefungstag pruefungstag : abitur.getPruefungstage()) {
+            PlanungsMatrixPanel matrixPanel = new PlanungsMatrixPanel(abitur, pruefungstag);
+            matrixPanels.add(matrixPanel);
+
+            Runnable ansichtAktualisieren = () -> {
+                tableModel.fireTableDataChanged();
+
+                for (PlanungsMatrixPanel panel : matrixPanels) {
+                    panel.aktualisieren();
+                }
+            };
+
+            matrixPanel.setNachBearbeitung(ansichtAktualisieren);
+            planungsTabs.addTab(pruefungstag.getDatum().format(formatter), matrixPanel);
+        }
+
+        revalidate();
+        repaint();
     }
 
     private JMenuBar erstelleMenueleiste() {
@@ -286,6 +302,102 @@ public class MainFrame extends JFrame {
         dateiMenue.add(beendenEintrag);
         menueleiste.add(dateiMenue);
 
+        JMenu planungMenue = new JMenu("Planung");
+
+        JMenuItem pruefungstagHinzufuegen = new JMenuItem("Prüfungstag hinzufügen");
+        pruefungstagHinzufuegen.addActionListener(this::pruefungstagHinzufuegenAction);
+
+        JMenuItem pruefungstagEntfernen = new JMenuItem("Prüfungstag entfernen");
+        pruefungstagEntfernen.addActionListener(this::pruefungstagEntfernenAction);
+
+        planungMenue.add(pruefungstagHinzufuegen);
+        planungMenue.add(pruefungstagEntfernen);
+
+        menueleiste.add(planungMenue);
+
         return menueleiste;
     }
+
+
+    private void pruefungstagHinzufuegenAction(ActionEvent event) {
+        SpinnerDateModel dateModel = new SpinnerDateModel();
+        JSpinner datumSpinner = new JSpinner(dateModel);
+        datumSpinner.setEditor(new JSpinner.DateEditor(datumSpinner, "dd.MM.yyyy"));
+
+        int ergebnis = JOptionPane.showConfirmDialog(this, datumSpinner, "Prüfungstag hinzufügen", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+
+        if (ergebnis != JOptionPane.OK_OPTION) {
+            return;
+        }
+
+        Date ausgewaehlt = dateModel.getDate();
+        LocalDate datum = ausgewaehlt.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+
+        for (Pruefungstag pruefungstag : abitur.getPruefungstage()) {
+            if (pruefungstag.getDatum().equals(datum)) {
+                JOptionPane.showMessageDialog(this, "Dieser Prüfungstag existiert bereits.", "Hinweis", JOptionPane.INFORMATION_MESSAGE);
+                return;
+            }
+        }
+
+        abitur.addPruefungstag(new Pruefungstag(datum));
+        planungsTabsAktualisieren();
+    }
+
+    private void pruefungstagEntfernenAction(ActionEvent event) {
+        int index = planungsTabs.getSelectedIndex();
+        if (index < 0 || index >= abitur.getPruefungstage().size()) {
+            return;
+        }
+
+        Pruefungstag pruefungstag = abitur.getPruefungstage().get(index);
+
+        int anzahlPruefungen = 0;
+
+        for (Pruefung pruefung : abitur.getPruefungen()) {
+            if (pruefungstag.getDatum().equals(pruefung.getPruefungstag())) {
+                anzahlPruefungen++;
+            }
+        }
+
+        if (anzahlPruefungen == 0) {
+            int bestaetigung = JOptionPane.showConfirmDialog(
+                    this,
+                    "Prüfungstag " + pruefungstag.getDatum().format(DateTimeFormatter.ofPattern("dd.MM.yyyy")) + " wirklich löschen?",
+                    "Prüfungstag löschen",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE
+            );
+
+            if (bestaetigung == JOptionPane.YES_OPTION) {
+                abitur.removePruefungstag(pruefungstag, true);
+                planungsTabsAktualisieren();
+            }
+
+            return;
+        }
+
+        Object[] optionen = {"Kommissionen behalten", "Kommissionen mitlöschen", "Abbrechen"};
+
+        int auswahl = JOptionPane.showOptionDialog(
+                this,
+                "An diesem Prüfungstag sind " + anzahlPruefungen + " Prüfungen geplant.\n\n" + "Planungsdaten werden gelöscht.\n" + "Sollen die bestehenden Kommissionen erhalten bleiben?","Prüfungstag löschen",
+                JOptionPane.DEFAULT_OPTION,
+                JOptionPane.WARNING_MESSAGE,
+                null,
+                optionen,
+                optionen[0]
+        );
+
+        if (auswahl == 0) {
+            abitur.removePruefungstag(pruefungstag, true);
+            planungsTabsAktualisieren();
+            tableModel.fireTableDataChanged();
+        } else if (auswahl == 1) {
+            abitur.removePruefungstag(pruefungstag, false);
+            planungsTabsAktualisieren();
+            tableModel.fireTableDataChanged();
+        }
+    }
+
 }
