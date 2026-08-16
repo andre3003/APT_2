@@ -17,11 +17,11 @@ public class Lehrer {
         this.kuerzel = kuerzel;
     }
 
-    public void aktualisiereStammdaten(LehrerDatensatz datensatz) {
-        anrede = datensatz.getAnrede();
-        nachname = datensatz.getNachname();
-        vorname = datensatz.getVorname();
+    public void aktualisiereStammdaten(LehrerDatensatz datensatz) {//Nur für den Initialimport
+        aktualisiereStammdaten(datensatz.getAnrede(), datensatz.getNachname(), datensatz.getVorname(), datensatz.getAmtsbez());
+
         fakultas.clear();
+
         if (!datensatz.getFak1().isEmpty()) {
             fakultas.add(datensatz.getFak1());
         }
@@ -34,8 +34,15 @@ public class Lehrer {
         if (!datensatz.getFak4().isEmpty()) {
             fakultas.add(datensatz.getFak4());
         }
-        amtsbez = datensatz.getAmtsbez();
     }
+
+    public void aktualisiereStammdaten(String anrede, String nachname, String vorname, String amtsbez) {
+        this.anrede = anrede;
+        this.nachname = nachname;
+        this.vorname = vorname;
+        this.amtsbez = amtsbez;
+    }
+
 
     public String getKuerzel() {
         return kuerzel;

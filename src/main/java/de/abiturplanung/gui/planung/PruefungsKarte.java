@@ -13,12 +13,13 @@ import java.awt.datatransfer.Transferable;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
+import java.util.function.Consumer;
 
 public class PruefungsKarte extends JPanel {
 
     private final Pruefung pruefung;
 
-    public PruefungsKarte(Abitur abitur, Pruefung pruefung, Runnable nachBearbeitung) {
+    public PruefungsKarte(Abitur abitur, Pruefung pruefung, Consumer<Pruefung> nachBearbeitung){
         this.pruefung = pruefung;
 
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
@@ -64,7 +65,7 @@ public class PruefungsKarte extends JPanel {
                     dialog.setVisible(true);
 
                     if (dialog.isGespeichert()) {
-                        nachBearbeitung.run();
+                        nachBearbeitung.accept(pruefung);
                     }
                 }
             }

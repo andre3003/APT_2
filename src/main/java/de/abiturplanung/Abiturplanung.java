@@ -1,9 +1,8 @@
 package de.abiturplanung;
+import de.abiturplanung.model.*;
 import de.abiturplanung.persistence.Datenbank;
 
 import de.abiturplanung.gui.MainFrame;
-import de.abiturplanung.model.Abitur;
-import de.abiturplanung.model.Pruefungstag;
 import de.abiturplanung.service.ImportService;
 
 import javax.swing.*;
@@ -45,13 +44,12 @@ public class Abiturplanung {
             abitur.addPruefungstag(new Pruefungstag(LocalDate.of(2027, 5, 24)));
 
             datenbank.speichereAbitur(abitur);
+            datenbank.setInitialisiert();
         } else {
             abitur = datenbank.ladeAbitur();
+
         }
-
-
-
-        MainFrame mainFrame = new MainFrame(abitur);
+        MainFrame mainFrame = new MainFrame(abitur, datenbank);
         mainFrame.setVisible(true);
     }
 

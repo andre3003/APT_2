@@ -55,12 +55,15 @@ public class Schueler {
     public LocalDate getGeburtsdatum() {
         return geburtsdatum;
     }
+    public void aktualisiereStammdaten(SchuelerDatensatz datensatz) { //Nur für den Initialimport relevant
+        aktualisiereStammdaten(datensatz.getNachname(), datensatz.getVorname(), datensatz.getGeburtsdatum(), datensatz.getGeschlecht());
+    }
 
-    public void aktualisiereStammdaten(SchuelerDatensatz datensatz) {
-        nachname = datensatz.getNachname();
-        vorname = datensatz.getVorname();
-        geburtsdatum = datensatz.getGeburtsdatum();
-        geschlecht = datensatz.getGeschlecht();
+    public void aktualisiereStammdaten(String nachname, String vorname, LocalDate geburtsdatum, Geschlecht geschlecht) {
+        this.nachname = nachname;
+        this.vorname = vorname;
+        this.geburtsdatum = geburtsdatum;
+        this.geschlecht = geschlecht;
     }
 
     @Override

@@ -13,6 +13,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Consumer;
 
 public class PlanungsMatrixPanel extends JPanel {
 
@@ -26,21 +27,20 @@ public class PlanungsMatrixPanel extends JPanel {
     private final Pruefungstag pruefungstag;
 
     private final JPanel matrixPanel = new JPanel();
-    private Runnable nachBearbeitung = () -> {
-    };
-    ;
+    private Consumer<Pruefung> nachBearbeitung = pruefung -> {}; //Leere Initialisierung
+
 
     public PlanungsMatrixPanel(Abitur abitur, Pruefungstag pruefungstag) {
         this.abitur = abitur;
         this.pruefungstag = pruefungstag;
         setLayout(new BorderLayout());
         add(new JScrollPane(matrixPanel), BorderLayout.CENTER);
-        aktualisieren();
     }
 
 
-    public void setNachBearbeitung(Runnable nachBearbeitung) {
+    public void setNachBearbeitung(Consumer<Pruefung> nachBearbeitung) {
         this.nachBearbeitung = nachBearbeitung;
+        aktualisieren();
     }
 
     public LocalDate getDatum() {
@@ -97,13 +97,10 @@ public class PlanungsMatrixPanel extends JPanel {
 
                         try {
                             Pruefung pruefung = (Pruefung) support.getTransferable().getTransferData(PruefungTransferable.PRUEFUNG_FLAVOR);
-
                             pruefung.setPruefungstag(pruefungstag.getDatum());
                             pruefung.setBeginn(slotZeit);
                             pruefung.setPlanungsspalte(slotSpalte);
-
-                            aktualisieren();
-
+                            nachBearbeitung.accept(pruefung);
                             return true;
                         } catch (Exception exception) {
                             exception.printStackTrace();

@@ -3,7 +3,10 @@ package de.abiturplanung.persistence;
 import de.abiturplanung.model.*;
 
 import java.sql.*;
+import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Datenbank {
 
@@ -165,7 +168,6 @@ public class Datenbank {
 
         try (Connection connection = getConnection();
              Statement statement = connection.createStatement()) {
-
             statement.executeUpdate(sql);
         }
     }
@@ -189,10 +191,6 @@ public class Datenbank {
             }
         }
 
-    }
-
-    public Abitur ladeAbitur() {
-        return null; //Platzhalter
     }
 
     private void speichereSchueler(Connection connection, Abitur abitur) throws SQLException {
@@ -223,15 +221,11 @@ public class Datenbank {
 
     private void speichereLehrer(Connection connection, Abitur abitur) throws SQLException {
         String lehrerSql = """ 
-            INSERT INTO lehrer
-            (kuerzel, anrede, nachname, vorname, amtsbezeichnung)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO lehrer (kuerzel, anrede, nachname, vorname, amtsbezeichnung) VALUES (?, ?, ?, ?, ?)
             """;
 
         String fakultasSql = """ 
-            INSERT INTO lehrer_fakultaet
-            (lehrer_kuerzel, fach)
-            VALUES (?, ?)
+            INSERT INTO lehrer_fakultaet (lehrer_kuerzel, fach) VALUES (?, ?)
             """;
 
         try (PreparedStatement lehrerStatement = connection.prepareStatement(lehrerSql);
@@ -338,6 +332,7 @@ public class Datenbank {
                     }
 
                     long pruefungId = keys.getLong(1);
+                    pruefung.setPruefungId(pruefungId);
                     speicherePruefungsplanung(connection, pruefungId, pruefung, abitur);
                 }
             }
@@ -346,10 +341,7 @@ public class Datenbank {
 
     private void speicherePruefungsplanung(Connection connection, long pruefungId, Pruefung pruefung, Abitur abitur) throws SQLException {
         String sql = """
-            INSERT INTO pruefungsplanung
-            (pruefung_id, pruefungstag_id, beginn, planungsspalte, raum_bezeichnung,
-             pruefer_kuerzel, schriftfuehrer_kuerzel, vorsitz_kuerzel)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO pruefungsplanung (pruefung_id, pruefungstag_id, beginn, planungsspalte, raum_bezeichnung, pruefer_kuerzel, schriftfuehrer_kuerzel, vorsitz_kuerzel) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -420,5 +412,288 @@ public class Datenbank {
         }
     }
 
+    public Abitur ladeAbitur() throws SQLException {
+        Abitur abitur = new Abitur();
 
+        Map<String, Schueler> schuelerMap = new HashMap<>(); //Die Maps sind nur für den Ladevorgang, um Datensätze anhand des Schlüssels leicht identifizieren zu können.
+        Map<String, Lehrer> lehrerMap = new HashMap<>();
+        Map<String, Raum> raumMap = new HashMap<>();
+        Map<String, Kurs> kursMap = new HashMap<>();
+        Map<Long, Pruefungstag> pruefungstagMap = new HashMap<>();
+        Map<Long, Pruefung> pruefungMap = new HashMap<>();
+
+        try (Connection connection = getConnection()) {
+            ladeSchueler(connection, abitur, schuelerMap);
+            ladeLehrer(connection, abitur, lehrerMap);
+            ladeFakultas(connection, lehrerMap);
+            ladeRaeume(connection, abitur, raumMap);
+            ladeKurse(connection, abitur, lehrerMap, kursMap);
+            ladePruefungstage(connection, abitur, pruefungstagMap);
+            ladePruefungen(connection, abitur, schuelerMap, kursMap, pruefungMap);
+            ladePruefungsplanung(connection, pruefungMap, pruefungstagMap, raumMap, lehrerMap);
+        }
+
+        return abitur;
+    }
+
+    private void ladeSchueler(Connection connection, Abitur abitur, Map<String, Schueler> schuelerMap) throws SQLException {
+        String sql = "SELECT schild_id, nachname, vorname, geburtsdatum, geschlecht FROM schueler";
+
+        try (Statement statement = connection.createStatement(); ResultSet resultSet = statement.executeQuery(sql)) {
+            while (resultSet.next()) {
+                String schildId = resultSet.getString("schild_id");
+                String nachname = resultSet.getString("nachname");
+                String vorname = resultSet.getString("vorname");
+
+                LocalDate geburtsdatum = null;
+                String geburtsdatumText = resultSet.getString("geburtsdatum");
+
+                if (geburtsdatumText != null) {
+                    geburtsdatum = LocalDate.parse(geburtsdatumText);
+                }
+
+                Geschlecht geschlecht = null;
+                String geschlechtText = resultSet.getString("geschlecht");
+
+                if (geschlechtText != null) {
+                    geschlecht = Geschlecht.valueOf(geschlechtText);
+                }
+
+                Schueler schueler = new Schueler(schildId);
+                schueler.aktualisiereStammdaten(nachname, vorname, geburtsdatum, geschlecht);
+
+                abitur.addSchueler(schueler);
+                schuelerMap.put(schildId, schueler);
+            }
+        }
+    }
+
+    private void ladeLehrer(Connection connection, Abitur abitur, Map<String, Lehrer> lehrerMap) throws SQLException {
+        String sql = "SELECT kuerzel, anrede, nachname, vorname, amtsbezeichnung FROM lehrer";
+        try (Statement statement = connection.createStatement(); ResultSet resultSet = statement.executeQuery(sql)) {
+            while (resultSet.next()) {
+                String kuerzel = resultSet.getString("kuerzel");
+                Lehrer lehrer = new Lehrer(kuerzel);
+                lehrer.aktualisiereStammdaten(resultSet.getString("anrede"), resultSet.getString("nachname"), resultSet.getString("vorname"), resultSet.getString("amtsbezeichnung")  );
+                abitur.addLehrer(lehrer);
+                lehrerMap.put(kuerzel, lehrer);
+            }
+        }
+    }
+
+    private void ladeFakultas(Connection connection, Map<String, Lehrer> lehrerMap) throws SQLException {
+        String sql = "SELECT lehrer_kuerzel, fach FROM lehrer_fakultaet";
+
+        try (Statement statement = connection.createStatement(); ResultSet resultSet = statement.executeQuery(sql)) {
+            while (resultSet.next()) {
+                String kuerzel = resultSet.getString("lehrer_kuerzel");
+                String fach = resultSet.getString("fach");
+
+                Lehrer lehrer = lehrerMap.get(kuerzel);
+
+                if (lehrer == null) {
+                    throw new SQLException("Lehrer für Fakultas nicht gefunden: " + kuerzel);
+                }
+
+                lehrer.getFakultas().add(fach);
+            }
+        }
+    }
+
+    private void ladeRaeume(Connection connection, Abitur abitur, Map<String, Raum> raumMap) throws SQLException {
+        String sql = "SELECT bezeichnung, kapazitaet FROM raum";
+
+        try (Statement statement = connection.createStatement(); ResultSet resultSet = statement.executeQuery(sql)) {
+            while (resultSet.next()) {
+                String bezeichnung = resultSet.getString("bezeichnung");
+                int kapazitaet = resultSet.getInt("kapazitaet");
+
+                Raum raum = new Raum(bezeichnung, kapazitaet);
+
+                abitur.addRaum(raum);
+                raumMap.put(bezeichnung, raum);
+            }
+        }
+    }
+
+    private void ladeKurse(Connection connection, Abitur abitur, Map<String, Lehrer> lehrerMap, Map<String, Kurs> kursMap) throws SQLException {
+        String sql = "SELECT bezeichnung, fach, fachlehrer_kuerzel FROM kurs";
+
+        try (Statement statement = connection.createStatement(); ResultSet resultSet = statement.executeQuery(sql)) {
+            while (resultSet.next()) {
+                String bezeichnung = resultSet.getString("bezeichnung");
+                String fach = resultSet.getString("fach");
+                String fachlehrerKuerzel = resultSet.getString("fachlehrer_kuerzel");
+
+                Lehrer fachlehrer = fachlehrerKuerzel == null ? null : lehrerMap.get(fachlehrerKuerzel);
+
+                if (fachlehrerKuerzel != null && fachlehrer == null) {
+                    throw new SQLException("Fachlehrer für Kurs " + bezeichnung + " nicht gefunden: " + fachlehrerKuerzel);
+                }
+
+                Kurs kurs = new Kurs(bezeichnung, fach, fachlehrer);
+
+                abitur.addKurs(kurs);
+                kursMap.put(bezeichnung, kurs);
+            }
+        }
+    }
+
+    private void ladePruefungstage(Connection connection, Abitur abitur, Map<Long, Pruefungstag> pruefungstagMap) throws SQLException {
+        String sql = "SELECT pruefungstag_id, datum FROM pruefungstag ORDER BY datum";
+
+        try (Statement statement = connection.createStatement(); ResultSet resultSet = statement.executeQuery(sql)) {
+            while (resultSet.next()) {
+                long id = resultSet.getLong("pruefungstag_id");
+                LocalDate datum = LocalDate.parse(resultSet.getString("datum"));
+
+                Pruefungstag pruefungstag = new Pruefungstag(datum);
+
+                abitur.addPruefungstag(pruefungstag);
+                pruefungstagMap.put(id, pruefungstag);
+            }
+        }
+    }
+
+    private void ladePruefungen(Connection connection, Abitur abitur, Map<String, Schueler> schuelerMap, Map<String, Kurs> kursMap, Map<Long, Pruefung> pruefungMap) throws SQLException {
+        String sql = "SELECT pruefung_id, schueler_id, kurs_bezeichnung, abiturfach, pruefungsform FROM pruefung";
+
+        try (Statement statement = connection.createStatement(); ResultSet resultSet = statement.executeQuery(sql)) {
+            while (resultSet.next()) {
+                long pruefungId = resultSet.getLong("pruefung_id");
+                String schuelerId = resultSet.getString("schueler_id");
+                String kursBezeichnung = resultSet.getString("kurs_bezeichnung");
+
+                Schueler schueler = schuelerMap.get(schuelerId);
+                Kurs kurs = kursMap.get(kursBezeichnung);
+
+                if (schueler == null) {
+                    throw new SQLException("Schüler für Prüfung nicht gefunden: " + schuelerId);
+                }
+
+                if (kurs == null) {
+                    throw new SQLException("Kurs für Prüfung nicht gefunden: " + kursBezeichnung);
+                }
+
+                Abiturfach abiturfach = Abiturfach.valueOf(resultSet.getString("abiturfach"));
+                Pruefung pruefung = new Pruefung(schueler, kurs, null, abiturfach); //null bei Prüfer, weil der Prüfer erst mit den Prüfungsdaten geladen wird!
+                pruefung.setPruefungId(pruefungId);
+                abitur.addPruefung(pruefung);
+                pruefungMap.put(pruefungId, pruefung);
+            }
+        }
+    }
+
+    private void ladePruefungsplanung(Connection connection, Map<Long, Pruefung> pruefungMap, Map<Long, Pruefungstag> pruefungstagMap, Map<String, Raum> raumMap, Map<String, Lehrer> lehrerMap) throws SQLException {
+
+        String sql = """
+            SELECT pruefung_id, pruefungstag_id, beginn, planungsspalte, raum_bezeichnung, pruefer_kuerzel, schriftfuehrer_kuerzel, vorsitz_kuerzel FROM pruefungsplanung
+            """;
+
+        try (Statement statement = connection.createStatement(); ResultSet resultSet = statement.executeQuery(sql)) {
+            while (resultSet.next()) {
+                long pruefungId = resultSet.getLong("pruefung_id");
+                Pruefung pruefung = pruefungMap.get(pruefungId);
+
+                if (pruefung == null) {
+                    throw new SQLException("Prüfung für Prüfungsplanung nicht gefunden: " + pruefungId);
+                }
+
+                long pruefungstagId = resultSet.getLong("pruefungstag_id");
+
+                if (!resultSet.wasNull()) {
+                    Pruefungstag pruefungstag = pruefungstagMap.get(pruefungstagId);
+
+                    if (pruefungstag == null) {
+                        throw new SQLException("Prüfungstag für Prüfungsplanung nicht gefunden: " + pruefungstagId);
+                    }
+
+                    pruefung.setPruefungstag(pruefungstag.getDatum());
+                }
+
+                String beginnText = resultSet.getString("beginn");
+
+                if (beginnText != null) {
+                    pruefung.setBeginn(LocalTime.parse(beginnText));
+                }
+
+                int planungsspalte = resultSet.getInt("planungsspalte");
+
+                if (!resultSet.wasNull()) {
+                    pruefung.setPlanungsspalte(planungsspalte);
+                }
+
+                String raumBezeichnung = resultSet.getString("raum_bezeichnung");
+
+                if (raumBezeichnung != null) {
+                    Raum raum = raumMap.get(raumBezeichnung);
+
+                    if (raum == null) {
+                        throw new SQLException("Raum für Prüfungsplanung nicht gefunden: " + raumBezeichnung);
+                    }
+
+                    pruefung.setRaum(raum);
+                }
+
+                String prueferKuerzel = resultSet.getString("pruefer_kuerzel");
+
+                if (prueferKuerzel != null) {
+                    Lehrer pruefer = lehrerMap.get(prueferKuerzel);
+
+                    if (pruefer == null) {
+                        throw new SQLException("Prüfer nicht gefunden: " + prueferKuerzel);
+                    }
+
+                    pruefung.setPruefer(pruefer);
+                }
+
+                String schriftfuehrerKuerzel = resultSet.getString("schriftfuehrer_kuerzel");
+
+                if (schriftfuehrerKuerzel != null) {
+                    Lehrer schriftfuehrer = lehrerMap.get(schriftfuehrerKuerzel);
+
+                    if (schriftfuehrer == null) {
+                        throw new SQLException("Schriftführer nicht gefunden: " + schriftfuehrerKuerzel);
+                    }
+
+                    pruefung.setSchriftfuehrer(schriftfuehrer);
+                }
+
+                String vorsitzKuerzel = resultSet.getString("vorsitz_kuerzel");
+
+                if (vorsitzKuerzel != null) {
+                    Lehrer vorsitz = lehrerMap.get(vorsitzKuerzel);
+
+                    if (vorsitz == null) {
+                        throw new SQLException("Vorsitz nicht gefunden: " + vorsitzKuerzel);
+                    }
+
+                    pruefung.setVorsitz(vorsitz);
+                }
+            }
+        }
+    }
+
+    public void aktualisierePruefungsplanung(Pruefung pruefung) throws SQLException {
+        if (pruefung.getPruefungId() == null) {
+            throw new IllegalStateException("Prüfung wurde noch nicht in der Datenbank gespeichert.");
+        }
+
+        String sql = """
+            UPDATE pruefungsplanung SET pruefungstag_id = ?, beginn = ?, planungsspalte = ?, raum_bezeichnung = ?, pruefer_kuerzel = ?, schriftfuehrer_kuerzel = ?, vorsitz_kuerzel = ? WHERE pruefung_id = ?
+            """;
+
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            setPruefungstagId(statement, 1, connection, pruefung);
+            setLocalTime(statement, 2, pruefung.getBeginn());
+            setInteger(statement, 3, pruefung.getPlanungsspalte());
+            setRaum(statement, 4, pruefung.getRaum());
+            setLehrer(statement, 5, pruefung.getPruefer());
+            setLehrer(statement, 6, pruefung.getSchriftfuehrer());
+            setLehrer(statement, 7, pruefung.getVorsitz());
+            statement.setLong(8, pruefung.getPruefungId());
+
+            statement.executeUpdate();
+        }
+    }
 }

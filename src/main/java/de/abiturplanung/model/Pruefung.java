@@ -19,6 +19,7 @@ public class Pruefung {
     private LocalTime beginn;
     private Raum raum;
     private Integer planungsspalte;
+    private Long pruefungId;
 
     public Pruefung(Schueler schueler, Kurs kurs, Lehrer pruefer, Abiturfach abiturfach) {
         this.schueler = schueler;
@@ -30,6 +31,14 @@ public class Pruefung {
             pruefungsform = Pruefungsform.MUENDLICH;
         else
             pruefungsform = Pruefungsform.SCHRIFTLICH;
+    }
+
+    public Long getPruefungId() {
+        return pruefungId;
+    }
+
+    public void setPruefungId(Long pruefungId) {
+        this.pruefungId = pruefungId;
     }
 
     public Integer getPlanungsspalte() {

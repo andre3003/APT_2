@@ -7,6 +7,7 @@ import de.abiturplanung.gui.planung.PruefungTransferable;
 import de.abiturplanung.model.Abitur;
 import de.abiturplanung.model.Pruefung;
 import de.abiturplanung.model.Pruefungstag;
+import de.abiturplanung.persistence.Datenbank;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -16,6 +17,7 @@ import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.awt.datatransfer.Transferable;
 import java.awt.event.ActionEvent;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -24,6 +26,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
+import java.util.function.Consumer;
 
 public class MainFrame extends JFrame {
 
@@ -31,9 +34,11 @@ public class MainFrame extends JFrame {
     List<PlanungsMatrixPanel> matrixPanels = new ArrayList<>();
     private final JTabbedPane planungsTabs = new JTabbedPane();
     private PruefungsTableModel tableModel;
+    private final Datenbank datenbank;
 
-    public MainFrame(Abitur abitur) {
+    public MainFrame(Abitur abitur, Datenbank datenbank) {
         this.abitur = abitur;
+        this.datenbank = datenbank;
         tableModel = new PruefungsTableModel(abitur.getPruefungen());
         setTitle("Abiturplanung");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -42,7 +47,6 @@ public class MainFrame extends JFrame {
         setLocationRelativeTo(null);
         setJMenuBar(erstelleMenueleiste());
 
-        PruefungsTableModel tableModel = new PruefungsTableModel(abitur.getPruefungen());
         JTable pruefungstabelle = new JTable(tableModel);
         TableRowSorter<PruefungsTableModel> sorter = new TableRowSorter<>(tableModel);
 
@@ -276,7 +280,15 @@ public class MainFrame extends JFrame {
             PlanungsMatrixPanel matrixPanel = new PlanungsMatrixPanel(abitur, pruefungstag);
             matrixPanels.add(matrixPanel);
 
-            Runnable ansichtAktualisieren = () -> {
+            Consumer<Pruefung> ansichtAktualisieren = pruefung -> {
+                try {
+                    datenbank.aktualisierePruefungsplanung(pruefung);
+                } catch (SQLException e) {
+                    JOptionPane.showMessageDialog(
+                            this,
+                            "Die Planungsdaten konnten nicht gespeichert werden:\n" + e.getMessage(), "Datenbankfehler", JOptionPane.ERROR_MESSAGE);
+                }
+
                 tableModel.fireTableDataChanged();
 
                 for (PlanungsMatrixPanel panel : matrixPanels) {
