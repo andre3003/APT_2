@@ -22,4 +22,8 @@ public class Raum {
     public String toString() {
         return bezeichnung;
     }
+
+    public void aktualisiereStammdaten(int kapazitaet) {
+        this.kapazitaet = kapazitaet;
+    }
 }

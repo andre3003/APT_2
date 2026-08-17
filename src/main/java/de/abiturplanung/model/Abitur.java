@@ -118,24 +118,16 @@ public class Abitur {
         return null;
     }
 
-
-    public Kurs findeOderErzeugeKurs(
-            String bezeichnung,
-            String fach,
-            Lehrer fachlehrer) {
-
+    public Kurs findeOderErzeugeKurs(String bezeichnung, String fach, Lehrer fachlehrer) {
         Kurs kurs = findeKurs(bezeichnung);
-
-        if (kurs != null)
+        if (kurs != null) {
+            kurs.setFach(fach);
+            kurs.setFachlehrer(fachlehrer);
             return kurs;
+        }
 
-        kurs = new Kurs(
-                normalisiere(bezeichnung),
-                fach,
-                fachlehrer);
-
+        kurs = new Kurs(normalisiere(bezeichnung), fach, fachlehrer);
         kurse.add(kurs);
-
         return kurs;
     }
 
@@ -143,6 +135,15 @@ public class Abitur {
         for (Raum raum: raeume) {
             if (raum.getBezeichnung().equalsIgnoreCase(bezeichnung)) {
                 return raum;
+            }
+        }
+        return null;
+    }
+
+    public Pruefung findePruefung(Schueler schueler, Abiturfach abiturfach) {
+        for (Pruefung pruefung : pruefungen) {
+            if (pruefung.getSchueler().getSchildId().equals(schueler.getSchildId()) && pruefung.getAbiturfach() == abiturfach) {
+                return pruefung;
             }
         }
         return null;

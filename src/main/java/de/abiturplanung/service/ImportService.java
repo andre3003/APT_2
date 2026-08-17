@@ -40,17 +40,18 @@ public class ImportService {
         }
     }
 
-    private void importiereLeistungsdatensatz(
-            SchuelerleistungsDatensatz ds) {
+    private void importiereLeistungsdatensatz(SchuelerleistungsDatensatz ds) {
         Schueler schueler = abitur.findeSchueler(ds.getNachname(), ds.getVorname(), ds.getGeburtsdatum());
-
-        Lehrer lehrer =
-                abitur.findeLehrer(ds.getLehrerkuerzel());
-
+        Lehrer lehrer = abitur.findeLehrer(ds.getLehrerkuerzel());
         Kurs kurs = abitur.findeOderErzeugeKurs(ds.getKursbezeichnung(), ds.getFach(), lehrer);
+        Pruefung pruefung = abitur.findePruefung(schueler, ds.getAbiturfach());
 
-        Pruefung pruefung = new Pruefung(schueler, kurs, lehrer, ds.getAbiturfach());
-        abitur.addPruefung(pruefung);
+        if (pruefung == null) {
+           pruefung = new Pruefung(schueler, kurs, lehrer, ds.getAbiturfach());
+            abitur.addPruefung(pruefung);
+        } else {
+            pruefung.setKurs(kurs);
+        }
     }
 
     public void importiereLeistungsdaten(Path datei) throws IOException {
@@ -65,11 +66,13 @@ public class ImportService {
     public void importiereRaeume(Path datei) throws IOException {
         RaumImporter importer = new RaumImporter();
         List<RaumDatensatz> datensaetze = importer.lese(datei);
-        for (RaumDatensatz datensatz: datensaetze) {
+        for (RaumDatensatz datensatz : datensaetze) {
             Raum raum = abitur.findeRaum(datensatz.getBezeichnung());
             if (raum == null) {
                 raum = new Raum(datensatz.getBezeichnung(), datensatz.getKapazitaet());
                 abitur.addRaum(raum);
+            } else {
+                raum.aktualisiereStammdaten(datensatz.getKapazitaet());
             }
         }
     }

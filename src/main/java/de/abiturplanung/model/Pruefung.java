@@ -6,7 +6,7 @@ import java.time.LocalTime;
 public class Pruefung {
 
     private final Schueler schueler;
-    private final Kurs kurs;
+    private Kurs kurs;
 
     private Lehrer pruefer;
     private Lehrer schriftfuehrer;
@@ -48,6 +48,11 @@ public class Pruefung {
     public void setPlanungsspalte(Integer planungsspalte) {
         this.planungsspalte = planungsspalte;
     }
+
+    public void setKurs(Kurs kurs) {
+        this.kurs = kurs;
+    }
+
 
     public Abiturfach getAbiturfach() {
         return abiturfach;

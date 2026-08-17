@@ -168,10 +168,10 @@ public class Datenbank {
 
     public void setInitialisiert() throws SQLException {
         String sql = """
-            INSERT INTO app_info (schluessel, wert)
-            VALUES ('initialisiert', 'true')
-            ON CONFLICT(schluessel) DO UPDATE SET wert = 'true'
-            """;
+                INSERT INTO app_info (schluessel, wert)
+                VALUES ('initialisiert', 'true')
+                ON CONFLICT(schluessel) DO UPDATE SET wert = 'true'
+                """;
 
         try (Connection connection = getConnection();
              Statement statement = connection.createStatement()) {
@@ -179,7 +179,7 @@ public class Datenbank {
         }
     }
 
-    public void speichereAbitur(Abitur abitur) throws SQLException{
+    public void speichereAbitur(Abitur abitur) throws SQLException {
         try (Connection connection = getConnection()) {
             connection.setAutoCommit(false);
 
@@ -202,8 +202,8 @@ public class Datenbank {
 
     private void speichereSchueler(Connection connection, Abitur abitur) throws SQLException {
         String sql = """
-            INSERT INTO schueler (schild_id, nachname, vorname, geburtsdatum, geschlecht) VALUES (?, ?, ?, ?, ?)
-            """;
+                INSERT INTO schueler (schild_id, nachname, vorname, geburtsdatum, geschlecht) VALUES (?, ?, ?, ?, ?)
+                """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             for (Schueler schueler : abitur.getSchueler()) {
@@ -228,12 +228,12 @@ public class Datenbank {
 
     private void speichereLehrer(Connection connection, Abitur abitur) throws SQLException {
         String lehrerSql = """ 
-            INSERT INTO lehrer (kuerzel, anrede, nachname, vorname, amtsbezeichnung) VALUES (?, ?, ?, ?, ?)
-            """;
+                INSERT INTO lehrer (kuerzel, anrede, nachname, vorname, amtsbezeichnung) VALUES (?, ?, ?, ?, ?)
+                """;
 
         String fakultasSql = """ 
-            INSERT INTO lehrer_fakultaet (lehrer_kuerzel, fach) VALUES (?, ?)
-            """;
+                INSERT INTO lehrer_fakultaet (lehrer_kuerzel, fach) VALUES (?, ?)
+                """;
 
         try (PreparedStatement lehrerStatement = connection.prepareStatement(lehrerSql);
              PreparedStatement fakultasStatement = connection.prepareStatement(fakultasSql)) {
@@ -262,8 +262,8 @@ public class Datenbank {
 
     private void speichereRaeume(Connection connection, Abitur abitur) throws SQLException {
         String sql = """
-            INSERT INTO raum (bezeichnung, kapazitaet) VALUES (?, ?) 
-            """;
+                INSERT INTO raum (bezeichnung, kapazitaet) VALUES (?, ?) 
+                """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             for (Raum raum : abitur.getRaeume()) {
@@ -278,10 +278,10 @@ public class Datenbank {
 
     private void speichereKurse(Connection connection, Abitur abitur) throws SQLException {
         String sql = """
-            INSERT INTO kurs
-            (bezeichnung, fach, fachlehrer_kuerzel)
-            VALUES (?, ?, ?)
-            """;
+                INSERT INTO kurs
+                (bezeichnung, fach, fachlehrer_kuerzel)
+                VALUES (?, ?, ?)
+                """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             for (Kurs kurs : abitur.getKurse()) {
@@ -303,9 +303,9 @@ public class Datenbank {
 
     private void speicherePruefungstage(Connection connection, Abitur abitur) throws SQLException {
         String sql = """
-            INSERT INTO pruefungstag (datum)
-            VALUES (?)
-            """;
+                INSERT INTO pruefungstag (datum)
+                VALUES (?)
+                """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             for (Pruefungstag pruefungstag : abitur.getPruefungstage()) {
@@ -319,10 +319,8 @@ public class Datenbank {
 
     private void speicherePruefungen(Connection connection, Abitur abitur) throws SQLException {
         String pruefungSql = """
-            INSERT INTO pruefung
-            (schueler_id, kurs_bezeichnung, abiturfach, pruefungsform)
-            VALUES (?, ?, ?, ?)
-            """;
+                INSERT INTO pruefung (schueler_id, kurs_bezeichnung, abiturfach, pruefungsform) VALUES (?, ?, ?, ?)
+                """;
 
         try (PreparedStatement statement = connection.prepareStatement(pruefungSql, Statement.RETURN_GENERATED_KEYS)) {
             for (Pruefung pruefung : abitur.getPruefungen()) {
@@ -348,8 +346,8 @@ public class Datenbank {
 
     private void speicherePruefungsplanung(Connection connection, long pruefungId, Pruefung pruefung, Abitur abitur) throws SQLException {
         String sql = """
-            INSERT INTO pruefungsplanung (pruefung_id, pruefungstag_id, beginn, planungsspalte, raum_bezeichnung, pruefer_kuerzel, schriftfuehrer_kuerzel, vorsitz_kuerzel) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """;
+                INSERT INTO pruefungsplanung (pruefung_id, pruefungstag_id, beginn, planungsspalte, raum_bezeichnung, pruefer_kuerzel, schriftfuehrer_kuerzel, vorsitz_kuerzel) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setLong(1, pruefungId);
@@ -481,7 +479,7 @@ public class Datenbank {
             while (resultSet.next()) {
                 String kuerzel = resultSet.getString("kuerzel");
                 Lehrer lehrer = new Lehrer(kuerzel);
-                lehrer.aktualisiereStammdaten(resultSet.getString("anrede"), resultSet.getString("nachname"), resultSet.getString("vorname"), resultSet.getString("amtsbezeichnung")  );
+                lehrer.aktualisiereStammdaten(resultSet.getString("anrede"), resultSet.getString("nachname"), resultSet.getString("vorname"), resultSet.getString("amtsbezeichnung"));
                 abitur.addLehrer(lehrer);
                 lehrerMap.put(kuerzel, lehrer);
             }
@@ -594,8 +592,8 @@ public class Datenbank {
     private void ladePruefungsplanung(Connection connection, Map<Long, Pruefung> pruefungMap, Map<Long, Pruefungstag> pruefungstagMap, Map<String, Raum> raumMap, Map<String, Lehrer> lehrerMap) throws SQLException {
 
         String sql = """
-            SELECT pruefung_id, pruefungstag_id, beginn, planungsspalte, raum_bezeichnung, pruefer_kuerzel, schriftfuehrer_kuerzel, vorsitz_kuerzel FROM pruefungsplanung
-            """;
+                SELECT pruefung_id, pruefungstag_id, beginn, planungsspalte, raum_bezeichnung, pruefer_kuerzel, schriftfuehrer_kuerzel, vorsitz_kuerzel FROM pruefungsplanung
+                """;
 
         try (Statement statement = connection.createStatement(); ResultSet resultSet = statement.executeQuery(sql)) {
             while (resultSet.next()) {
@@ -687,8 +685,8 @@ public class Datenbank {
         }
 
         String sql = """
-            UPDATE pruefungsplanung SET pruefungstag_id = ?, beginn = ?, planungsspalte = ?, raum_bezeichnung = ?, pruefer_kuerzel = ?, schriftfuehrer_kuerzel = ?, vorsitz_kuerzel = ? WHERE pruefung_id = ?
-            """;
+                UPDATE pruefungsplanung SET pruefungstag_id = ?, beginn = ?, planungsspalte = ?, raum_bezeichnung = ?, pruefer_kuerzel = ?, schriftfuehrer_kuerzel = ?, vorsitz_kuerzel = ? WHERE pruefung_id = ?
+                """;
 
         try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             setPruefungstagId(statement, 1, connection, pruefung);
@@ -701,6 +699,187 @@ public class Datenbank {
             statement.setLong(8, pruefung.getPruefungId());
 
             statement.executeUpdate();
+        }
+    }
+
+    public void aktualisiereSchueler(Abitur abitur) throws SQLException {
+        String sql = """
+                INSERT INTO schueler (schild_id, nachname, vorname, geburtsdatum, geschlecht) VALUES (?, ?, ?, ?, ?) ON CONFLICT(schild_id) DO UPDATE SET
+                nachname = excluded.nachname, vorname = excluded.vorname,
+                geburtsdatum = excluded.geburtsdatum,
+                geschlecht = excluded.geschlecht
+                """;
+
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            for (Schueler schueler : abitur.getSchueler()) {
+                statement.setString(1, schueler.getSchildId());
+                statement.setString(2, schueler.getNachname());
+                statement.setString(3, schueler.getVorname());
+
+                if (schueler.getGeburtsdatum() == null) {
+                    statement.setNull(4, Types.VARCHAR);
+                } else {
+                    statement.setString(4, schueler.getGeburtsdatum().toString());
+                }
+
+                statement.setString(5, schueler.getGeschlecht() == null ? null : schueler.getGeschlecht().name());
+                statement.addBatch();
+            }
+
+            statement.executeBatch();
+        }
+    }
+
+    public void aktualisiereLehrer(Abitur abitur) throws SQLException {
+        String lehrerSql = """
+                INSERT INTO lehrer
+                (kuerzel, anrede, nachname, vorname, amtsbezeichnung) VALUES (?, ?, ?, ?, ?) ON CONFLICT(kuerzel) DO UPDATE SET
+                    anrede = excluded.anrede,
+                    nachname = excluded.nachname,
+                    vorname = excluded.vorname,
+                    amtsbezeichnung = excluded.amtsbezeichnung
+                """;
+
+        String fakultasLoeschenSql = "DELETE FROM lehrer_fakultaet WHERE lehrer_kuerzel = ?";
+
+        String fakultasEinfuegenSql = """
+                INSERT INTO lehrer_fakultaet (lehrer_kuerzel, fach) VALUES (?, ?)
+                """;
+
+        try (Connection connection = getConnection()) {
+            connection.setAutoCommit(false);
+
+            try (PreparedStatement lehrerStatement = connection.prepareStatement(lehrerSql);
+                 PreparedStatement fakultasLoeschenStatement = connection.prepareStatement(fakultasLoeschenSql);
+                 PreparedStatement fakultasEinfuegenStatement = connection.prepareStatement(fakultasEinfuegenSql)) {
+
+                for (Lehrer lehrer : abitur.getLehrer()) {
+                    lehrerStatement.setString(1, lehrer.getKuerzel());
+                    lehrerStatement.setString(2, lehrer.getAnrede());
+                    lehrerStatement.setString(3, lehrer.getNachname());
+                    lehrerStatement.setString(4, lehrer.getVorname());
+                    lehrerStatement.setString(5, lehrer.getAmtsbez());
+                    lehrerStatement.executeUpdate();
+
+                    fakultasLoeschenStatement.setString(1, lehrer.getKuerzel());
+                    fakultasLoeschenStatement.executeUpdate();
+
+                    for (String fakultas : lehrer.getFakultas()) {
+                        if (fakultas != null && !fakultas.isBlank()) {
+                            fakultasEinfuegenStatement.setString(1, lehrer.getKuerzel());
+                            fakultasEinfuegenStatement.setString(2, fakultas);
+                            fakultasEinfuegenStatement.addBatch();
+                        }
+                    }
+
+                    fakultasEinfuegenStatement.executeBatch();
+                }
+
+                connection.commit();
+
+            } catch (SQLException exception) {
+                connection.rollback();
+                throw exception;
+            }
+        }
+    }
+
+    public void aktualisiereRaeume(Abitur abitur) throws SQLException {
+        String raeumeSql = """
+                INSERT INTO raum (bezeichnung, kapazitaet) VALUES (?, ?) ON CONFLICT(bezeichnung) DO UPDATE SET
+                    kapazitaet = excluded.kapazitaet
+                """;
+
+        try (Connection connection = getConnection(); PreparedStatement raeumeStatement = connection.prepareStatement(raeumeSql)) {
+            for (Raum raum : abitur.getRaeume()) {
+                raeumeStatement.setString(1, raum.getBezeichnung());
+                raeumeStatement.setInt(2, raum.getKapazitaet());
+                raeumeStatement.addBatch();
+            }
+            raeumeStatement.executeBatch();
+        }
+    }
+
+    private void aktualisiereKurse(Connection connection, Abitur abitur) throws SQLException {
+        String sql = """
+            INSERT INTO kurs (bezeichnung, fach, fachlehrer_kuerzel) VALUES (?, ?, ?) ON CONFLICT(bezeichnung) DO UPDATE SET
+                fach = excluded.fach,
+                fachlehrer_kuerzel = excluded.fachlehrer_kuerzel
+            """;
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            for (Kurs kurs : abitur.getKurse()) {
+                statement.setString(1, kurs.getBezeichnung());
+                statement.setString(2, kurs.getFach());
+
+                if (kurs.getFachlehrer() == null) {
+                    statement.setNull(3, Types.VARCHAR);
+                } else {
+                    statement.setString(3, kurs.getFachlehrer().getKuerzel());
+                }
+                statement.addBatch();
+            }
+            statement.executeBatch();
+        }
+    }
+
+    private void aktualisierePruefungen(Connection connection, Abitur abitur) throws SQLException {
+        String updateSql = """
+            UPDATE pruefung SET schueler_id = ?, kurs_bezeichnung = ?, abiturfach = ?, pruefungsform = ? WHERE pruefung_id = ?
+            """;
+
+        String insertSql = """
+            INSERT INTO pruefung (schueler_id, kurs_bezeichnung, abiturfach, pruefungsform) VALUES (?, ?, ?, ?)
+            """;
+
+        try (PreparedStatement updateStatement = connection.prepareStatement(updateSql);
+             PreparedStatement insertStatement = connection.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS)) {
+
+            for (Pruefung pruefung : abitur.getPruefungen()) {
+                if (pruefung.getPruefungId() != null) {
+                    updateStatement.setString(1, pruefung.getSchueler().getSchildId());
+                    updateStatement.setString(2, pruefung.getKurs().getBezeichnung());
+                    updateStatement.setString(3, pruefung.getAbiturfach().name());
+                    updateStatement.setString(4, pruefung.getPruefungsform().name());
+                    updateStatement.setLong(5, pruefung.getPruefungId());
+
+                    updateStatement.executeUpdate();
+
+                } else {
+                    insertStatement.setString(1, pruefung.getSchueler().getSchildId());
+                    insertStatement.setString(2, pruefung.getKurs().getBezeichnung());
+                    insertStatement.setString(3, pruefung.getAbiturfach().name());
+                    insertStatement.setString(4, pruefung.getPruefungsform().name());
+
+                    insertStatement.executeUpdate();
+
+                    try (ResultSet keys = insertStatement.getGeneratedKeys()) {
+                        if (!keys.next()) {
+                            throw new SQLException("Keine ID für neue Prüfung erzeugt.");
+                        }
+
+                        long pruefungId = keys.getLong(1);
+                        pruefung.setPruefungId(pruefungId);
+
+                        speicherePruefungsplanung(connection, pruefungId, pruefung, abitur);
+                    }
+                }
+            }
+        }
+    }
+
+    public void aktualisiereLeistungsdaten(Abitur abitur) throws SQLException {
+        try (Connection connection = getConnection()) {
+            connection.setAutoCommit(false);
+
+            try {
+                aktualisiereKurse(connection, abitur);
+                aktualisierePruefungen(connection, abitur);
+                connection.commit();
+            } catch (SQLException exception) {
+                connection.rollback();
+                throw exception;
+            }
         }
     }
 }

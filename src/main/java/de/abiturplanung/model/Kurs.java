@@ -5,7 +5,7 @@ import de.abiturplanung.model.Lehrer;
 public class Kurs {
 
     private final String bezeichnung;
-    private final String fach;
+    private String fach;
     private Lehrer fachlehrer;
 
     public Kurs(String bezeichnung,
@@ -29,4 +29,11 @@ public class Kurs {
         return fachlehrer;
     }
 
+    public void setFachlehrer(Lehrer fachlehrer) {
+        this.fachlehrer = fachlehrer;
+    }
+
+    public void setFach(String fach) {
+        this.fach = fach;
+    }
 }
