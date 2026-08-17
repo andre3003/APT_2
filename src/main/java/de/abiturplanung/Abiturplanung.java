@@ -4,9 +4,12 @@ import de.abiturplanung.persistence.Datenbank;
 
 import de.abiturplanung.gui.MainFrame;
 import de.abiturplanung.service.ImportService;
+import de.config.AppEinstellungen;
+import de.config.AppPfade;
 
 import javax.swing.*;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.SQLException;
 import java.time.LocalDate;
@@ -25,32 +28,19 @@ public class Abiturplanung {
     }
 
     private static void starteAnwendung() throws IOException, SQLException {
-        Datenbank datenbank = new Datenbank("Abitur_2027.db");
-        datenbank.initialisieren();
+        AppPfade.initialisiereVerzeichnisse();
 
-        Abitur abitur;
-
-        if (!datenbank.istInitialisiert()) {
-            abitur = new Abitur();
-            ImportService service = new ImportService(abitur);
-            service.importiereSchueler( Path.of("Schueler.csv"));
-            service.importiereLehrer(Path.of("Lehrer.csv"));
-            service.importiereLeistungsdaten(Path.of("SchuelerLeistungsdaten.dat"));
-            service.importiereRaeume(Path.of("Raumliste.csv"));
-
-            //Testdaten:
-            abitur.addPruefungstag(new Pruefungstag(LocalDate.of(2027, 5, 20)));
-            abitur.addPruefungstag(new Pruefungstag(LocalDate.of(2027, 5, 21)));
-            abitur.addPruefungstag(new Pruefungstag(LocalDate.of(2027, 5, 24)));
-
-            datenbank.speichereAbitur(abitur);
-            datenbank.setInitialisiert();
-        } else {
-            abitur = datenbank.ladeAbitur();
-
+        AppEinstellungen einstellungen = new AppEinstellungen();
+        Path letzterPfad = einstellungen.getLetzteDatenbank();
+        MainFrame mainFrame = new MainFrame();
+        if (letzterPfad != null && Files.exists(letzterPfad)) {
+            Datenbank datenbank = new Datenbank(letzterPfad);
+            Abitur abitur = datenbank.ladeAbitur();
+            mainFrame.setPlanung(abitur, datenbank);
         }
-        MainFrame mainFrame = new MainFrame(abitur, datenbank);
+//        einstellungen.setLetzteDatenbank(AppPfade.getDatenVerzeichnis().resolve("Abitur_2027.db"));
         mainFrame.setVisible(true);
+
     }
 
     private static void zeigeStartfehler(Exception exception) {

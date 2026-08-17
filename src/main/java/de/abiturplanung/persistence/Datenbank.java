@@ -2,6 +2,7 @@ package de.abiturplanung.persistence;
 
 import de.abiturplanung.model.*;
 
+import java.nio.file.Path;
 import java.sql.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -10,10 +11,16 @@ import java.util.Map;
 
 public class Datenbank {
 
+    private final Path pfad;
     private final String url;
 
-    public Datenbank(String dateiname) {
-        url = "jdbc:sqlite:" + dateiname;
+    public Datenbank(Path pfad) {
+        this.pfad = pfad.toAbsolutePath().normalize();
+        this.url = "jdbc:sqlite:" + this.pfad;
+    }
+
+    public Path getPfad() {
+        return pfad;
     }
 
     public Connection getConnection() throws SQLException {
