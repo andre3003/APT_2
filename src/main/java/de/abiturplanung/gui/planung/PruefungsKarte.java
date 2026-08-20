@@ -10,18 +10,24 @@ import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.datatransfer.Transferable;
+import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
 import java.util.function.Consumer;
+import java.util.List;
 
 public class PruefungsKarte extends JPanel {
 
     private final Pruefung pruefung;
+    private List<Pruefung> kollisionen;
+    private JPopupMenu popupMenu;
+    private Consumer nachBesarbeitung;
 
-    public PruefungsKarte(Abitur abitur, Pruefung pruefung, Consumer<Pruefung> nachBearbeitung){
+    public PruefungsKarte(Abitur abitur, Pruefung pruefung, Consumer<Pruefung> nachBearbeitung, List<Pruefung> kollisionen){
         this.pruefung = pruefung;
-
+        this.kollisionen = kollisionen;
+        this.nachBesarbeitung = nachBearbeitung;
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setOpaque(true);
         setBackground(ermittleHintergrundfarbe());
@@ -54,19 +60,32 @@ public class PruefungsKarte extends JPanel {
             public void mouseDragged(MouseEvent e) {
                 getTransferHandler().exportAsDrag(PruefungsKarte.this, e, TransferHandler.MOVE);
             }
+
+
         };
 
-        MouseAdapter doppelklickListener = new MouseAdapter() {
+        MouseAdapter mausListener = new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 2) {
                     JFrame owner = (JFrame) SwingUtilities.getWindowAncestor(PruefungsKarte.this);
                     PruefungsDialog dialog = new PruefungsDialog(owner, abitur, pruefung);
                     dialog.setVisible(true);
-
                     if (dialog.isGespeichert()) {
                         nachBearbeitung.accept(pruefung);
                     }
+                }
+            }
+            public void mousePressed(MouseEvent e) {
+                if (e.isPopupTrigger()) { //Ginge auch so: SwingUtilities.isRightMouseButton(e)
+                    zeigePopup(e);
+                }
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                if (e.isPopupTrigger()) {  //Ginge auch so: SwingUtilities.isRightMouseButton(e)
+                    zeigePopup(e);
                 }
             }
         };
@@ -76,10 +95,52 @@ public class PruefungsKarte extends JPanel {
         kursLabel.addMouseMotionListener(dragListener);
         planungLabel.addMouseMotionListener(dragListener);
 
-        addMouseListener(doppelklickListener);
-        nameLabel.addMouseListener(doppelklickListener);
-        kursLabel.addMouseListener(doppelklickListener);
-        planungLabel.addMouseListener(doppelklickListener);
+        addMouseListener(mausListener);
+        nameLabel.addMouseListener(mausListener);
+        kursLabel.addMouseListener(mausListener);
+        planungLabel.addMouseListener(mausListener);
+        if (!kollisionen.isEmpty()) {
+            setzeToolTip(nameLabel, kursLabel, planungLabel);
+        }
+        addPopUpMenu();
+    }
+
+    public void addPopUpMenu(){
+        popupMenu = new JPopupMenu();
+        JMenuItem entplanen = new JMenuItem("Prüfung entplanen");
+        entplanen.addActionListener(this::entplanenAction);
+        popupMenu.add(entplanen);
+    }
+
+    private void entplanenAction(ActionEvent actionEvent) {
+        pruefung.setPruefungstag(null);
+        pruefung.setBeginn(null);
+        pruefung.setSchriftfuehrer(null);
+        pruefung.setVorsitz(null);
+        pruefung.setRaum(null);
+        pruefung.setPlanungsspalte(0);
+        nachBesarbeitung.accept(pruefung);
+    }
+
+    private void zeigePopup(MouseEvent e) {
+        if (e.isPopupTrigger()) {
+            popupMenu.show(e.getComponent(), e.getX()+10, e.getY());
+        }
+    }
+
+    public void setzeToolTip(JLabel ... labels) {
+        StringBuilder tooltip = new StringBuilder();
+        tooltip.append("<html>");
+        tooltip.append("Kollidierende Prüfungen: <br>");
+        for (Pruefung p : kollisionen) {
+            tooltip.append(p.getSchueler().getNachname()).append(" - ").append(p.getBeginn()).append(" - Spalte ").append(p.getPlanungsspalte()).append("<br>");
+
+        }
+        tooltip.append("</html>");
+        this.setToolTipText(tooltip.toString());
+        for (JLabel l : labels) {
+            l.setToolTipText(tooltip.toString());
+        }
     }
 
     public Pruefung getPruefung() {
@@ -104,6 +165,9 @@ public class PruefungsKarte extends JPanel {
     private Color ermittleHintergrundfarbe() {
         if (pruefung.istVollstaendigGeplant()) {
             return new Color(230, 245, 230);
+        }
+        if (!kollisionen.isEmpty()) {
+            return new Color(249, 115, 115);
         }
 
         return new Color(255, 248, 220);

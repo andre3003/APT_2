@@ -9,6 +9,7 @@ import de.abiturplanung.model.Pruefung;
 import de.abiturplanung.model.Pruefungstag;
 import de.abiturplanung.persistence.Datenbank;
 import de.abiturplanung.service.ImportService;
+import de.abiturplanung.service.Kollisionspruefer;
 import de.config.AppEinstellungen;
 import de.config.AppPfade;
 
@@ -30,20 +31,19 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Date;
+import java.util.*;
 import java.util.List;
-import java.util.TreeSet;
 import java.util.regex.Pattern;
 import java.util.function.Consumer;
 
 public class MainFrame extends JFrame {
 
     private Abitur abitur;
+    private Datenbank datenbank;
+    private Kollisionspruefer kollisionspruefer;
     List<PlanungsMatrixPanel> matrixPanels = new ArrayList<>();
     private final JTabbedPane planungsTabs = new JTabbedPane();
     private PruefungsTableModel tableModel;
-    private Datenbank datenbank;
     private final JPanel arbeitsbereich = new JPanel(new BorderLayout());
     private final JLabel statusleiste = new JLabel();
     private final JMenu importMenue = new JMenu("Import");
@@ -51,7 +51,7 @@ public class MainFrame extends JFrame {
 
     public MainFrame(Abitur abitur, Datenbank datenbank) {
         this();
-        setPlanung(abitur, datenbank);
+        initialisierePlanung(abitur, datenbank);
     }
 
     public MainFrame() {
@@ -60,52 +60,31 @@ public class MainFrame extends JFrame {
         setSize(1400, 750);
         setMinimumSize(new Dimension(1000, 550));
         setLocationRelativeTo(null);
-
         setJMenuBar(erstelleMenueleiste());
-
         statusleiste.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
-
         add(arbeitsbereich, BorderLayout.CENTER);
         add(statusleiste, BorderLayout.SOUTH);
-
         zeigeKeinePlanung();
     }
 
     private void planungsTabsAktualisieren() {
         planungsTabs.removeAll();
         matrixPanels.clear();
-
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+        Map<Pruefung, List<Pruefung>> alleKollisionen = kollisionspruefer.findeAlleKollisionen();
 
         for (Pruefungstag pruefungstag : abitur.getPruefungstage()) {
             PlanungsMatrixPanel matrixPanel = new PlanungsMatrixPanel(abitur, pruefungstag);
             matrixPanels.add(matrixPanel);
 
-            Consumer<Pruefung> ansichtAktualisieren = pruefung -> {
-                try {
-                    datenbank.aktualisierePruefungsplanung(pruefung);
-                } catch (SQLException e) {
-                    JOptionPane.showMessageDialog(
-                            this,
-                            "Die Planungsdaten konnten nicht gespeichert werden:\n" + e.getMessage(), "Datenbankfehler", JOptionPane.ERROR_MESSAGE);
-                }
-
-                tableModel.fireTableDataChanged();
-
-                for (PlanungsMatrixPanel panel : matrixPanels) {
-                    panel.aktualisieren();
-                }
-            };
-
-            matrixPanel.setNachBearbeitung(ansichtAktualisieren);
+            Consumer<Pruefung> nachBearbeitung = this::verarbeitePlanungsaenderung;
+            matrixPanel.setKollisionen(alleKollisionen);
+            matrixPanel.setNachBearbeitung(nachBearbeitung);
             planungsTabs.addTab(pruefungstag.getDatum().format(formatter), matrixPanel);
         }
-
         revalidate();
         repaint();
     }
-
-
 
     private JMenuBar erstelleMenueleiste() {
         JMenuBar menueleiste = new JMenuBar();
@@ -185,7 +164,7 @@ public class MainFrame extends JFrame {
             ImportService importService = new ImportService(abitur);
             importService.importiereLeistungsdaten(importPfad);
             datenbank.aktualisiereLeistungsdaten(abitur);
-            setPlanung(abitur, datenbank);
+            initialisierePlanung(abitur, datenbank);
             JOptionPane.showMessageDialog(this, "Die Leistungsdaten wurden erfolgreich importiert.", "Import abgeschlossen", JOptionPane.INFORMATION_MESSAGE);
 
         } catch (IOException | SQLException exception) {
@@ -212,7 +191,7 @@ public class MainFrame extends JFrame {
 
             datenbank.aktualisiereRaeume(abitur);
 
-            setPlanung(abitur, datenbank);
+            initialisierePlanung(abitur, datenbank);
 
             JOptionPane.showMessageDialog(this, "Räume wurden erfolgreich importiert.", "Import abgeschlossen", JOptionPane.INFORMATION_MESSAGE);
 
@@ -239,7 +218,7 @@ public class MainFrame extends JFrame {
 
             datenbank.aktualisiereLehrer(abitur);
 
-            setPlanung(abitur, datenbank);
+            initialisierePlanung(abitur, datenbank);
 
             JOptionPane.showMessageDialog(this, "Lehrerdaten wurden erfolgreich importiert.", "Import abgeschlossen", JOptionPane.INFORMATION_MESSAGE);
 
@@ -266,7 +245,7 @@ public class MainFrame extends JFrame {
 
             datenbank.aktualisiereSchueler(abitur);
 
-            setPlanung(abitur, datenbank);
+            initialisierePlanung(abitur, datenbank);
 
             JOptionPane.showMessageDialog(this, "Schülerdaten wurden erfolgreich importiert.", "Import abgeschlossen", JOptionPane.INFORMATION_MESSAGE);
 
@@ -347,7 +326,7 @@ public class MainFrame extends JFrame {
             Datenbank neueDatenbank = new Datenbank(pfad);
             Abitur neuesAbitur = neueDatenbank.ladeAbitur();
 
-            setPlanung(neuesAbitur, neueDatenbank);
+            initialisierePlanung(neuesAbitur, neueDatenbank);
 
             AppEinstellungen einstellungen = new AppEinstellungen();
             einstellungen.setLetzteDatenbank(pfad);
@@ -393,7 +372,7 @@ public class MainFrame extends JFrame {
 
             Abitur neuesAbitur = new Abitur();
 
-            setPlanung(neuesAbitur, neueDatenbank);
+            initialisierePlanung(neuesAbitur, neueDatenbank);
 
             AppEinstellungen einstellungen = new AppEinstellungen();
             einstellungen.setLetzteDatenbank(pfad);
@@ -408,24 +387,21 @@ public class MainFrame extends JFrame {
     private void zeigeKeinePlanung() {
         abitur = null;
         datenbank = null;
-
+        kollisionspruefer = null;
         arbeitsbereich.removeAll();
-
         importMenue.setEnabled(false);
-
         JLabel hinweis = new JLabel("Keine Planung geöffnet", SwingConstants.CENTER);
         hinweis.setFont(hinweis.getFont().deriveFont(Font.BOLD, 20f));
-
         arbeitsbereich.add(hinweis, BorderLayout.CENTER);
         statusleiste.setText("Keine Planung geöffnet");
-
         arbeitsbereich.revalidate();
         arbeitsbereich.repaint();
     }
 
-    public void setPlanung(Abitur abitur, Datenbank datenbank) {
+    public void initialisierePlanung(Abitur abitur, Datenbank datenbank) {
         this.abitur = abitur;
         this.datenbank = datenbank;
+        this.kollisionspruefer = new Kollisionspruefer(abitur);
         importMenue.setEnabled(true);
 
         arbeitsbereich.removeAll();
@@ -439,7 +415,29 @@ public class MainFrame extends JFrame {
         arbeitsbereich.repaint();
     }
 
-    private JPanel erstellePlanungsbereich() {
+    private void verarbeitePlanungsaenderung(Pruefung pruefung) {
+        try {
+            datenbank.aktualisierePruefungsplanung(pruefung);
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this,
+                    "Die Änderungen konnten nicht gespeichert werden.\n" +
+                            "Starten Sie die Anwendung neu.",
+                    "Datenbankfehler",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        tableModel.fireTableDataChanged();
+
+        Map<Pruefung, List<Pruefung>> aktuelleKollisionen = kollisionspruefer.findeAlleKollisionen();
+
+        for (PlanungsMatrixPanel panel : matrixPanels) {
+            panel.setKollisionen(aktuelleKollisionen);
+            panel.aktualisieren();
+        }
+    }
+
+    private JPanel erstellePlanungsbereich() { //Das ist die Tabelle mit den Prüfungen
         JPanel panel = new JPanel(new BorderLayout());
 
         tableModel = new PruefungsTableModel(abitur.getPruefungen());
@@ -685,8 +683,16 @@ public class MainFrame extends JFrame {
             }
         }
 
-        abitur.addPruefungstag(new Pruefungstag(datum));
-        planungsTabsAktualisieren();
+        Pruefungstag pruefungstag = new Pruefungstag(datum);
+
+        try {
+            datenbank.speicherePruefungstag(pruefungstag);
+            abitur.addPruefungstag(pruefungstag);
+            planungsTabsAktualisieren();
+
+        } catch (SQLException exception) {
+            JOptionPane.showMessageDialog(this, "Der Prüfungstag konnte nicht gespeichert werden:\n" + exception.getMessage(), "Datenbankfehler", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private void pruefungstagEntfernenAction(ActionEvent event) {

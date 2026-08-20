@@ -13,6 +13,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 public class PlanungsMatrixPanel extends JPanel {
@@ -28,6 +29,8 @@ public class PlanungsMatrixPanel extends JPanel {
 
     private final JPanel matrixPanel = new JPanel();
     private Consumer<Pruefung> nachBearbeitung = pruefung -> {}; //Leere Initialisierung
+
+    private Map<Pruefung, List<Pruefung>> alleKollisionen = Map.of();
 
 
     public PlanungsMatrixPanel(Abitur abitur, Pruefungstag pruefungstag) {
@@ -72,8 +75,30 @@ public class PlanungsMatrixPanel extends JPanel {
         int zeile = 1;
 
         while (!zeit.isAfter(ENDZEIT)) {
-            JLabel zeitLabel = new JLabel(zeit.format(ZEIT_FORMAT), SwingConstants.CENTER);
-            addZelle(zeitLabel, 0, zeile, 70, 65);
+            LocalTime vorbereitungsbeginn = zeit.minusMinutes(30);
+            LocalTime pruefungsende = zeit.plusMinutes(30);
+
+            String zeitText = String.format(
+                    "<html><div style='text-align:center;'>Vorber: %s - %s<br>----------------<br>Prüfg: %s - %s</div></html>",
+                    vorbereitungsbeginn.format(ZEIT_FORMAT),
+                    zeit.format(ZEIT_FORMAT),
+                    zeit.format(ZEIT_FORMAT),
+                    pruefungsende.format(ZEIT_FORMAT)
+            );
+
+            JLabel zeitLabel = new JLabel(zeitText, SwingConstants.CENTER);
+
+            JPanel zeitPanel = new JPanel(new BorderLayout());
+            zeitPanel.setBackground(getBackground());
+            zeitPanel.setBorder(BorderFactory.createLineBorder(Color.GRAY));
+            zeitPanel.add(zeitLabel, BorderLayout.CENTER);
+
+            JPanel zeitContainer = new JPanel(new BorderLayout());
+            zeitContainer.setBackground(getBackground());
+            zeitContainer.setBorder(BorderFactory.createEmptyBorder(3, 4, 3, 4));
+            zeitContainer.add(zeitPanel, BorderLayout.CENTER);
+
+            addZelle(zeitContainer, 0, zeile, 150, 65);
 
             for (int spalte = 1; spalte <= SPALTEN; spalte++) {
                 JPanel slot = new JPanel(new BorderLayout());
@@ -94,13 +119,12 @@ public class PlanungsMatrixPanel extends JPanel {
                         if (!canImport(support)) {
                             return false;
                         }
-
                         try {
                             Pruefung pruefung = (Pruefung) support.getTransferable().getTransferData(PruefungTransferable.PRUEFUNG_FLAVOR);
                             pruefung.setPruefungstag(pruefungstag.getDatum());
                             pruefung.setBeginn(slotZeit);
                             pruefung.setPlanungsspalte(slotSpalte);
-                            nachBearbeitung.accept(pruefung);
+                            nachBearbeitung.accept(pruefung); //Aufruf der Methode verarbeitePlanungsänderung im Mainframe, das über den Consumer an das Panel über setNachbearbeitung weitergegeben wurde.
                             return true;
                         } catch (Exception exception) {
                             exception.printStackTrace();
@@ -108,11 +132,9 @@ public class PlanungsMatrixPanel extends JPanel {
                         }
                     }
                 });
-
                 slots[zeile - 1][spalte - 1] = slot;
                 addZelle(slot, spalte, zeile, 180, 65);
             }
-
             zeit = zeit.plusMinutes(30);
             zeile++;
         }
@@ -144,7 +166,8 @@ public class PlanungsMatrixPanel extends JPanel {
 
             if (spalte > 0) {
                 JPanel slot = slots[zeile - 1][spalte - 1];
-                slot.add(new PruefungsKarte(abitur, pruefung, nachBearbeitung), BorderLayout.CENTER);
+                List<Pruefung> kollisionen = alleKollisionen.getOrDefault(pruefung, List.of()); //Liefert die Liste der Kollisionen der Prüfung dieser Karte; getOrDefault sorgt dafür, dass wir im Falle von null (Prüfung nicht in der Map) eine leere Liste bekommen und nicht null
+                slot.add(new PruefungsKarte(abitur, pruefung, nachBearbeitung, kollisionen), BorderLayout.CENTER);
             }
         }
     }
@@ -188,5 +211,9 @@ public class PlanungsMatrixPanel extends JPanel {
         gbc.weighty = 0;
 
         matrixPanel.add(zelle, gbc);
+    }
+
+    public void setKollisionen(Map<Pruefung, List<Pruefung>> alleKollisionen) {
+        this.alleKollisionen = alleKollisionen;
     }
 }

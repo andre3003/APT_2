@@ -171,7 +171,6 @@ public class Abitur {
                 }
             }
         }
-
         pruefungstage.remove(pruefungstag);
     }
 }
