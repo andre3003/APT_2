@@ -4,6 +4,7 @@ import de.abiturplanung.gui.dialogs.PruefungsDialog;
 import de.abiturplanung.gui.model.PruefungsTableModel;
 import de.abiturplanung.gui.planung.PlanungsMatrixPanel;
 import de.abiturplanung.gui.planung.PruefungTransferable;
+import de.abiturplanung.gui.planung.PruefungsKartenAktionen;
 import de.abiturplanung.model.Abitur;
 import de.abiturplanung.model.Pruefung;
 import de.abiturplanung.model.Pruefungstag;
@@ -36,7 +37,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 import java.util.function.Consumer;
 
-public class MainFrame extends JFrame {
+public class MainFrame extends JFrame implements PruefungsKartenAktionen {
 
     private Abitur abitur;
     private Datenbank datenbank;
@@ -47,7 +48,7 @@ public class MainFrame extends JFrame {
     private final JPanel arbeitsbereich = new JPanel(new BorderLayout());
     private final JLabel statusleiste = new JLabel();
     private final JMenu importMenue = new JMenu("Import");
-
+    private Pruefung kopiertePruefung = null;
 
     public MainFrame(Abitur abitur, Datenbank datenbank) {
         this();
@@ -67,6 +68,7 @@ public class MainFrame extends JFrame {
         zeigeKeinePlanung();
     }
 
+
     private void planungsTabsAktualisieren() {
         planungsTabs.removeAll();
         matrixPanels.clear();
@@ -76,10 +78,9 @@ public class MainFrame extends JFrame {
         for (Pruefungstag pruefungstag : abitur.getPruefungstage()) {
             PlanungsMatrixPanel matrixPanel = new PlanungsMatrixPanel(abitur, pruefungstag);
             matrixPanels.add(matrixPanel);
-
-            Consumer<Pruefung> nachBearbeitung = this::verarbeitePlanungsaenderung;
             matrixPanel.setKollisionen(alleKollisionen);
-            matrixPanel.setNachBearbeitung(nachBearbeitung);
+            matrixPanel.setzePruefungskartenAktionen(this);
+            matrixPanel.aktualisieren();
             planungsTabs.addTab(pruefungstag.getDatum().format(formatter), matrixPanel);
         }
         revalidate();
@@ -420,10 +421,7 @@ public class MainFrame extends JFrame {
             datenbank.aktualisierePruefungsplanung(pruefung);
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(this,
-                    "Die Änderungen konnten nicht gespeichert werden.\n" +
-                            "Starten Sie die Anwendung neu.",
-                    "Datenbankfehler",
-                    JOptionPane.ERROR_MESSAGE);
+                    "Die Änderungen konnten nicht gespeichert werden.\n" + "Starten Sie die Anwendung neu.", "Datenbankfehler", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
@@ -661,7 +659,6 @@ public class MainFrame extends JFrame {
         return panel;
     }
 
-
     private void pruefungstagHinzufuegenAction(ActionEvent event) {
         SpinnerDateModel dateModel = new SpinnerDateModel();
         JSpinner datumSpinner = new JSpinner(dateModel);
@@ -700,55 +697,68 @@ public class MainFrame extends JFrame {
         if (index < 0 || index >= abitur.getPruefungstage().size()) {
             return;
         }
-
         Pruefungstag pruefungstag = abitur.getPruefungstage().get(index);
-
         int anzahlPruefungen = 0;
-
         for (Pruefung pruefung : abitur.getPruefungen()) {
             if (pruefungstag.getDatum().equals(pruefung.getPruefungstag())) {
                 anzahlPruefungen++;
             }
         }
 
-        if (anzahlPruefungen == 0) {
-            int bestaetigung = JOptionPane.showConfirmDialog(
-                    this,
-                    "Prüfungstag " + pruefungstag.getDatum().format(DateTimeFormatter.ofPattern("dd.MM.yyyy")) + " wirklich löschen?",
-                    "Prüfungstag löschen",
-                    JOptionPane.YES_NO_OPTION,
-                    JOptionPane.WARNING_MESSAGE
-            );
-
-            if (bestaetigung == JOptionPane.YES_OPTION) {
-                abitur.removePruefungstag(pruefungstag, true);
-                planungsTabsAktualisieren();
+        try {
+            if (anzahlPruefungen == 0) {
+                int bestaetigung = JOptionPane.showConfirmDialog(this, "Prüfungstag " + pruefungstag.getDatum().format(DateTimeFormatter.ofPattern("dd.MM.yyyy")) + " wirklich löschen?", "Prüfungstag löschen", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+                if (bestaetigung == JOptionPane.YES_OPTION) {
+                    abitur.removePruefungstag(pruefungstag, true);
+                    planungsTabsAktualisieren();
+                    datenbank.loeschePruefungstag(pruefungstag);
+                }
+                return;
             }
 
-            return;
-        }
+            Object[] optionen = {"Kommissionen behalten", "Kommissionen mitlöschen", "Abbrechen"};
+            int auswahl = JOptionPane.showOptionDialog(this, "An diesem Prüfungstag sind " + anzahlPruefungen + " Prüfungen geplant.\n\n" + "Planungsdaten werden gelöscht.\n" + "Sollen die bestehenden Kommissionen erhalten bleiben?", "Prüfungstag löschen",
+                    JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, optionen, optionen[0]);
 
-        Object[] optionen = {"Kommissionen behalten", "Kommissionen mitlöschen", "Abbrechen"};
+            if (auswahl == 2 || auswahl == JOptionPane.CLOSED_OPTION) {
+                return;
+            }
+            ArrayList<Pruefung> geaendertePruefungen = new ArrayList<>();
+            if (auswahl == 0) {
+                geaendertePruefungen = abitur.removePruefungstag(pruefungstag, true);
 
-        int auswahl = JOptionPane.showOptionDialog(
-                this,
-                "An diesem Prüfungstag sind " + anzahlPruefungen + " Prüfungen geplant.\n\n" + "Planungsdaten werden gelöscht.\n" + "Sollen die bestehenden Kommissionen erhalten bleiben?","Prüfungstag löschen",
-                JOptionPane.DEFAULT_OPTION,
-                JOptionPane.WARNING_MESSAGE,
-                null,
-                optionen,
-                optionen[0]
-        );
-
-        if (auswahl == 0) {
-            abitur.removePruefungstag(pruefungstag, true);
+            } else if (auswahl == 1) {
+                geaendertePruefungen = abitur.removePruefungstag(pruefungstag, false);
+            }
+            for (Pruefung p : geaendertePruefungen) {
+                datenbank.aktualisierePruefungsplanung(p);
+            }
             planungsTabsAktualisieren();
             tableModel.fireTableDataChanged();
-        } else if (auswahl == 1) {
-            abitur.removePruefungstag(pruefungstag, false);
-            planungsTabsAktualisieren();
-            tableModel.fireTableDataChanged();
+            datenbank.loeschePruefungstag(pruefungstag);
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 
+    @Override
+    public void nachBearbeitung(Pruefung pruefung) {
+        verarbeitePlanungsaenderung(pruefung);
+    }
+
+    @Override
+    public void planungsdatenKopieren(Pruefung pruefung) {
+        kopiertePruefung = pruefung;
+    }
+
+    @Override
+    public void planungsdatenUebertragen(Pruefung pruefung) {
+        if (kopiertePruefung == null) {
+            return;
+        }
+        pruefung.setVorsitz(kopiertePruefung.getVorsitz());
+        pruefung.setSchriftfuehrer(kopiertePruefung.getSchriftfuehrer());
+        pruefung.setRaum(kopiertePruefung.getRaum());
+        verarbeitePlanungsaenderung(pruefung);
+    }
 }

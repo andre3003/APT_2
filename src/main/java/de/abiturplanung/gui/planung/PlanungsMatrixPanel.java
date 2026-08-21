@@ -28,11 +28,9 @@ public class PlanungsMatrixPanel extends JPanel {
     private final Pruefungstag pruefungstag;
 
     private final JPanel matrixPanel = new JPanel();
-    private Consumer<Pruefung> nachBearbeitung = pruefung -> {}; //Leere Initialisierung
+    private PruefungsKartenAktionen aktionen;
 
     private Map<Pruefung, List<Pruefung>> alleKollisionen = Map.of();
-
-
     public PlanungsMatrixPanel(Abitur abitur, Pruefungstag pruefungstag) {
         this.abitur = abitur;
         this.pruefungstag = pruefungstag;
@@ -40,10 +38,8 @@ public class PlanungsMatrixPanel extends JPanel {
         add(new JScrollPane(matrixPanel), BorderLayout.CENTER);
     }
 
-
-    public void setNachBearbeitung(Consumer<Pruefung> nachBearbeitung) {
-        this.nachBearbeitung = nachBearbeitung;
-        aktualisieren();
+    public void setzePruefungskartenAktionen(PruefungsKartenAktionen aktionen) {
+        this.aktionen = aktionen;
     }
 
     public LocalDate getDatum() {
@@ -124,7 +120,7 @@ public class PlanungsMatrixPanel extends JPanel {
                             pruefung.setPruefungstag(pruefungstag.getDatum());
                             pruefung.setBeginn(slotZeit);
                             pruefung.setPlanungsspalte(slotSpalte);
-                            nachBearbeitung.accept(pruefung); //Aufruf der Methode verarbeitePlanungsänderung im Mainframe, das über den Consumer an das Panel über setNachbearbeitung weitergegeben wurde.
+                            aktionen.nachBearbeitung(pruefung);
                             return true;
                         } catch (Exception exception) {
                             exception.printStackTrace();
@@ -167,7 +163,7 @@ public class PlanungsMatrixPanel extends JPanel {
             if (spalte > 0) {
                 JPanel slot = slots[zeile - 1][spalte - 1];
                 List<Pruefung> kollisionen = alleKollisionen.getOrDefault(pruefung, List.of()); //Liefert die Liste der Kollisionen der Prüfung dieser Karte; getOrDefault sorgt dafür, dass wir im Falle von null (Prüfung nicht in der Map) eine leere Liste bekommen und nicht null
-                slot.add(new PruefungsKarte(abitur, pruefung, nachBearbeitung, kollisionen), BorderLayout.CENTER);
+                slot.add(new PruefungsKarte(abitur, pruefung, aktionen, kollisionen), BorderLayout.CENTER);
             }
         }
     }

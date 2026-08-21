@@ -609,10 +609,10 @@ public class Datenbank {
 
     private void aktualisiereKurse(Connection connection, Abitur abitur) throws SQLException {
         String sql = """
-            INSERT INTO kurs (bezeichnung, fach, fachlehrer_kuerzel) VALUES (?, ?, ?) ON CONFLICT(bezeichnung) DO UPDATE SET
-                fach = excluded.fach,
-                fachlehrer_kuerzel = excluded.fachlehrer_kuerzel
-            """;
+                INSERT INTO kurs (bezeichnung, fach, fachlehrer_kuerzel) VALUES (?, ?, ?) ON CONFLICT(bezeichnung) DO UPDATE SET
+                    fach = excluded.fach,
+                    fachlehrer_kuerzel = excluded.fachlehrer_kuerzel
+                """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             for (Kurs kurs : abitur.getKurse()) {
@@ -632,12 +632,12 @@ public class Datenbank {
 
     private void aktualisierePruefungen(Connection connection, Abitur abitur) throws SQLException {
         String updateSql = """
-            UPDATE pruefung SET schueler_id = ?, kurs_bezeichnung = ?, abiturfach = ?, pruefungsform = ? WHERE pruefung_id = ?
-            """;
+                UPDATE pruefung SET schueler_id = ?, kurs_bezeichnung = ?, abiturfach = ?, pruefungsform = ? WHERE pruefung_id = ?
+                """;
 
         String insertSql = """
-            INSERT INTO pruefung (schueler_id, kurs_bezeichnung, abiturfach, pruefungsform) VALUES (?, ?, ?, ?)
-            """;
+                INSERT INTO pruefung (schueler_id, kurs_bezeichnung, abiturfach, pruefungsform) VALUES (?, ?, ?, ?)
+                """;
 
         try (PreparedStatement updateStatement = connection.prepareStatement(updateSql);
              PreparedStatement insertStatement = connection.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS)) {
@@ -691,9 +691,18 @@ public class Datenbank {
 
     public void speicherePruefungstag(Pruefungstag pruefungstag) throws SQLException {
         String sql = """
-            INSERT INTO pruefungstag (datum) VALUES (?) ON CONFLICT(datum) DO NOTHING
-            """;
+                INSERT INTO pruefungstag (datum) VALUES (?) ON CONFLICT(datum) DO NOTHING
+                """;
 
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, pruefungstag.getDatum().toString());
+            statement.executeUpdate();
+        }
+    }
+
+    public void loeschePruefungstag(Pruefungstag pruefungstag) throws SQLException {
+        String sql = "DELETE FROM pruefungstag WHERE datum = ?";
         try (Connection connection = getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, pruefungstag.getDatum().toString());

@@ -132,7 +132,7 @@ public class Abitur {
     }
 
     public Raum findeRaum(String bezeichnung) {
-        for (Raum raum: raeume) {
+        for (Raum raum : raeume) {
             if (raum.getBezeichnung().equalsIgnoreCase(bezeichnung)) {
                 return raum;
             }
@@ -154,9 +154,9 @@ public class Abitur {
     }
 
 
-    public void removePruefungstag(Pruefungstag pruefungstag, boolean kommissionenBehalten) {
+    public ArrayList<Pruefung> removePruefungstag(Pruefungstag pruefungstag, boolean kommissionenBehalten) {
+        ArrayList<Pruefung> result = new ArrayList<>();
         LocalDate datum = pruefungstag.getDatum();
-
         for (Pruefung pruefung : pruefungen) {
             if (datum.equals(pruefung.getPruefungstag())) {
                 pruefung.setPruefungstag(null);
@@ -169,8 +169,11 @@ public class Abitur {
                     pruefung.setSchriftfuehrer(null);
                     pruefung.setVorsitz(null);
                 }
+                result.add(pruefung);
             }
+
         }
         pruefungstage.remove(pruefungstag);
+        return result;
     }
 }

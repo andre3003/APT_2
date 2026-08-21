@@ -22,12 +22,13 @@ public class PruefungsKarte extends JPanel {
     private final Pruefung pruefung;
     private List<Pruefung> kollisionen;
     private JPopupMenu popupMenu;
-    private Consumer nachBesarbeitung;
+    private PruefungsKartenAktionen aktionen;
 
-    public PruefungsKarte(Abitur abitur, Pruefung pruefung, Consumer<Pruefung> nachBearbeitung, List<Pruefung> kollisionen){
+
+    public PruefungsKarte(Abitur abitur, Pruefung pruefung, PruefungsKartenAktionen aktionen, List<Pruefung> kollisionen){
         this.pruefung = pruefung;
         this.kollisionen = kollisionen;
-        this.nachBesarbeitung = nachBearbeitung;
+        this.aktionen = aktionen;
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setOpaque(true);
         setBackground(ermittleHintergrundfarbe());
@@ -60,8 +61,6 @@ public class PruefungsKarte extends JPanel {
             public void mouseDragged(MouseEvent e) {
                 getTransferHandler().exportAsDrag(PruefungsKarte.this, e, TransferHandler.MOVE);
             }
-
-
         };
 
         MouseAdapter mausListener = new MouseAdapter() {
@@ -72,7 +71,7 @@ public class PruefungsKarte extends JPanel {
                     PruefungsDialog dialog = new PruefungsDialog(owner, abitur, pruefung);
                     dialog.setVisible(true);
                     if (dialog.isGespeichert()) {
-                        nachBearbeitung.accept(pruefung);
+                        aktionen.nachBearbeitung(pruefung);
                     }
                 }
             }
@@ -110,6 +109,21 @@ public class PruefungsKarte extends JPanel {
         JMenuItem entplanen = new JMenuItem("Prüfung entplanen");
         entplanen.addActionListener(this::entplanenAction);
         popupMenu.add(entplanen);
+        JMenuItem datenKopieren = new JMenuItem("Planungsdaten kopieren");
+        datenKopieren.addActionListener(this::datenKopierenAction);
+        popupMenu.add(datenKopieren);
+        JMenuItem datenUebertragen = new JMenuItem("Daten übertragen");
+        datenUebertragen.addActionListener(this::datenUebertragenAction);
+        popupMenu.add(datenUebertragen);
+    }
+
+    private void datenUebertragenAction(ActionEvent actionEvent) {
+        aktionen.planungsdatenUebertragen(pruefung);
+
+    }
+
+    private void datenKopierenAction(ActionEvent actionEvent) {
+        aktionen.planungsdatenKopieren(pruefung);
     }
 
     private void entplanenAction(ActionEvent actionEvent) {
@@ -119,7 +133,7 @@ public class PruefungsKarte extends JPanel {
         pruefung.setVorsitz(null);
         pruefung.setRaum(null);
         pruefung.setPlanungsspalte(0);
-        nachBesarbeitung.accept(pruefung);
+        aktionen.nachBearbeitung(pruefung);
     }
 
     private void zeigePopup(MouseEvent e) {
@@ -163,13 +177,12 @@ public class PruefungsKarte extends JPanel {
     }
 
     private Color ermittleHintergrundfarbe() {
-        if (pruefung.istVollstaendigGeplant()) {
-            return new Color(230, 245, 230);
-        }
         if (!kollisionen.isEmpty()) {
             return new Color(249, 115, 115);
         }
-
+        if (pruefung.istVollstaendigGeplant()) {
+            return new Color(230, 245, 230);
+        }
         return new Color(255, 248, 220);
     }
 
