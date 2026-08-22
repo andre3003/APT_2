@@ -33,6 +33,8 @@ public class Datenbank {
         return connection;
     }
 
+    //Initialiserung ___________
+
     public void initialisieren() throws SQLException {
         try (Connection connection = getConnection(); Statement statement = connection.createStatement()) {
 
@@ -101,6 +103,7 @@ public class Datenbank {
                         kurs_bezeichnung TEXT NOT NULL,
                         abiturfach TEXT NOT NULL,
                         pruefungsform TEXT NOT NULL,
+                        pruefungsfolge TEXT,
                     
                         FOREIGN KEY (schueler_id)
                             REFERENCES schueler(schild_id),
@@ -223,6 +226,8 @@ public class Datenbank {
             }
         }
     }
+
+    //Landen_______
 
     public Abitur ladeAbitur() throws SQLException {
         Abitur abitur = new Abitur();
@@ -368,13 +373,14 @@ public class Datenbank {
     }
 
     private void ladePruefungen(Connection connection, Abitur abitur, Map<String, Schueler> schuelerMap, Map<String, Kurs> kursMap, Map<Long, Pruefung> pruefungMap) throws SQLException {
-        String sql = "SELECT pruefung_id, schueler_id, kurs_bezeichnung, abiturfach, pruefungsform FROM pruefung";
+        String sql = "SELECT pruefung_id, schueler_id, kurs_bezeichnung, abiturfach, pruefungsform, pruefungsfolge FROM pruefung";
 
         try (Statement statement = connection.createStatement(); ResultSet resultSet = statement.executeQuery(sql)) {
             while (resultSet.next()) {
                 long pruefungId = resultSet.getLong("pruefung_id");
                 String schuelerId = resultSet.getString("schueler_id");
                 String kursBezeichnung = resultSet.getString("kurs_bezeichnung");
+                String pruefungsfolge = resultSet.getString("pruefungsfolge");
 
                 Schueler schueler = schuelerMap.get(schuelerId);
                 Kurs kurs = kursMap.get(kursBezeichnung);
@@ -390,6 +396,7 @@ public class Datenbank {
                 Abiturfach abiturfach = Abiturfach.valueOf(resultSet.getString("abiturfach"));
                 Pruefung pruefung = new Pruefung(schueler, kurs, null, abiturfach); //null bei Prüfer, weil der Prüfer erst mit den Prüfungsdaten geladen wird!
                 pruefung.setPruefungId(pruefungId);
+                pruefung.setPruefungsFolge(pruefungsfolge);
                 abitur.addPruefung(pruefung);
                 pruefungMap.put(pruefungId, pruefung);
             }
@@ -632,11 +639,12 @@ public class Datenbank {
 
     private void aktualisierePruefungen(Connection connection, Abitur abitur) throws SQLException {
         String updateSql = """
-                UPDATE pruefung SET schueler_id = ?, kurs_bezeichnung = ?, abiturfach = ?, pruefungsform = ? WHERE pruefung_id = ?
+                UPDATE pruefung SET schueler_id = ?, kurs_bezeichnung = ?, abiturfach = ?, pruefungsform = ?, pruefungsfolge = ? WHERE pruefung_id = ?
                 """;
 
         String insertSql = """
-                INSERT INTO pruefung (schueler_id, kurs_bezeichnung, abiturfach, pruefungsform) VALUES (?, ?, ?, ?)
+                INSERT INTO pruefung (schueler_id, kurs_bezeichnung, abiturfach, pruefungsform, pruefungsfolge) 
+                VALUES (?, ?, ?, ?,?)
                 """;
 
         try (PreparedStatement updateStatement = connection.prepareStatement(updateSql);
@@ -648,7 +656,8 @@ public class Datenbank {
                     updateStatement.setString(2, pruefung.getKurs().getBezeichnung());
                     updateStatement.setString(3, pruefung.getAbiturfach().name());
                     updateStatement.setString(4, pruefung.getPruefungsform().name());
-                    updateStatement.setLong(5, pruefung.getPruefungId());
+                    updateStatement.setString(5, pruefung.getPruefungsFolge());
+                    updateStatement.setLong(6, pruefung.getPruefungId());
 
                     updateStatement.executeUpdate();
 
@@ -657,6 +666,7 @@ public class Datenbank {
                     insertStatement.setString(2, pruefung.getKurs().getBezeichnung());
                     insertStatement.setString(3, pruefung.getAbiturfach().name());
                     insertStatement.setString(4, pruefung.getPruefungsform().name());
+                    insertStatement.setString(5, pruefung.getPruefungsFolge());
 
                     insertStatement.executeUpdate();
 

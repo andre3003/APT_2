@@ -13,9 +13,10 @@ public class PruefungsTableModel extends AbstractTableModel {
     public static final int SPALTE_FACH = 1;
     public static final int SPALTE_KURS = 2;
     public static final int SPALTE_PRUEFER = 3;
-    public static final int SPALTE_STATUS = 4;
+    public static final int SPALTE_FOLGE = 4;
+    public static final int SPALTE_STATUS = 5;
 
-    private static final String[] SPALTENNAMEN = {"Schüler", "Fach", "Kurs", "Prüfer", "Status"};
+    private static final String[] SPALTENNAMEN = {"Schüler", "Fach", "Kurs", "Prüfer", "Folge", "Status"};
 
     private final List<Pruefung> pruefungen = new ArrayList<>();
 
@@ -51,6 +52,7 @@ public class PruefungsTableModel extends AbstractTableModel {
             case SPALTE_FACH -> pruefung.getKurs().getFach();
             case SPALTE_KURS -> pruefung.getKurs().getBezeichnung();
             case SPALTE_PRUEFER -> pruefung.getPruefer() == null ? "---" : pruefung.getPruefer().getKuerzel();
+            case SPALTE_FOLGE -> pruefung.getPruefungsFolge() == null ? "" : pruefung.getPruefungsFolge();
             case SPALTE_STATUS -> pruefung.istVollstaendigGeplant() ? "vollständig" : "unvollständig";
             default -> "";
         };

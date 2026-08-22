@@ -20,6 +20,7 @@ public class Pruefung {
     private Raum raum;
     private Integer planungsspalte;
     private Long pruefungId;
+    private String pruefungsFolge;
 
     public Pruefung(Schueler schueler, Kurs kurs, Lehrer pruefer, Abiturfach abiturfach) {
         this.schueler = schueler;
@@ -31,6 +32,14 @@ public class Pruefung {
             pruefungsform = Pruefungsform.MUENDLICH;
         else
             pruefungsform = Pruefungsform.SCHRIFTLICH;
+    }
+
+    public String getPruefungsFolge() {
+        return pruefungsFolge;
+    }
+
+    public void setPruefungsFolge(String pruefungsFolge) {
+        this.pruefungsFolge = pruefungsFolge;
     }
 
     public Long getPruefungId() {
