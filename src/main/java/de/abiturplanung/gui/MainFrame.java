@@ -7,6 +7,8 @@ import de.abiturplanung.gui.model.PruefungsTableModel;
 import de.abiturplanung.gui.planung.PlanungsMatrixPanel;
 import de.abiturplanung.gui.planung.PruefungTransferable;
 import de.abiturplanung.gui.planung.PruefungsKartenAktionen;
+import de.abiturplanung.gui.timeline.KommissionsGruppe;
+import de.abiturplanung.gui.timeline.TimelineDatenService;
 import de.abiturplanung.model.Abitur;
 import de.abiturplanung.model.Pruefung;
 import de.abiturplanung.model.Pruefungstag;
@@ -741,15 +743,34 @@ public class MainFrame extends JFrame implements PruefungsKartenAktionen, Hauptm
         }
 
         File datei = fileChooser.getSelectedFile();
+
+        int count = 0;
         try {
             PruefungsfolgenImportServide service = new PruefungsfolgenImportServide();
             List<Pruefung> geaendertePruefungen = service.importiere(abitur, datei);
             for (Pruefung pruefung : geaendertePruefungen) {
                 datenbank.aktualisierePruefungsfolge(pruefung);
+                count++;
             }
             tableModel.fireTableDataChanged();
+            JOptionPane.showMessageDialog(this, count + " Prüfungsfolgen erfolgreich importiert.");
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            JOptionPane.showMessageDialog(this, "Die Daten konnten nicht gespeichert werden:\n" + e.getMessage(), "Fehler beim Export", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    @Override
+    public void timeLineErzeugen() {
+        TimelineDatenService service = new TimelineDatenService();
+        List<KommissionsGruppe> gruppen = service.gibSortierteKommissionsGruppen(abitur, abitur.getPruefungstage().get(0));
+
+        for (KommissionsGruppe gruppe : gruppen) {
+            System.out.print(gruppe.pruefer() + " | " + gruppe.vorsitz() + " | "  + gruppe.schriftfuehrer() + "\n");
+            List<Pruefung> pruefungen = gruppe.pruefungen();
+
+            for (Pruefung p : pruefungen) {
+                System.out.println("      " + p.getBeginn() + " " + p.getSchueler().getNachname() + " " + p.getSchueler().getVorname());
+            }
         }
     }
 

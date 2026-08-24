@@ -81,6 +81,16 @@ public class Hauptmenue {
 
         menueleiste.add(planungMenue);
 
+        JMenu ansichtMenue = new JMenu("Ansicht");
+
+        JMenuItem timeLineAnsicht = new JMenuItem("Time-Line");
+        timeLineAnsicht.addActionListener(e -> aktionen.timeLineErzeugen());
+        ansichtMenue.add(timeLineAnsicht);
+
+        menueleiste.add(ansichtMenue);
+
+        JMenu importMenue = new JMenu("Import");
+
         JMenuItem schuelerImportEintrag = new JMenuItem("Schüler laden");
         schuelerImportEintrag.addActionListener(e -> aktionen.schuelerImportAction());
 
@@ -93,7 +103,7 @@ public class Hauptmenue {
         JMenuItem leistungsdatenImportEintrag = new JMenuItem("Leistungsdaten laden");
         leistungsdatenImportEintrag.addActionListener(e -> aktionen.leistungsdatenImportAction());
 
-        JMenu importMenue = new JMenu("Initial-Import");
+
         importMenue.add(schuelerImportEintrag);
         importMenue.add(lehrerImportEintrag);
         importMenue.add(raeumeImportEintrag);

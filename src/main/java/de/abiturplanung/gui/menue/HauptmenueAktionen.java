@@ -26,5 +26,7 @@ public interface HauptmenueAktionen {
 
     void pruefungsfolgenImportieren();
 
+    void timeLineErzeugen();
+
 
 }
