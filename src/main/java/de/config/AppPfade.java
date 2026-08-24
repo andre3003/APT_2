@@ -20,12 +20,13 @@ public class AppPfade {
         return APP_VERZEICHNIS.resolve("Import");
     }
 
+    public static Path getExportVerzeichnis() {
+        return APP_VERZEICHNIS.resolve("Export");
+    }
+
     public static void initialisiereVerzeichnisse() throws IOException {
         Files.createDirectories(getDatenVerzeichnis());
         Files.createDirectories(getImportVerzeichnis());
+        Files.createDirectories(getExportVerzeichnis());
     }
-
-
-
-
 }

@@ -31,6 +31,8 @@ public class PlanungsMatrixPanel extends JPanel {
     private PruefungsKartenAktionen aktionen;
 
     private Map<Pruefung, List<Pruefung>> alleKollisionen = Map.of();
+
+
     public PlanungsMatrixPanel(Abitur abitur, Pruefungstag pruefungstag) {
         this.abitur = abitur;
         this.pruefungstag = pruefungstag;

@@ -643,7 +643,7 @@ public class Datenbank {
                 """;
 
         String insertSql = """
-                INSERT INTO pruefung (schueler_id, kurs_bezeichnung, abiturfach, pruefungsform, pruefungsfolge) 
+                INSERT INTO pruefung (schueler_id, kurs_bezeichnung, abiturfach, pruefungsform, pruefungsfolge)
                 VALUES (?, ?, ?, ?,?)
                 """;
 
@@ -718,5 +718,18 @@ public class Datenbank {
             statement.setString(1, pruefungstag.getDatum().toString());
             statement.executeUpdate();
         }
+    }
+
+    public void aktualisierePruefungsfolge(Pruefung pruefung) {
+        String sql = """
+                UPDATE pruefung SET pruefungsfolge = ?
+                """;
+        try (Connection connection = getConnection(); PreparedStatement statement =  connection.prepareStatement(sql)){
+            statement.setString(1, pruefung.getPruefungsFolge());
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
     }
 }
