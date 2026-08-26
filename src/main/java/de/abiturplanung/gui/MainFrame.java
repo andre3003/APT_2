@@ -761,17 +761,19 @@ public class MainFrame extends JFrame implements PruefungsKartenAktionen, Hauptm
 
     @Override
     public void timeLineErzeugen() {
-        TimelineDatenService service = new TimelineDatenService();
-        List<KommissionsGruppe> gruppen = service.gibSortierteKommissionsGruppen(abitur, abitur.getPruefungstage().get(0));
-
-        for (KommissionsGruppe gruppe : gruppen) {
-            System.out.print(gruppe.pruefer() + " | " + gruppe.vorsitz() + " | "  + gruppe.schriftfuehrer() + "\n");
-            List<Pruefung> pruefungen = gruppe.pruefungen();
-
-            for (Pruefung p : pruefungen) {
-                System.out.println("      " + p.getBeginn() + " " + p.getSchueler().getNachname() + " " + p.getSchueler().getVorname());
-            }
-        }
+//        TimelineDatenService service = new TimelineDatenService();
+//        List<KommissionsGruppe> gruppen = service.gibSortierteKommissionsGruppen(abitur, abitur.getPruefungstage().get(0));
+//
+//        for (KommissionsGruppe gruppe : gruppen) {
+//            System.out.print(gruppe.pruefer() + " | " + gruppe.vorsitz() + " | "  + gruppe.schriftfuehrer() + "\n");
+//            List<Pruefung> pruefungen = gruppe.pruefungen();
+//
+//            for (Pruefung p : pruefungen) {
+//                System.out.println("      " + p.getBeginn() + " " + p.getSchueler().getNachname() + " " + p.getSchueler().getVorname());
+//            }
+//        }
+        TimelineFrame timelineFrame = new TimelineFrame(abitur);
+        timelineFrame.setVisible(true);
     }
 
     //Interface-Methoden für die Planungsaktionen:
