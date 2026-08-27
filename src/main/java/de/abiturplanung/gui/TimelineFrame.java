@@ -16,7 +16,9 @@ public class TimelineFrame extends JFrame {
     private final Abitur abitur;
     private final TimelineDatenService timelineDatenService = new TimelineDatenService();
     private JComboBox<Pruefungstag> pruefungstagComboBox;
-    private JPanel timelinePanel = new JPanel(new GridBagLayout());
+    private final JPanel timelinePanel = new JPanel(new GridBagLayout());
+    private static final int SPALTENBREITE = 100;
+    private static final int SPALTENHOEHE = 20;
 
     public TimelineFrame(Abitur abitur) {
         this.abitur = abitur;
@@ -29,16 +31,22 @@ public class TimelineFrame extends JFrame {
 
     public void initGui() {
         JScrollPane scrollPane = new JScrollPane(timelinePanel);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
         add(scrollPane, BorderLayout.CENTER);
+
+        JPanel steuerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        steuerPanel.add(new JLabel("Prüfungstag:"));
+
         pruefungstagComboBox = new JComboBox<>();
-        pruefungstagComboBox.addActionListener(e -> aktualisiereTimeline());
         pruefungstagComboBox.setRenderer(new DefaultListCellRenderer() {
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
                 super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+
                 if (value instanceof Pruefungstag pruefungstag) {
                     setText(pruefungstag.getDatum().format(DateTimeFormatter.ofPattern("dd.MM.yyyy")));
                 }
+
                 return this;
             }
         });
@@ -46,7 +54,23 @@ public class TimelineFrame extends JFrame {
         for (Pruefungstag pruefungstag : abitur.getPruefungstage()) {
             pruefungstagComboBox.addItem(pruefungstag);
         }
-        add(pruefungstagComboBox, BorderLayout.NORTH);
+
+        pruefungstagComboBox.addActionListener(e -> aktualisiereTimeline());
+
+        steuerPanel.add(pruefungstagComboBox);
+        steuerPanel.add(Box.createHorizontalStrut(20));
+
+        JButton aktuelleTimelineDrucken = new JButton("Aktuelle Timeline drucken");
+        JButton alleTimelinesDrucken = new JButton("Alle Timelines drucken");
+
+        aktuelleTimelineDrucken.setEnabled(false);
+        alleTimelinesDrucken.setEnabled(false);
+
+        steuerPanel.add(aktuelleTimelineDrucken);
+        steuerPanel.add(alleTimelinesDrucken);
+
+        add(steuerPanel, BorderLayout.NORTH);
+
         aktualisiereTimeline();
     }
 
@@ -74,7 +98,6 @@ public class TimelineFrame extends JFrame {
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.BOTH;
-        gbc.weightx = 1.0;
 
         // Linke obere Ecke
         gbc.gridx = 0;
@@ -92,7 +115,7 @@ public class TimelineFrame extends JFrame {
             gbc.gridx = ersteSpalte;
             gbc.gridy = 0;
             gbc.gridwidth = 2;
-            gbc.weightx = 1.0;
+            gbc.weightx = 0;
             timelinePanel.add(erstelleKommissionsInfoPanel(gruppe), gbc);
 
             // Spaltentitel
@@ -123,16 +146,16 @@ public class TimelineFrame extends JFrame {
 
                 for (Pruefung p : gruppe.pruefungen()) {
                     if (p.getBeginn().minusMinutes(30).equals(zeit)) {
-                        vorbereitung = p.getSchueler().getNachname() + ", " + p.getSchueler().getVorname();
+                        vorbereitung = p.getSchueler().getNachname() + ", " + p.getSchueler().getVorname().charAt(0) + ".";
                     }
 
                     if (p.getBeginn().equals(zeit)) {
-                        pruefung = p.getSchueler().getNachname() + ", " + p.getSchueler().getVorname();
+                        pruefung = p.getSchueler().getNachname() + ", " + p.getSchueler().getVorname().charAt(0) + ".";
                     }
                 }
 
                 gbc.gridy = zeile;
-                gbc.weightx = 1.0;
+                gbc.weightx = 0;
 
                 gbc.gridx = vorbereitungsSpalte;
                 timelinePanel.add(erstelleZelle(vorbereitung, false), gbc);
@@ -145,6 +168,16 @@ public class TimelineFrame extends JFrame {
 
             zeile++;
         }
+
+//sorgt für linksbündig, wenn noch Paltz ist:
+        gbc.gridx = 1 + gruppen.size() * 2;
+        gbc.gridy = 0;
+        gbc.gridheight = GridBagConstraints.REMAINDER;
+        gbc.gridwidth = 1;
+        gbc.weightx = 1.0;
+        gbc.weighty = 0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        timelinePanel.add(Box.createHorizontalGlue(), gbc);
         timelinePanel.revalidate();
         timelinePanel.repaint();
     }
@@ -164,10 +197,11 @@ public class TimelineFrame extends JFrame {
                 BorderFactory.createLineBorder(Color.BLACK, 1),
                 BorderFactory.createEmptyBorder(5, 8, 5, 8)
         ));
+        panel.setPreferredSize(new Dimension(SPALTENBREITE * 2, SPALTENHOEHE * 3));
         Pruefung erstePruefung = gruppe.pruefungen().get(0);
         panel.add(new JLabel("Kurs: " + erstePruefung.getKurs().getBezeichnung()));
-        panel.add(new JLabel("Kommission: " + gruppe.pruefer() + " / " + gruppe.vorsitz() + " / " + gruppe.schriftfuehrer()));
-        panel.add(new JLabel("Raum: " + erstePruefung.getRaum()));
+        panel.add(new JLabel("Komm.: " + gruppe.pruefer() + " / " + gruppe.vorsitz() + " / " + gruppe.schriftfuehrer()));
+        panel.add(new JLabel(erstePruefung.getRaum() == null ? "" : erstePruefung.getRaum().toString()));
         return panel;
     }
 
@@ -186,6 +220,7 @@ public class TimelineFrame extends JFrame {
                 BorderFactory.createLineBorder(Color.LIGHT_GRAY),
                 BorderFactory.createEmptyBorder(6, 8, 6, 8)
         ));
+        label.setPreferredSize(new Dimension(SPALTENBREITE, SPALTENHOEHE));
 
         if (hervorgehoben) {
             label.setFont(label.getFont().deriveFont(Font.BOLD));
@@ -203,13 +238,14 @@ public class TimelineFrame extends JFrame {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 0;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.weightx = 1.0;
+        gbc.weightx = 0;
         JLabel verbereitung = new JLabel("Vorbereitung ");
         panel.add(verbereitung, gbc);
+        verbereitung.setPreferredSize(new Dimension(SPALTENBREITE, SPALTENHOEHE));
         gbc.gridx++;
-        JLabel bruefungsBeginn = new JLabel("Prüfung");
-        panel.add(bruefungsBeginn, gbc);
+        JLabel pruefungsbeginn = new JLabel("Prüfung");
+        pruefungsbeginn.setPreferredSize(new Dimension(SPALTENBREITE, SPALTENHOEHE));
+        panel.add(pruefungsbeginn, gbc);
         return panel;
     }
 }

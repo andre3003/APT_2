@@ -28,5 +28,8 @@ public interface HauptmenueAktionen {
 
     void timeLineErzeugen();
 
+    void zeigeMuendlichePruefungen();
+    void zeigeStammdaten();
+
 
 }

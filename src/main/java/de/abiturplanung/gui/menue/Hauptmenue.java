@@ -83,12 +83,23 @@ public class Hauptmenue {
 
         JMenu ansichtMenue = new JMenu("Ansicht");
 
-        JMenuItem timeLineAnsicht = new JMenuItem("Time-Line");
+        JMenuItem timeLineAnsicht = new JMenuItem("Timeline");
         timeLineAnsicht.addActionListener(e -> aktionen.timeLineErzeugen());
         ansichtMenue.add(timeLineAnsicht);
 
         menueleiste.add(ansichtMenue);
 
+        JMenu module = new JMenu("Module");
+
+        JMenuItem muendlichePruefungen = new JMenuItem("Mündliche Prüfungen");
+        muendlichePruefungen.addActionListener(e -> aktionen.zeigeMuendlichePruefungen());
+        module.add(muendlichePruefungen);
+        module.addSeparator();
+
+        JMenuItem stammdaten = new JMenuItem("Stammdaten");
+        stammdaten.addActionListener(e -> aktionen.zeigeStammdaten());
+        module.add(stammdaten);
+        menueleiste.add(module);
         JMenu importMenue = new JMenu("Import");
 
         JMenuItem schuelerImportEintrag = new JMenuItem("Schüler laden");

@@ -722,14 +722,14 @@ public class Datenbank {
 
     public void aktualisierePruefungsfolge(Pruefung pruefung) {
         String sql = """
-                UPDATE pruefung SET pruefungsfolge = ?
+                UPDATE pruefung SET pruefungsfolge = ? WHERE pruefung_id = ?
                 """;
         try (Connection connection = getConnection(); PreparedStatement statement =  connection.prepareStatement(sql)){
             statement.setString(1, pruefung.getPruefungsFolge());
+            statement.setLong(2, pruefung.getPruefungId());
             statement.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-
     }
 }

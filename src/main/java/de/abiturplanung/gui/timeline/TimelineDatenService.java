@@ -18,10 +18,12 @@ public class TimelineDatenService {
             if (!pt.getDatum().equals(p.getPruefungstag())) {
                 continue;
             }
-            KommissionsSchluessel schluessel = new KommissionsSchluessel(
-                    p.getPruefer().getKuerzel(),
-                    p.getVorsitz().getKuerzel(),
-                    p.getSchriftfuehrer().getKuerzel());
+
+            String pruefer = p.getPruefer() == null ? "---" : p.getPruefer().getKuerzel();
+            String vorsitz = p.getVorsitz() == null ? "---" : p.getVorsitz().getKuerzel();
+            String schriftfuehrer = p.getSchriftfuehrer() == null ? "---" : p.getSchriftfuehrer().getKuerzel();
+
+            KommissionsSchluessel schluessel = new KommissionsSchluessel(pruefer, vorsitz, schriftfuehrer);
 
             if (map.containsKey(schluessel)) {
                 map.get(schluessel).add(p);

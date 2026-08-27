@@ -1,14 +1,9 @@
 package de.abiturplanung.gui;
 
-import de.abiturplanung.gui.dialogs.PruefungsDialog;
 import de.abiturplanung.gui.menue.Hauptmenue;
 import de.abiturplanung.gui.menue.HauptmenueAktionen;
-import de.abiturplanung.gui.model.PruefungsTableModel;
 import de.abiturplanung.gui.planung.PlanungsMatrixPanel;
-import de.abiturplanung.gui.planung.PruefungTransferable;
 import de.abiturplanung.gui.planung.PruefungsKartenAktionen;
-import de.abiturplanung.gui.timeline.KommissionsGruppe;
-import de.abiturplanung.gui.timeline.TimelineDatenService;
 import de.abiturplanung.model.Abitur;
 import de.abiturplanung.model.Pruefung;
 import de.abiturplanung.model.Pruefungstag;
@@ -19,22 +14,11 @@ import de.abiturplanung.service.PruefungsfolgenExportService;
 import de.abiturplanung.service.PruefungsfolgenImportServide;
 import de.config.AppEinstellungen;
 import de.config.AppPfade;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import javax.swing.*;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.TableRowSorter;
 import java.awt.*;
-import java.awt.datatransfer.Transferable;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -45,7 +29,6 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.List;
-import java.util.regex.Pattern;
 
 public class MainFrame extends JFrame implements PruefungsKartenAktionen, HauptmenueAktionen {
 
@@ -54,12 +37,15 @@ public class MainFrame extends JFrame implements PruefungsKartenAktionen, Hauptm
     private Kollisionspruefer kollisionspruefer;
     List<PlanungsMatrixPanel> matrixPanels = new ArrayList<>();
     private final JTabbedPane planungsTabs = new JTabbedPane();
-    private PruefungsTableModel tableModel;
-    private final JPanel arbeitsbereich = new JPanel(new BorderLayout());
     private final JLabel statusleiste = new JLabel();
     private final JMenu importMenue = new JMenu("Import");
     private Pruefung kopiertePruefung = null;
     private final Hauptmenue hauptmenue = new Hauptmenue(this);
+    private final CardLayout modulLayout = new CardLayout();
+    private final JPanel modulPanel = new JPanel(modulLayout);
+
+    private MuendlichePruefungenPanel muendlichePruefungenPanel;
+    private StammdatenPanel stammdatenPanel;
 
     public MainFrame(Abitur abitur, Datenbank datenbank) {
         this();
@@ -74,8 +60,7 @@ public class MainFrame extends JFrame implements PruefungsKartenAktionen, Hauptm
         setLocationRelativeTo(null);
         setJMenuBar(hauptmenue.getMenueleiste());
         statusleiste.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
-        add(arbeitsbereich, BorderLayout.CENTER);
-        add(statusleiste, BorderLayout.SOUTH);
+        add(modulPanel);
         zeigeKeinePlanung();
     }
 
@@ -101,14 +86,14 @@ public class MainFrame extends JFrame implements PruefungsKartenAktionen, Hauptm
         abitur = null;
         datenbank = null;
         kollisionspruefer = null;
-        arbeitsbereich.removeAll();
+        modulPanel.removeAll();
         importMenue.setEnabled(false);
         JLabel hinweis = new JLabel("Keine Planung geöffnet", SwingConstants.CENTER);
         hinweis.setFont(hinweis.getFont().deriveFont(Font.BOLD, 20f));
-        arbeitsbereich.add(hinweis, BorderLayout.CENTER);
+        modulPanel.add(hinweis, BorderLayout.CENTER);
         statusleiste.setText("Keine Planung geöffnet");
-        arbeitsbereich.revalidate();
-        arbeitsbereich.repaint();
+        modulPanel.revalidate();
+        modulPanel.repaint();
     }
 
     public void initialisierePlanung(Abitur abitur, Datenbank datenbank) {
@@ -117,15 +102,16 @@ public class MainFrame extends JFrame implements PruefungsKartenAktionen, Hauptm
         this.kollisionspruefer = new Kollisionspruefer(abitur);
         importMenue.setEnabled(true);
 
-        arbeitsbereich.removeAll();
+        muendlichePruefungenPanel = new MuendlichePruefungenPanel(abitur);
+        stammdatenPanel = new StammdatenPanel();
 
-        JPanel planungsbereich = erstellePlanungsbereich();
-        arbeitsbereich.add(planungsbereich, BorderLayout.CENTER);
+        modulPanel.add(muendlichePruefungenPanel, "MUENDLICH");
+        modulPanel.add(stammdatenPanel, "STAMMDATEN");
 
+        modulLayout.show(modulPanel, "MUENDLICH");
         statusleiste.setText("Datenbank: " + datenbank.getPfad().getFileName() + " | " + abitur.getPruefungen().size() + " Prüfungen geladen");
-
-        arbeitsbereich.revalidate();
-        arbeitsbereich.repaint();
+        add(modulPanel, BorderLayout.CENTER);
+        add(statusleiste, BorderLayout.SOUTH);
     }
 
     private void verarbeitePlanungsaenderung(Pruefung pruefung) {
@@ -136,239 +122,13 @@ public class MainFrame extends JFrame implements PruefungsKartenAktionen, Hauptm
                     "Die Änderungen konnten nicht gespeichert werden.\n" + "Starten Sie die Anwendung neu.", "Datenbankfehler", JOptionPane.ERROR_MESSAGE);
             return;
         }
-
-        tableModel.fireTableDataChanged();
-
+        muendlichePruefungenPanel.planungsvorratAktualisieren();
         Map<Pruefung, List<Pruefung>> aktuelleKollisionen = kollisionspruefer.findeAlleKollisionen();
 
         for (PlanungsMatrixPanel panel : matrixPanels) {
             panel.setKollisionen(aktuelleKollisionen);
             panel.aktualisieren();
         }
-    }
-
-    private JPanel erstellePlanungsbereich() { //Das ist die Tabelle mit den Prüfungen
-        JPanel panel = new JPanel(new BorderLayout());
-
-        tableModel = new PruefungsTableModel(abitur.getPruefungen());
-
-        JTable pruefungstabelle = new JTable(tableModel);
-
-        TableRowSorter<PruefungsTableModel> sorter = new TableRowSorter<>(tableModel);
-
-        pruefungstabelle.setRowSorter(sorter);
-        pruefungstabelle.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        pruefungstabelle.setFillsViewportHeight(true);
-        pruefungstabelle.setRowHeight(24);
-        pruefungstabelle.setDragEnabled(true);
-
-        sorter.setSortsOnUpdates(true);
-
-        pruefungstabelle.setTransferHandler(new TransferHandler() {
-            @Override
-            protected Transferable createTransferable(JComponent component) {
-                int viewZeile = pruefungstabelle.getSelectedRow();
-
-                if (viewZeile < 0) {
-                    return null;
-                }
-
-                int modelZeile = pruefungstabelle.convertRowIndexToModel(viewZeile);
-                return new PruefungTransferable(tableModel.getPruefung(modelZeile));
-            }
-
-            @Override
-            public int getSourceActions(JComponent component) {
-                return MOVE;
-            }
-        });
-
-        pruefungstabelle.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
-            public void mouseClicked(java.awt.event.MouseEvent e) {
-                if (e.getClickCount() != 2) {
-                    return;
-                }
-
-                int viewZeile = pruefungstabelle.rowAtPoint(e.getPoint());
-
-                if (viewZeile < 0) {
-                    return;
-                }
-
-                int modelZeile = pruefungstabelle.convertRowIndexToModel(viewZeile);
-                PruefungsDialog dialog = new PruefungsDialog(MainFrame.this, abitur, tableModel.getPruefung(modelZeile));
-                dialog.setVisible(true);
-
-                if (dialog.isGespeichert()) {
-                    tableModel.fireTableRowsUpdated(modelZeile, modelZeile);
-                }
-            }
-        });
-
-        // ----------------------------------------------------------
-        // Farbliche Statusanzeige
-        // ----------------------------------------------------------
-
-        DefaultTableCellRenderer statusRenderer = new DefaultTableCellRenderer() {
-            @Override
-            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-                Component component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-
-                if (!isSelected) {
-                    int modelZeile = table.convertRowIndexToModel(row);
-                    Pruefung pruefung = tableModel.getPruefung(modelZeile);
-
-                    if (pruefung.istVollstaendigGeplant()) {
-                        component.setBackground(new Color(230, 245, 230));
-                    } else {
-                        component.setBackground(new Color(255, 248, 220));
-                    }
-
-                    component.setForeground(Color.BLACK);
-                }
-
-                return component;
-            }
-        };
-
-        pruefungstabelle.setDefaultRenderer(Object.class, statusRenderer);
-
-        // ----------------------------------------------------------
-        // Filter
-        // ----------------------------------------------------------
-
-        JTextField txtSuche = new JTextField(12);
-
-        JComboBox<String> cmbFach = new JComboBox<>();
-        cmbFach.addItem("Alle");
-
-        JComboBox<String> cmbKurs = new JComboBox<>();
-        cmbKurs.addItem("Alle");
-
-        JComboBox<String> cmbStatus = new JComboBox<>(new String[]{"Alle", "unvollständig", "vollständig"});
-
-        JCheckBox chkVollstaendigeAusblenden = new JCheckBox("Vollständige ausblenden");
-
-        TreeSet<String> faecher = new TreeSet<>();
-        TreeSet<String> kurse = new TreeSet<>();
-
-        for (int i = 0; i < tableModel.getRowCount(); i++) {
-            Pruefung pruefung = tableModel.getPruefung(i);
-            faecher.add(pruefung.getKurs().getFach());
-            kurse.add(pruefung.getKurs().getBezeichnung());
-        }
-
-        for (String fach : faecher) {
-            cmbFach.addItem(fach);
-        }
-
-        for (String kurs : kurse) {
-            cmbKurs.addItem(kurs);
-        }
-
-        Runnable filterAktualisieren = () -> {
-            List<RowFilter<PruefungsTableModel, Integer>> filter = new ArrayList<>();
-
-            String suche = txtSuche.getText().trim();
-
-            if (!suche.isEmpty()) {
-                filter.add(RowFilter.regexFilter("(?i)" + Pattern.quote(suche)));
-            }
-
-            String fach = (String) cmbFach.getSelectedItem();
-
-            if (fach != null && !fach.equals("Alle")) {
-                filter.add(RowFilter.regexFilter("^" + Pattern.quote(fach) + "$", PruefungsTableModel.SPALTE_FACH));
-            }
-
-            String kurs = (String) cmbKurs.getSelectedItem();
-
-            if (kurs != null && !kurs.equals("Alle")) {
-                filter.add(RowFilter.regexFilter("^" + Pattern.quote(kurs) + "$", PruefungsTableModel.SPALTE_KURS));
-            }
-
-            String status = (String) cmbStatus.getSelectedItem();
-
-            if (status != null && !status.equals("Alle")) {
-                filter.add(RowFilter.regexFilter("^" + Pattern.quote(status) + "$", PruefungsTableModel.SPALTE_STATUS));
-            }
-
-            if (chkVollstaendigeAusblenden.isSelected()) {
-                filter.add(RowFilter.notFilter(RowFilter.regexFilter("^vollständig$", PruefungsTableModel.SPALTE_STATUS)));
-            }
-
-            sorter.setRowFilter(filter.isEmpty() ? null : RowFilter.andFilter(filter));
-        };
-
-        txtSuche.getDocument().addDocumentListener(new DocumentListener() {
-            @Override
-            public void insertUpdate(DocumentEvent e) {
-                filterAktualisieren.run();
-            }
-
-            @Override
-            public void removeUpdate(DocumentEvent e) {
-                filterAktualisieren.run();
-            }
-
-            @Override
-            public void changedUpdate(DocumentEvent e) {
-                filterAktualisieren.run();
-            }
-        });
-
-        cmbFach.addActionListener(e -> filterAktualisieren.run());
-        cmbKurs.addActionListener(e -> filterAktualisieren.run());
-        cmbStatus.addActionListener(e -> filterAktualisieren.run());
-        chkVollstaendigeAusblenden.addActionListener(e -> filterAktualisieren.run());
-
-        // ----------------------------------------------------------
-        // Linker Arbeitsvorrat
-        // ----------------------------------------------------------
-
-        JLabel ueberschrift = new JLabel("Prüfungen im 4. Abiturfach");
-        ueberschrift.setFont(ueberschrift.getFont().deriveFont(Font.BOLD, 18f));
-
-        JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 3));
-        filterPanel.add(new JLabel("Suche:"));
-        filterPanel.add(txtSuche);
-        filterPanel.add(new JLabel("Fach:"));
-        filterPanel.add(cmbFach);
-        filterPanel.add(new JLabel("Kurs:"));
-        filterPanel.add(cmbKurs);
-        filterPanel.add(new JLabel("Status:"));
-        filterPanel.add(cmbStatus);
-        filterPanel.add(chkVollstaendigeAusblenden);
-
-        JPanel kopfPanel = new JPanel();
-        kopfPanel.setLayout(new BoxLayout(kopfPanel, BoxLayout.Y_AXIS));
-        kopfPanel.add(ueberschrift);
-        kopfPanel.add(Box.createVerticalStrut(5));
-        kopfPanel.add(filterPanel);
-
-        JPanel pruefungsPanel = new JPanel(new BorderLayout(0, 8));
-        pruefungsPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        pruefungsPanel.add(kopfPanel, BorderLayout.NORTH);
-        pruefungsPanel.add(new JScrollPane(pruefungstabelle), BorderLayout.CENTER);
-
-        // ----------------------------------------------------------
-        // Matrix
-        // ----------------------------------------------------------
-
-        // ----------------------------------------------------------
-// Matrix
-// ----------------------------------------------------------
-        planungsTabsAktualisieren();
-
-        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, pruefungsPanel, planungsTabs);
-        splitPane.setResizeWeight(0.32);
-        splitPane.setDividerLocation(480);
-        splitPane.setOneTouchExpandable(true);
-
-        panel.add(splitPane, BorderLayout.CENTER);
-
-        return panel;
     }
 
     //Interface-Methoden des Hauptmenüs:
@@ -611,7 +371,7 @@ public class MainFrame extends JFrame implements PruefungsKartenAktionen, Hauptm
                 datenbank.aktualisierePruefungsplanung(p);
             }
             planungsTabsAktualisieren();
-            tableModel.fireTableDataChanged();
+            muendlichePruefungenPanel.planungsvorratAktualisieren();
             datenbank.loeschePruefungstag(pruefungstag);
         } catch (SQLException e) {
             e.printStackTrace();
@@ -731,7 +491,6 @@ public class MainFrame extends JFrame implements PruefungsKartenAktionen, Hauptm
 
     @Override
     public void pruefungsfolgenImportieren() {
-        System.out.println("TEST");
         File importOrdner = AppPfade.getImportVerzeichnis().toFile();
         JFileChooser fileChooser = new JFileChooser(importOrdner);
         fileChooser.setDialogTitle("Prüfungsfolgen importieren");
@@ -752,7 +511,7 @@ public class MainFrame extends JFrame implements PruefungsKartenAktionen, Hauptm
                 datenbank.aktualisierePruefungsfolge(pruefung);
                 count++;
             }
-            tableModel.fireTableDataChanged();
+            muendlichePruefungenPanel.planungsvorratAktualisieren();
             JOptionPane.showMessageDialog(this, count + " Prüfungsfolgen erfolgreich importiert.");
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Die Daten konnten nicht gespeichert werden:\n" + e.getMessage(), "Fehler beim Export", JOptionPane.ERROR_MESSAGE);
@@ -761,19 +520,19 @@ public class MainFrame extends JFrame implements PruefungsKartenAktionen, Hauptm
 
     @Override
     public void timeLineErzeugen() {
-//        TimelineDatenService service = new TimelineDatenService();
-//        List<KommissionsGruppe> gruppen = service.gibSortierteKommissionsGruppen(abitur, abitur.getPruefungstage().get(0));
-//
-//        for (KommissionsGruppe gruppe : gruppen) {
-//            System.out.print(gruppe.pruefer() + " | " + gruppe.vorsitz() + " | "  + gruppe.schriftfuehrer() + "\n");
-//            List<Pruefung> pruefungen = gruppe.pruefungen();
-//
-//            for (Pruefung p : pruefungen) {
-//                System.out.println("      " + p.getBeginn() + " " + p.getSchueler().getNachname() + " " + p.getSchueler().getVorname());
-//            }
-//        }
         TimelineFrame timelineFrame = new TimelineFrame(abitur);
         timelineFrame.setVisible(true);
+    }
+
+    @Override
+    public void zeigeMuendlichePruefungen() {
+        modulLayout.show(modulPanel, "MUENDLICH");
+
+    }
+
+    @Override
+    public void zeigeStammdaten() {
+        modulLayout.show(modulPanel, "STAMMDATEN");
     }
 
     //Interface-Methoden für die Planungsaktionen:
