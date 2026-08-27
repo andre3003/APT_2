@@ -2,14 +2,11 @@ package de.abiturplanung.gui;
 
 import de.abiturplanung.gui.menue.Hauptmenue;
 import de.abiturplanung.gui.menue.HauptmenueAktionen;
-import de.abiturplanung.gui.planung.PlanungsMatrixPanel;
-import de.abiturplanung.gui.planung.PruefungsKartenAktionen;
+import de.abiturplanung.gui.planung.MuendlichePruefungenPanel;
 import de.abiturplanung.model.Abitur;
 import de.abiturplanung.model.Pruefung;
-import de.abiturplanung.model.Pruefungstag;
 import de.abiturplanung.persistence.Datenbank;
 import de.abiturplanung.service.ImportService;
-import de.abiturplanung.service.Kollisionspruefer;
 import de.abiturplanung.service.PruefungsfolgenExportService;
 import de.abiturplanung.service.PruefungsfolgenImportServide;
 import de.config.AppEinstellungen;
@@ -25,21 +22,14 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.sql.SQLException;
 import java.time.LocalDate;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
 import java.util.List;
 
-public class MainFrame extends JFrame implements PruefungsKartenAktionen, HauptmenueAktionen {
+public class MainFrame extends JFrame implements HauptmenueAktionen {
 
     private Abitur abitur;
     private Datenbank datenbank;
-    private Kollisionspruefer kollisionspruefer;
-    List<PlanungsMatrixPanel> matrixPanels = new ArrayList<>();
-    private final JTabbedPane planungsTabs = new JTabbedPane();
     private final JLabel statusleiste = new JLabel();
     private final JMenu importMenue = new JMenu("Import");
-    private Pruefung kopiertePruefung = null;
     private final Hauptmenue hauptmenue = new Hauptmenue(this);
     private final CardLayout modulLayout = new CardLayout();
     private final JPanel modulPanel = new JPanel(modulLayout);
@@ -64,28 +54,25 @@ public class MainFrame extends JFrame implements PruefungsKartenAktionen, Hauptm
         zeigeKeinePlanung();
     }
 
-    private void planungsTabsAktualisieren() {
-        planungsTabs.removeAll();
-        matrixPanels.clear();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
-        Map<Pruefung, List<Pruefung>> alleKollisionen = kollisionspruefer.findeAlleKollisionen();
-
-        for (Pruefungstag pruefungstag : abitur.getPruefungstage()) {
-            PlanungsMatrixPanel matrixPanel = new PlanungsMatrixPanel(abitur, pruefungstag);
-            matrixPanels.add(matrixPanel);
-            matrixPanel.setKollisionen(alleKollisionen);
-            matrixPanel.setzePruefungskartenAktionen(this);
-            matrixPanel.aktualisieren();
-            planungsTabs.addTab(pruefungstag.getDatum().format(formatter), matrixPanel);
-        }
-        revalidate();
-        repaint();
+    public void initialisierePlanung(Abitur abitur, Datenbank datenbank) {
+        this.abitur = abitur;
+        this.datenbank = datenbank;
+        importMenue.setEnabled(true);
+        modulPanel.removeAll();
+        muendlichePruefungenPanel = new MuendlichePruefungenPanel(abitur, datenbank);
+        stammdatenPanel = new StammdatenPanel();
+        modulPanel.add(muendlichePruefungenPanel, "MUENDLICH");
+        modulPanel.add(stammdatenPanel, "STAMMDATEN");
+        modulLayout.show(modulPanel, "MUENDLICH");
+        statusleiste.setText("Datenbank: " + datenbank.getPfad().getFileName() + " | " + abitur.getPruefungen().size() + " Prüfungen geladen");
+        add(modulPanel, BorderLayout.CENTER);
+        add(statusleiste, BorderLayout.SOUTH);
     }
+
 
     private void zeigeKeinePlanung() {
         abitur = null;
         datenbank = null;
-        kollisionspruefer = null;
         modulPanel.removeAll();
         importMenue.setEnabled(false);
         JLabel hinweis = new JLabel("Keine Planung geöffnet", SwingConstants.CENTER);
@@ -94,41 +81,6 @@ public class MainFrame extends JFrame implements PruefungsKartenAktionen, Hauptm
         statusleiste.setText("Keine Planung geöffnet");
         modulPanel.revalidate();
         modulPanel.repaint();
-    }
-
-    public void initialisierePlanung(Abitur abitur, Datenbank datenbank) {
-        this.abitur = abitur;
-        this.datenbank = datenbank;
-        this.kollisionspruefer = new Kollisionspruefer(abitur);
-        importMenue.setEnabled(true);
-
-        muendlichePruefungenPanel = new MuendlichePruefungenPanel(abitur);
-        stammdatenPanel = new StammdatenPanel();
-
-        modulPanel.add(muendlichePruefungenPanel, "MUENDLICH");
-        modulPanel.add(stammdatenPanel, "STAMMDATEN");
-
-        modulLayout.show(modulPanel, "MUENDLICH");
-        statusleiste.setText("Datenbank: " + datenbank.getPfad().getFileName() + " | " + abitur.getPruefungen().size() + " Prüfungen geladen");
-        add(modulPanel, BorderLayout.CENTER);
-        add(statusleiste, BorderLayout.SOUTH);
-    }
-
-    private void verarbeitePlanungsaenderung(Pruefung pruefung) {
-        try {
-            datenbank.aktualisierePruefungsplanung(pruefung);
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this,
-                    "Die Änderungen konnten nicht gespeichert werden.\n" + "Starten Sie die Anwendung neu.", "Datenbankfehler", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-        muendlichePruefungenPanel.planungsvorratAktualisieren();
-        Map<Pruefung, List<Pruefung>> aktuelleKollisionen = kollisionspruefer.findeAlleKollisionen();
-
-        for (PlanungsMatrixPanel panel : matrixPanels) {
-            panel.setKollisionen(aktuelleKollisionen);
-            panel.aktualisieren();
-        }
     }
 
     //Interface-Methoden des Hauptmenüs:
@@ -296,86 +248,12 @@ public class MainFrame extends JFrame implements PruefungsKartenAktionen, Hauptm
 
     @Override
     public void pruefungstagHinzufuegenAction() {
-        SpinnerDateModel dateModel = new SpinnerDateModel();
-        JSpinner datumSpinner = new JSpinner(dateModel);
-        datumSpinner.setEditor(new JSpinner.DateEditor(datumSpinner, "dd.MM.yyyy"));
-
-        int ergebnis = JOptionPane.showConfirmDialog(this, datumSpinner, "Prüfungstag hinzufügen", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-
-        if (ergebnis != JOptionPane.OK_OPTION) {
-            return;
-        }
-
-        Date ausgewaehlt = dateModel.getDate();
-        LocalDate datum = ausgewaehlt.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-
-        for (Pruefungstag pruefungstag : abitur.getPruefungstage()) {
-            if (pruefungstag.getDatum().equals(datum)) {
-                JOptionPane.showMessageDialog(this, "Dieser Prüfungstag existiert bereits.", "Hinweis", JOptionPane.INFORMATION_MESSAGE);
-                return;
-            }
-        }
-
-        Pruefungstag pruefungstag = new Pruefungstag(datum);
-
-        try {
-            datenbank.speicherePruefungstag(pruefungstag);
-            abitur.addPruefungstag(pruefungstag);
-            planungsTabsAktualisieren();
-
-        } catch (SQLException exception) {
-            JOptionPane.showMessageDialog(this, "Der Prüfungstag konnte nicht gespeichert werden:\n" + exception.getMessage(), "Datenbankfehler", JOptionPane.ERROR_MESSAGE);
-        }
+        muendlichePruefungenPanel.pruefungstagHinzufuegen();
     }
 
     @Override
     public void pruefungstagEntfernenAction() {
-        int index = planungsTabs.getSelectedIndex();
-        if (index < 0 || index >= abitur.getPruefungstage().size()) {
-            return;
-        }
-        Pruefungstag pruefungstag = abitur.getPruefungstage().get(index);
-        int anzahlPruefungen = 0;
-        for (Pruefung pruefung : abitur.getPruefungen()) {
-            if (pruefungstag.getDatum().equals(pruefung.getPruefungstag())) {
-                anzahlPruefungen++;
-            }
-        }
-
-        try {
-            if (anzahlPruefungen == 0) {
-                int bestaetigung = JOptionPane.showConfirmDialog(this, "Prüfungstag " + pruefungstag.getDatum().format(DateTimeFormatter.ofPattern("dd.MM.yyyy")) + " wirklich löschen?", "Prüfungstag löschen", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-                if (bestaetigung == JOptionPane.YES_OPTION) {
-                    abitur.removePruefungstag(pruefungstag, true);
-                    planungsTabsAktualisieren();
-                    datenbank.loeschePruefungstag(pruefungstag);
-                }
-                return;
-            }
-
-            Object[] optionen = {"Kommissionen behalten", "Kommissionen mitlöschen", "Abbrechen"};
-            int auswahl = JOptionPane.showOptionDialog(this, "An diesem Prüfungstag sind " + anzahlPruefungen + " Prüfungen geplant.\n\n" + "Planungsdaten werden gelöscht.\n" + "Sollen die bestehenden Kommissionen erhalten bleiben?", "Prüfungstag löschen",
-                    JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, optionen, optionen[0]);
-
-            if (auswahl == 2 || auswahl == JOptionPane.CLOSED_OPTION) {
-                return;
-            }
-            ArrayList<Pruefung> geaendertePruefungen = new ArrayList<>();
-            if (auswahl == 0) {
-                geaendertePruefungen = abitur.removePruefungstag(pruefungstag, true);
-
-            } else if (auswahl == 1) {
-                geaendertePruefungen = abitur.removePruefungstag(pruefungstag, false);
-            }
-            for (Pruefung p : geaendertePruefungen) {
-                datenbank.aktualisierePruefungsplanung(p);
-            }
-            planungsTabsAktualisieren();
-            muendlichePruefungenPanel.planungsvorratAktualisieren();
-            datenbank.loeschePruefungstag(pruefungstag);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        muendlichePruefungenPanel.pruefungstagEntfernen();
     }
 
     @Override
@@ -527,34 +405,10 @@ public class MainFrame extends JFrame implements PruefungsKartenAktionen, Hauptm
     @Override
     public void zeigeMuendlichePruefungen() {
         modulLayout.show(modulPanel, "MUENDLICH");
-
     }
 
     @Override
     public void zeigeStammdaten() {
         modulLayout.show(modulPanel, "STAMMDATEN");
     }
-
-    //Interface-Methoden für die Planungsaktionen:
-    @Override
-    public void nachBearbeitung(Pruefung pruefung) {
-        verarbeitePlanungsaenderung(pruefung);
-    }
-
-    @Override
-    public void planungsdatenKopieren(Pruefung pruefung) {
-        kopiertePruefung = pruefung;
-    }
-
-    @Override
-    public void planungsdatenUebertragen(Pruefung pruefung) {
-        if (kopiertePruefung == null) {
-            return;
-        }
-        pruefung.setVorsitz(kopiertePruefung.getVorsitz());
-        pruefung.setSchriftfuehrer(kopiertePruefung.getSchriftfuehrer());
-        pruefung.setRaum(kopiertePruefung.getRaum());
-        verarbeitePlanungsaenderung(pruefung);
-    }
-
 }

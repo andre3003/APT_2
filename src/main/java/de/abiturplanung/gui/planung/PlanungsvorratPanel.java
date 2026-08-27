@@ -1,7 +1,6 @@
-package de.abiturplanung.gui;
+package de.abiturplanung.gui.planung;
 
 import de.abiturplanung.gui.model.PruefungsTableModel;
-import de.abiturplanung.gui.planung.PruefungTransferable;
 import de.abiturplanung.model.Abitur;
 import de.abiturplanung.model.Pruefung;
 import javax.swing.*;
