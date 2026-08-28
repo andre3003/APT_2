@@ -257,6 +257,14 @@ public class MainFrame extends JFrame implements HauptmenueAktionen {
     }
 
     @Override
+    public void datumPruefungstagAendern() {
+        muendlichePruefungenPanel.datumPreufungstagAendern();
+
+    }
+
+
+
+    @Override
     public void planungOeffnenAction() {
         JFileChooser fileChooser = new JFileChooser(AppPfade.getDatenVerzeichnis().toFile());
         fileChooser.setDialogTitle("Planung öffnen");

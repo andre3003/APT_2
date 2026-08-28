@@ -58,31 +58,26 @@ public class Hauptmenue {
         pruefungstagEntfernen.addActionListener(e -> aktionen.pruefungstagEntfernenAction());
 
         planungMenue.add(pruefungstagHinzufuegen);
+        planungMenue.addSeparator();
         planungMenue.add(pruefungstagEntfernen);
         planungMenue.addSeparator();
 
+        JMenuItem datumAendern = new JMenuItem("Datum des aktuellen PT ändern");
+        datumAendern.addActionListener(e -> aktionen.datumPruefungstagAendern());
+        planungMenue.add(datumAendern);
+        planungMenue.addSeparator();
         menueleiste.add(planungMenue);
-
         JMenu pruefungsfolge = new JMenu("Prüfungsfolge");
-
         JMenuItem vorlagePruegfungsfolgeErstellen = new JMenuItem("Vorlage erstellen");
         vorlagePruegfungsfolgeErstellen.addActionListener(e -> aktionen.vorlagePruefungsfolgeErstellen());
-
         pruefungsfolge.add(vorlagePruegfungsfolgeErstellen);
-
         pruefungsfolge.addSeparator();
-
         JMenuItem folgenimportieren = new JMenuItem("Folgen Importieren");
         folgenimportieren.addActionListener(e -> aktionen.pruefungsfolgenImportieren());
-
         pruefungsfolge.add(folgenimportieren);
-
         planungMenue.add(pruefungsfolge);
-
         menueleiste.add(planungMenue);
-
         JMenu ansichtMenue = new JMenu("Ansicht");
-
         JMenuItem timeLineAnsicht = new JMenuItem("Timeline");
         timeLineAnsicht.addActionListener(e -> aktionen.timeLineErzeugen());
         ansichtMenue.add(timeLineAnsicht);
@@ -116,7 +111,9 @@ public class Hauptmenue {
 
 
         importMenue.add(schuelerImportEintrag);
+        importMenue.addSeparator();
         importMenue.add(lehrerImportEintrag);
+        importMenue.addSeparator();
         importMenue.add(raeumeImportEintrag);
         importMenue.addSeparator();
         importMenue.add(leistungsdatenImportEintrag);

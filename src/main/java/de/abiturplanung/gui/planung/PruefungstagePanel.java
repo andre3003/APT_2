@@ -1,5 +1,6 @@
 package de.abiturplanung.gui.planung;
 
+import de.abiturplanung.gui.dialogs.PruefungstagDatumDialog;
 import de.abiturplanung.model.Abitur;
 import de.abiturplanung.model.Pruefung;
 import de.abiturplanung.model.Pruefungstag;
@@ -10,10 +11,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.sql.SQLException;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -53,7 +52,7 @@ public class PruefungstagePanel extends JPanel implements PruefungsKartenAktione
         repaint();
     }
 
-    //INterface-Methoden:
+    //Interface-Methoden:
 
     @Override
     public void nachBearbeitung(Pruefung pruefung) {
@@ -73,17 +72,8 @@ public class PruefungstagePanel extends JPanel implements PruefungsKartenAktione
     }
 
     public void pruefungstagHinzufuegen() {
-        SpinnerDateModel dateModel = new SpinnerDateModel();
-        JSpinner datumSpinner = new JSpinner(dateModel);
-        datumSpinner.setEditor(new JSpinner.DateEditor(datumSpinner, "dd.MM.yyyy"));
-        int ergebnis = JOptionPane.showConfirmDialog(this, datumSpinner, "Prüfungstag hinzufügen", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-
-        if (ergebnis != JOptionPane.OK_OPTION) {
-            return;
-        }
-
-        Date ausgewaehlt = dateModel.getDate();
-        LocalDate datum = ausgewaehlt.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        LocalDate datum = PruefungstagDatumDialog.anzeigen(this, "Prüfungstag hinzufügen", LocalDate.now());
+        if (datum == null) return;
 
         for (Pruefungstag pruefungstag : abitur.getPruefungstage()) {
             if (pruefungstag.getDatum().equals(datum)) {
@@ -149,7 +139,42 @@ public class PruefungstagePanel extends JPanel implements PruefungsKartenAktione
         }
     }
 
-    //Interface-Methoden:
+    public void datumPruefungstagAendern() {
+        int index = tabbedPane.getSelectedIndex();
+        if (index < 0 || index >= abitur.getPruefungstage().size()) {
+            return;
+        }
+        Pruefungstag pruefungstag = abitur.getPruefungstage().get(index);
+        LocalDate altesDatum = pruefungstag.getDatum();
+        LocalDate neuesDatum = PruefungstagDatumDialog.anzeigen(this, "Datum des Prüfungstags ändern", altesDatum);
+        if (neuesDatum == null || neuesDatum.equals(altesDatum)){
+            return;
+        }
+        for (Pruefungstag andererTag : abitur.getPruefungstage()) {
+            if (andererTag != pruefungstag && andererTag.getDatum().equals(neuesDatum)) {
+                JOptionPane.showMessageDialog(this, "Dieser Prüfungstag existiert bereits.", "Hinweis", JOptionPane.INFORMATION_MESSAGE);
+                return;
+            }
+        }
+        try {
+            datenbank.aktualisierePruefungstagDatum(altesDatum, neuesDatum);
+            abitur.aenderePruefungstag(pruefungstag, neuesDatum);
+
+            for (Pruefung pruefung : abitur.getPruefungen()) {
+                if (altesDatum.equals(pruefung.getPruefungstag())) {
+                    pruefung.setPruefungstag(neuesDatum);
+                }
+            }
+            planungsvorratAktualisieren.run();
+            aktualisieren();
+            int neuerIndex = abitur.getPruefungstage().indexOf(pruefungstag);
+            if (neuerIndex >= 0) {
+                tabbedPane.setSelectedIndex(neuerIndex);
+            }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Das Datum des Prüfungstags konnte nicht geändert werden:\n" + e.getMessage(), "Datenbankfehler", JOptionPane.ERROR_MESSAGE);
+        }
+    }
 
     @Override
     public void planungsdatenKopieren(Pruefung pruefung) {

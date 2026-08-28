@@ -44,15 +44,20 @@ public class PlanungsvorratPanel extends JPanel {
     private JPanel erstelleKopfPanel() {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.add(Box.createVerticalStrut(10));
         JLabel ueberschrift = new JLabel("Prüfungen im 4. Abiturfach");
         ueberschrift.setFont(ueberschrift.getFont().deriveFont(Font.BOLD, 18f));
+        ueberschrift.setAlignmentX(Component.CENTER_ALIGNMENT);
         panel.add(ueberschrift);
+        panel.add(Box.createVerticalStrut(10));
         panel.add(erstelleFilterPanel());
         return panel;
     }
 
     private JPanel erstelleFilterPanel() {
-        JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 3));
+        JPanel filterPanel = new JPanel(new BorderLayout());
+        JPanel obereZeile = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 3));
+        JPanel untereZeile = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 3));
         txtSuche = new JTextField(12);
         cmbFach = new JComboBox<>();
         cmbFach.addItem("Alle");
@@ -60,6 +65,23 @@ public class PlanungsvorratPanel extends JPanel {
         cmbKurs.addItem("Alle");
         cmbStatus = new JComboBox<>(new String[]{"Alle", "unvollständig", "vollständig"});
         chkVollstaendigeAusblenden = new JCheckBox("Vollständige ausblenden");
+
+        JLabel ueberschrift = new JLabel("Prüfungen im 4. Abiturfach");
+        ueberschrift.setFont(ueberschrift.getFont().deriveFont(Font.BOLD, 18f));
+        obereZeile.add(new JLabel("Fach:"));
+        obereZeile.add(cmbFach);
+        obereZeile.add(new JLabel("Kurs:"));
+        obereZeile.add(cmbKurs);
+        obereZeile.add(new JLabel("Status:"));
+        obereZeile.add(cmbStatus);
+        obereZeile.add(chkVollstaendigeAusblenden);
+
+        untereZeile.add(new JLabel("Suche:"));
+        untereZeile.add(txtSuche);
+
+        filterPanel.add(obereZeile, BorderLayout.NORTH);
+        filterPanel.add(untereZeile, BorderLayout.SOUTH);
+
         TreeSet<String> faecher = new TreeSet<>();
         TreeSet<String> kurse = new TreeSet<>();
         for (int i = 0; i < tableModel.getRowCount(); i++) {
@@ -95,18 +117,6 @@ public class PlanungsvorratPanel extends JPanel {
         cmbKurs.addActionListener(e -> filterAktualisieren());
         cmbStatus.addActionListener(e -> filterAktualisieren());
         chkVollstaendigeAusblenden.addActionListener(e -> filterAktualisieren());
-
-        JLabel ueberschrift = new JLabel("Prüfungen im 4. Abiturfach");
-        ueberschrift.setFont(ueberschrift.getFont().deriveFont(Font.BOLD, 18f));
-        filterPanel.add(new JLabel("Suche:"));
-        filterPanel.add(txtSuche);
-        filterPanel.add(new JLabel("Fach:"));
-        filterPanel.add(cmbFach);
-        filterPanel.add(new JLabel("Kurs:"));
-        filterPanel.add(cmbKurs);
-        filterPanel.add(new JLabel("Status:"));
-        filterPanel.add(cmbStatus);
-        filterPanel.add(chkVollstaendigeAusblenden);
         return filterPanel;
     }
 

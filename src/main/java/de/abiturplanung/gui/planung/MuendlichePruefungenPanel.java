@@ -32,4 +32,8 @@ public class MuendlichePruefungenPanel extends JPanel {
     public void pruefungstagEntfernen() {
         pruefungstagePanel.pruefungstagEntfernen();
     }
+
+    public void datumPreufungstagAendern() {
+        pruefungstagePanel.datumPruefungstagAendern();
+    }
 }

@@ -12,4 +12,8 @@ public class Pruefungstag {
     public LocalDate getDatum() {
         return datum;
     }
+
+    public void setDatum(LocalDate datum) {
+        this.datum = datum;
+    }
 }

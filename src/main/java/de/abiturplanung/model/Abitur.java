@@ -3,6 +3,7 @@ package de.abiturplanung.model;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 public class Abitur {
@@ -30,6 +31,12 @@ public class Abitur {
 
     public void addPruefungstag(Pruefungstag pruefungstag) {
         pruefungstage.add(pruefungstag);
+        pruefungstage.sort(Comparator.comparing(Pruefungstag::getDatum));
+    }
+
+    public void aenderePruefungstag(Pruefungstag pruefungstag, LocalDate date) {
+        pruefungstag.setDatum(date);
+        pruefungstage.sort(Comparator.comparing(Pruefungstag::getDatum));
     }
 
     public void addSchueler(Schueler schueler) {

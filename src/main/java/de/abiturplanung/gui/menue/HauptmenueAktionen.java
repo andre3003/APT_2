@@ -16,6 +16,8 @@ public interface HauptmenueAktionen {
 
     void pruefungstagEntfernenAction();
 
+    void datumPruefungstagAendern();
+
     void planungOeffnenAction();
 
     void neuePlanungAction();
@@ -29,6 +31,7 @@ public interface HauptmenueAktionen {
     void timeLineErzeugen();
 
     void zeigeMuendlichePruefungen();
+
     void zeigeStammdaten();
 
 

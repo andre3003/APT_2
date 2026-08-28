@@ -732,4 +732,13 @@ public class Datenbank {
             throw new RuntimeException(e);
         }
     }
+
+    public void aktualisierePruefungstagDatum(LocalDate altesDatum, LocalDate neuesDatum) throws SQLException {
+        String sql = "UPDATE pruefungstag SET datum = ? WHERE datum = ?";
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, neuesDatum.toString());
+            statement.setString(2, altesDatum.toString());
+            statement.executeUpdate();
+        }
+    }
 }
