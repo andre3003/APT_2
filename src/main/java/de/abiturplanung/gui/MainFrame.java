@@ -3,6 +3,7 @@ package de.abiturplanung.gui;
 import de.abiturplanung.gui.menue.Hauptmenue;
 import de.abiturplanung.gui.menue.HauptmenueAktionen;
 import de.abiturplanung.gui.planung.MuendlichePruefungenPanel;
+import de.abiturplanung.gui.stammdaten.StammdatenPanel;
 import de.abiturplanung.model.Abitur;
 import de.abiturplanung.model.Pruefung;
 import de.abiturplanung.persistence.Datenbank;
@@ -60,7 +61,7 @@ public class MainFrame extends JFrame implements HauptmenueAktionen {
         importMenue.setEnabled(true);
         modulPanel.removeAll();
         muendlichePruefungenPanel = new MuendlichePruefungenPanel(abitur, datenbank);
-        stammdatenPanel = new StammdatenPanel();
+        stammdatenPanel = new StammdatenPanel(abitur, datenbank);
         modulPanel.add(muendlichePruefungenPanel, "MUENDLICH");
         modulPanel.add(stammdatenPanel, "STAMMDATEN");
         modulLayout.show(modulPanel, "MUENDLICH");

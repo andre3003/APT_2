@@ -1,12 +1,11 @@
-package de.abiturplanung.util;
+package de.abiturplanung;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
 public final class Utilities {
 
-    private static final DateTimeFormatter FORMAT =
-            DateTimeFormatter.ofPattern("dd.MM.yyyy");
+    private static final DateTimeFormatter FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
     private Utilities() {
         // Verhindert die Instanziierung
@@ -58,9 +57,12 @@ public final class Utilities {
     }
 
     public static LocalDate parseDatum(String datum) {
+        String normalisiert = normalisiereDatum(datum);
+        return normalisiert.isEmpty() ? null : LocalDate.parse(normalisiert, FORMAT);
+    }
 
-        return LocalDate.parse(normalisiereDatum(datum), FORMAT);
-
+    public static String formatiereDatum(LocalDate datum) {
+        return datum == null ? "" : datum.format(FORMAT);
     }
 
 }

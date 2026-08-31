@@ -249,7 +249,6 @@ public class Datenbank {
             ladePruefungen(connection, abitur, schuelerMap, kursMap, pruefungMap);
             ladePruefungsplanung(connection, pruefungMap, pruefungstagMap, raumMap, lehrerMap);
         }
-
         return abitur;
     }
 
@@ -541,6 +540,57 @@ public class Datenbank {
             }
 
             statement.executeBatch();
+        }
+    }
+
+    public void aktualisiereSchueler(Schueler schueler) throws SQLException {
+        String sql = """
+            UPDATE schueler
+            SET nachname = ?, vorname = ?, geburtsdatum = ?, geschlecht = ?
+            WHERE schild_id = ?
+            """;
+
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, schueler.getNachname());
+            statement.setString(2, schueler.getVorname());
+
+            if (schueler.getGeburtsdatum() == null) {
+                statement.setNull(3, Types.VARCHAR);
+            } else {
+                statement.setString(3, schueler.getGeburtsdatum().toString());
+            }
+
+            statement.setString(4, schueler.getGeschlecht() == null ? null : schueler.getGeschlecht().name());
+            statement.setString(5, schueler.getSchildId());
+
+           int anzahl = statement.executeUpdate();
+
+            if (anzahl != 1) {
+                throw new SQLException("Schüler konnte nicht eindeutig aktualisiert werden.");
+            }
+        }
+    }
+
+    public void fuegeSchuelerHinzu(Schueler schueler) throws SQLException {
+        String sql = """
+                INSERT INTO schueler (schild_id, nachname, vorname, geburtsdatum, geschlecht) VALUES (?, ?, ?, ?, ?)
+                """;
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, schueler.getSchildId());
+            statement.setString(2, schueler.getNachname());
+            statement.setString(3, schueler.getVorname());
+
+            if (schueler.getGeburtsdatum() == null) {
+                statement.setNull(4, Types.VARCHAR);
+            } else {
+                statement.setString(4, schueler.getGeburtsdatum().toString());
+            }
+            statement.setString(5, schueler.getGeschlecht() == null ? null : schueler.getGeschlecht().name());
+
+            int anzahl = statement.executeUpdate();
+            if (anzahl != 1) {
+                throw new SQLException("Schüler konnte nicht eindeutig eingefügt werden.");
+            }
         }
     }
 

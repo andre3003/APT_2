@@ -68,13 +68,29 @@ public class Schueler {
 
     @Override
     public boolean equals(Object o) {
+        if (this == o) return true;
         if (!(o instanceof Schueler schueler)) return false;
-        return Objects.equals(nachname, schueler.nachname)
-                && Objects.equals(vorname, schueler.vorname);
+        return Objects.equals(schildId, schueler.schildId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(nachname, vorname);
+        return Objects.hash(schildId);
+    }
+
+    public void setNachname(String nachname) {
+        this.nachname = nachname;
+    }
+
+    public void setVorname(String vorname) {
+        this.vorname = vorname;
+    }
+
+    public void setGeburtsdatum(LocalDate geburtsdatum) {
+        this.geburtsdatum = geburtsdatum;
+    }
+
+    public void setGeschlecht(Geschlecht geschlecht) {
+        this.geschlecht = geschlecht;
     }
 }

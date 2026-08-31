@@ -42,7 +42,7 @@ public class SchuelerImporter {
         }
         String nachname = spalten[1].trim();
         String vorname  = spalten[2].trim();
-        return new SchuelerDatensatz(schildId, nachname, vorname, de.abiturplanung.util.Utilities.parseDatum(spalten[3]), parseGeschlecht(spalten[4]));
+        return new SchuelerDatensatz(schildId, nachname, vorname, de.abiturplanung.Utilities.parseDatum(spalten[3]), parseGeschlecht(spalten[4]));
     }
 
     private Geschlecht parseGeschlecht(String wert) {

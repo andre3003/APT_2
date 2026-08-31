@@ -3,10 +3,8 @@ import de.abiturplanung.model.Abiturfach;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -62,22 +60,10 @@ public class LeistungsdatenImporter {
         return new SchuelerleistungsDatensatz(
                 spalten[0].trim(),   // Nachname
                 spalten[1].trim(), // Vorname
-                de.abiturplanung.util.Utilities.parseDatum(spalten[2].trim()), //Geburtsdatum
+                de.abiturplanung.Utilities.parseDatum(spalten[2].trim()), //Geburtsdatum
                 spalten[5].trim(), // Fach
                 spalten[8].trim(),   // Kurs
                 spalten[6].trim(),   // Fachlehrer
                 abiturfach);   // Abiturfach
     }
-
-//    private Abiturfach parseAbiturfach(String wert) {
-//        return switch (wert.trim()) {
-//            case "1" -> Abiturfach.AB1;
-//            case "2" -> Abiturfach.AB2;
-//            case "3" -> Abiturfach.AB3;
-//            case "4" -> Abiturfach.AB4;
-//            default ->
-//                    throw new IllegalArgumentException(
-//                            "Ungültiges Abiturfach: " + wert);
-//        };
-//    }
 }

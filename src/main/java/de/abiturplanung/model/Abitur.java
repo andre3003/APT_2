@@ -1,10 +1,7 @@
 package de.abiturplanung.model;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
 public class Abitur {
 
@@ -39,8 +36,10 @@ public class Abitur {
         pruefungstage.sort(Comparator.comparing(Pruefungstag::getDatum));
     }
 
-    public void addSchueler(Schueler schueler) {
-        this.schueler.add(schueler);
+    public void addSchueler(Schueler neuerSchueler) {
+        schueler.add(neuerSchueler);
+        schueler.sort(Comparator.comparing(Schueler::getNachname, String.CASE_INSENSITIVE_ORDER)
+                .thenComparing(Schueler::getVorname, String.CASE_INSENSITIVE_ORDER));
     }
 
     public void addLehrer(Lehrer lehrer) {
@@ -89,14 +88,18 @@ public class Abitur {
      * Suchen
      *--------------------------------------------------*/
 
-    public Schueler findeSchueler(
-            String nachname,
-            String vorname,
-            LocalDate geburtsdatum) {
+    public Schueler findeSchueler(String nachname, String vorname, LocalDate geburtsdatum) {
         for (Schueler schueler : schueler) {
-            if (schueler.getNachname().equalsIgnoreCase(nachname)
-                    && schueler.getVorname().equalsIgnoreCase(vorname)
-                    && schueler.getGeburtsdatum().equals(geburtsdatum)) {
+            if (schueler.getNachname().equalsIgnoreCase(nachname) && schueler.getVorname().equalsIgnoreCase(vorname) && Objects.equals(schueler.getGeburtsdatum(), geburtsdatum)) {
+                return schueler;
+            }
+        }
+        return null;
+    }
+
+    public Schueler findeSchueler(String schildId) {
+        for (Schueler schueler : schueler) {
+            if (schueler.getSchildId().equals(schildId)) {
                 return schueler;
             }
         }
