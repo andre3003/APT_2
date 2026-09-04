@@ -11,14 +11,15 @@ public class SchuelerTableModel extends AbstractTableModel {
 
     private final List<Schueler> schueler;
     private final String[] spaltennamen = {"Schild-ID", "Nachname", "Vorname", "Geburtsdatum", "Geschlecht"};
-    private Consumer<Schueler> nachAenderung;
+    private Consumer<SchuelerAenderung> nachAenderung;
+    public record SchuelerAenderung(Schueler schueler, int spalte, Object wert) {}
 
 
     public SchuelerTableModel(List<Schueler> schueler) {
         this.schueler = schueler;
     }
 
-    public void setNachAenderung(Consumer<Schueler> nachAenderung) {
+    public void setNachAenderung(Consumer<SchuelerAenderung> nachAenderung) {
         this.nachAenderung = nachAenderung;
     }
 
@@ -58,15 +59,13 @@ public class SchuelerTableModel extends AbstractTableModel {
     @Override
     public void setValueAt(Object value, int rowIndex, int columnIndex) {
         Schueler aktuellerSchueler = schueler.get(rowIndex);
-        switch (columnIndex) {
-            case 1 -> aktuellerSchueler.setNachname((String) value);
-            case 2 -> aktuellerSchueler.setVorname((String) value);
-            case 3 -> aktuellerSchueler.setGeburtsdatum((LocalDate) value);
-            case 4 -> aktuellerSchueler.setGeschlecht((Geschlecht) value);
-        }
-        fireTableCellUpdated(rowIndex, columnIndex);
+
         if (nachAenderung != null) {
-            nachAenderung.accept(aktuellerSchueler);
+            nachAenderung.accept(new SchuelerAenderung(aktuellerSchueler, columnIndex, value));
         }
+    }
+
+    public void aktualisieren() {
+        fireTableDataChanged();
     }
 }

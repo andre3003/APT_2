@@ -108,7 +108,7 @@ public class PruefungstagePanel extends JPanel implements PruefungsKartenAktione
             if (anzahlPruefungen == 0) {
                 int bestaetigung = JOptionPane.showConfirmDialog(this, "Prüfungstag " + pruefungstag.getDatum().format(DateTimeFormatter.ofPattern("dd.MM.yyyy")) + " wirklich löschen?", "Prüfungstag löschen", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
                 if (bestaetigung == JOptionPane.YES_OPTION) {
-                    abitur.removePruefungstag(pruefungstag, true);
+                    abitur.loeschePruefungstag(pruefungstag, true);
                     datenbank.loeschePruefungstag(pruefungstag);
                     aktualisieren();
                 }
@@ -123,10 +123,10 @@ public class PruefungstagePanel extends JPanel implements PruefungsKartenAktione
             }
             ArrayList<Pruefung> geaendertePruefungen = new ArrayList<>();
             if (auswahl == 0) {
-                geaendertePruefungen = abitur.removePruefungstag(pruefungstag, true);
+                geaendertePruefungen = abitur.loeschePruefungstag(pruefungstag, true);
 
             } else if (auswahl == 1) {
-                geaendertePruefungen = abitur.removePruefungstag(pruefungstag, false);
+                geaendertePruefungen = abitur.loeschePruefungstag(pruefungstag, false);
             }
             for (Pruefung p : geaendertePruefungen) {
                 datenbank.aktualisierePruefungsplanung(p);

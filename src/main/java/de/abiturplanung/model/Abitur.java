@@ -5,7 +5,7 @@ import java.util.*;
 
 public class Abitur {
 
-    private final List<Schueler> schueler = new ArrayList<>();
+    private final List<Schueler> schuelerList = new ArrayList<>();
 
     private final List<Lehrer> lehrer = new ArrayList<>();
 
@@ -36,10 +36,49 @@ public class Abitur {
         pruefungstage.sort(Comparator.comparing(Pruefungstag::getDatum));
     }
 
+    public ArrayList<Pruefung> loeschePruefungstag(Pruefungstag pruefungstag, boolean kommissionenBehalten) {
+        ArrayList<Pruefung> result = new ArrayList<>();
+        LocalDate datum = pruefungstag.getDatum();
+        for (Pruefung pruefung : pruefungen) {
+            if (datum.equals(pruefung.getPruefungstag())) {
+                pruefung.setPruefungstag(null);
+                pruefung.setBeginn(null);
+                pruefung.setPlanungsspalte(null);
+                pruefung.setRaum(null);
+
+                if (!kommissionenBehalten) {
+                    pruefung.setPruefer(null);
+                    pruefung.setSchriftfuehrer(null);
+                    pruefung.setVorsitz(null);
+                }
+                result.add(pruefung);
+            }
+
+        }
+        pruefungstage.remove(pruefungstag);
+        return result;
+    }
+
+    public void schuelerLoeschen(String schildId) {
+        Schueler schueler = findeSchueler(schildId);
+        if (schueler == null) {
+            return;
+        }
+        pruefungen.removeIf(pruefung -> pruefung.getSchueler().equals(schueler));
+        schuelerList.remove(schueler);
+    }
+
     public void addSchueler(Schueler neuerSchueler) {
-        schueler.add(neuerSchueler);
-        schueler.sort(Comparator.comparing(Schueler::getNachname, String.CASE_INSENSITIVE_ORDER)
-                .thenComparing(Schueler::getVorname, String.CASE_INSENSITIVE_ORDER));
+        schuelerList.add(neuerSchueler);
+    }
+
+    public void aendereSchueler(Schueler schueler, String nachname, String vorname, LocalDate
+            geburtsdatum, Geschlecht geschlecht) {
+        schueler.aktualisiereStammdaten(nachname, vorname, geburtsdatum, geschlecht);
+        schuelerList.sort(Comparator
+                .comparing(Schueler::getNachname, String.CASE_INSENSITIVE_ORDER)
+                .thenComparing(Schueler::getVorname, String.CASE_INSENSITIVE_ORDER)
+                .thenComparing(Schueler::getSchildId));
     }
 
     public void addLehrer(Lehrer lehrer) {
@@ -63,8 +102,8 @@ public class Abitur {
      * Zugriff
      *--------------------------------------------------*/
 
-    public List<Schueler> getSchueler() {
-        return Collections.unmodifiableList(schueler);
+    public List<Schueler> getSchuelerList() {
+        return Collections.unmodifiableList(schuelerList);
     }
 
     public List<Lehrer> getLehrer() {
@@ -89,7 +128,7 @@ public class Abitur {
      *--------------------------------------------------*/
 
     public Schueler findeSchueler(String nachname, String vorname, LocalDate geburtsdatum) {
-        for (Schueler schueler : schueler) {
+        for (Schueler schueler : schuelerList) {
             if (schueler.getNachname().equalsIgnoreCase(nachname) && schueler.getVorname().equalsIgnoreCase(vorname) && Objects.equals(schueler.getGeburtsdatum(), geburtsdatum)) {
                 return schueler;
             }
@@ -98,7 +137,7 @@ public class Abitur {
     }
 
     public Schueler findeSchueler(String schildId) {
-        for (Schueler schueler : schueler) {
+        for (Schueler schueler : schuelerList) {
             if (schueler.getSchildId().equals(schildId)) {
                 return schueler;
             }
@@ -163,27 +202,11 @@ public class Abitur {
         return text.trim().replaceAll("\\s+", " ");
     }
 
-
-    public ArrayList<Pruefung> removePruefungstag(Pruefungstag pruefungstag, boolean kommissionenBehalten) {
-        ArrayList<Pruefung> result = new ArrayList<>();
-        LocalDate datum = pruefungstag.getDatum();
-        for (Pruefung pruefung : pruefungen) {
-            if (datum.equals(pruefung.getPruefungstag())) {
-                pruefung.setPruefungstag(null);
-                pruefung.setBeginn(null);
-                pruefung.setPlanungsspalte(null);
-                pruefung.setRaum(null);
-
-                if (!kommissionenBehalten) {
-                    pruefung.setPruefer(null);
-                    pruefung.setSchriftfuehrer(null);
-                    pruefung.setVorsitz(null);
-                }
-                result.add(pruefung);
-            }
-
-        }
-        pruefungstage.remove(pruefungstag);
-        return result;
+    public void sortiereSchueler() {
+        schuelerList.sort(Comparator
+                .comparing(Schueler::getNachname, String.CASE_INSENSITIVE_ORDER)
+                .thenComparing(Schueler::getVorname, String.CASE_INSENSITIVE_ORDER));
     }
+
+
 }

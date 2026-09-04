@@ -106,7 +106,8 @@ public class Datenbank {
                         pruefungsfolge TEXT,
                     
                         FOREIGN KEY (schueler_id)
-                            REFERENCES schueler(schild_id),
+                            REFERENCES schueler(schild_id)
+                             ON DELETE CASCADE,
                     
                         FOREIGN KEY (kurs_bezeichnung)
                             REFERENCES kurs(bezeichnung)
@@ -524,7 +525,7 @@ public class Datenbank {
                 """;
 
         try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
-            for (Schueler schueler : abitur.getSchueler()) {
+            for (Schueler schueler : abitur.getSchuelerList()) {
                 statement.setString(1, schueler.getSchildId());
                 statement.setString(2, schueler.getNachname());
                 statement.setString(3, schueler.getVorname());
@@ -590,6 +591,16 @@ public class Datenbank {
             int anzahl = statement.executeUpdate();
             if (anzahl != 1) {
                 throw new SQLException("Schüler konnte nicht eindeutig eingefügt werden.");
+            }
+        }
+    }
+
+    public void schuelerLoeschen(String schild_id) throws SQLException{
+        String sql = "DELETE FROM schueler WHERE schild_id = ?";
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, schild_id);
+            if (statement.executeUpdate() != 1) {
+                throw new SQLException("Schüler mit Schild-ID " + schild_id + " konnte nicht gelöscht werden.");
             }
         }
     }

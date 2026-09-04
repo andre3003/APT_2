@@ -61,7 +61,9 @@ public class MainFrame extends JFrame implements HauptmenueAktionen {
         importMenue.setEnabled(true);
         modulPanel.removeAll();
         muendlichePruefungenPanel = new MuendlichePruefungenPanel(abitur, datenbank);
+
         stammdatenPanel = new StammdatenPanel(abitur, datenbank);
+        stammdatenPanel.setNachAenderungPruefungsbestand(muendlichePruefungenPanel::planungsvorratAktualisieren);
         modulPanel.add(muendlichePruefungenPanel, "MUENDLICH");
         modulPanel.add(stammdatenPanel, "STAMMDATEN");
         modulLayout.show(modulPanel, "MUENDLICH");

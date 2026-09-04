@@ -34,10 +34,13 @@ public class ImportService {
             Schueler schueler = abitur.findeSchueler(datensatz.getNachname(), datensatz.getVorname(), datensatz.getGeburtsdatum());
             if (schueler == null) {
                 schueler = new Schueler(datensatz.getSchildId());
+                schueler.aktualisiereStammdaten(datensatz);
                 abitur.addSchueler(schueler);
+            } else {
+                schueler.aktualisiereStammdaten(datensatz);
             }
-            schueler.aktualisiereStammdaten(datensatz);
         }
+        abitur.sortiereSchueler();
     }
 
     private void importiereLeistungsdatensatz(SchuelerleistungsDatensatz ds) {

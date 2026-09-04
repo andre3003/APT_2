@@ -208,6 +208,6 @@ public class PlanungsvorratPanel extends JPanel {
     }
 
     public void aktualisieren() {
-        tableModel.fireTableDataChanged();
+        tableModel.aktualisieren(abitur.getPruefungen());
     }
 }

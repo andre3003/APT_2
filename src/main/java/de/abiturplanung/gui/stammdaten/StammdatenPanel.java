@@ -2,43 +2,65 @@ package de.abiturplanung.gui.stammdaten;
 
 import de.abiturplanung.gui.dialogs.SchuelerStammdatenDialog;
 import de.abiturplanung.model.Abitur;
+import de.abiturplanung.model.Geschlecht;
 import de.abiturplanung.model.Schueler;
 import de.abiturplanung.persistence.Datenbank;
 
 import javax.swing.*;
 import java.awt.*;
 import java.sql.SQLException;
+import java.time.LocalDate;
 
 public class StammdatenPanel extends JPanel {
     private final JTabbedPane tabbedPane = new JTabbedPane();
-    Datenbank datenbank;
-    Abitur abitur;
+    private final Datenbank datenbank;
+    private final Abitur abitur;
+    private final SchuelerStammdatenPanel schuelerStammdatenPanel;
+    private Runnable nachAenderungPruefungsbestand;
 
     public StammdatenPanel(Abitur abitur, Datenbank datenbank) {
         this.datenbank = datenbank;
         this.abitur = abitur;
         setLayout(new BorderLayout());
-        SchuelerStammdatenPanel panel = new SchuelerStammdatenPanel(abitur);
-        panel.setNachAenderung(this::schuelerAktualisieren);
-        panel.setSchuelerAnlegen(this::neuenSchuelerAnlegen);
-        tabbedPane.addTab("Schüler", panel);
+        schuelerStammdatenPanel = new SchuelerStammdatenPanel(abitur);
+        schuelerStammdatenPanel.setNachAenderung(this::schuelerAktualisieren);
+        schuelerStammdatenPanel.setSchuelerAnlegen(this::neuenSchuelerAnlegen);
+        schuelerStammdatenPanel.setSchuelerLoeschenAction(this::schuelerLoeschen);
+        tabbedPane.addTab("Schüler", schuelerStammdatenPanel);
         add(tabbedPane, BorderLayout.CENTER);
     }
 
+    private void schuelerAktualisieren(SchuelerTableModel.SchuelerAenderung aenderung) {
+        Schueler schueler = aenderung.schueler();
 
-    private void schuelerAktualisieren(Schueler schueler) {
+        String nachname = schueler.getNachname();
+        String vorname = schueler.getVorname();
+        LocalDate geburtsdatum = schueler.getGeburtsdatum();
+        Geschlecht geschlecht = schueler.getGeschlecht();
+
+        switch (aenderung.spalte()) {
+            case 1 -> nachname = (String) aenderung.wert();
+            case 2 -> vorname = (String) aenderung.wert();
+            case 3 -> geburtsdatum = (LocalDate) aenderung.wert();
+            case 4 -> geschlecht = (Geschlecht) aenderung.wert();
+        }
+        abitur.aendereSchueler(schueler, nachname, vorname, geburtsdatum, geschlecht);
         try {
             datenbank.aktualisiereSchueler(schueler);
-        } catch (SQLException e) {JOptionPane.showMessageDialog(this, "Die Änderung konnte nicht gespeichert werden.\n" + "Starten Sie die Anwendung neu.",
-                    "Datenbankfehler",
+            schuelerStammdatenPanel.aktualisieren();
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Die Änderung konnte nicht gespeichert werden.\nStarten Sie die Anwendung neu.", "Datenbankfehler",
                     JOptionPane.ERROR_MESSAGE);
         }
     }
 
+    public void setNachAenderungPruefungsbestand(Runnable nachPruefungsbestandAenderung) {
+        this.nachAenderungPruefungsbestand = nachPruefungsbestandAenderung;
+    }
+
     private void neuenSchuelerAnlegen(SchuelerStammdatenDialog.SchuelerEingabe eingabe) {
-        //ID checken fehlt! Datenchek insgesamt fehlt! Schülerliste wird nicht neu sortiert.
-        if (abitur.findeSchueler(eingabe.schildId()) != null) {JOptionPane.showMessageDialog(this, "Ein Schüler mit dieser Schild-ID ist bereits vorhanden.",
-                "Schild-ID bereits vergeben",
+        if (abitur.findeSchueler(eingabe.schildId()) != null) {
+            JOptionPane.showMessageDialog(this, "Ein Schüler mit dieser Schild-ID ist bereits vorhanden.", "Schild-ID bereits vergeben",
                     JOptionPane.WARNING_MESSAGE);
             return;
         }
@@ -50,8 +72,22 @@ public class StammdatenPanel extends JPanel {
         try {
             datenbank.fuegeSchuelerHinzu(neu);
             abitur.addSchueler(neu);
-        } catch(SQLException e) {
+            abitur.sortiereSchueler();
+            schuelerStammdatenPanel.aktualisieren();
+        } catch (SQLException e) {
             e.printStackTrace();
+        }
+    }
+
+    private void schuelerLoeschen(String schild_id) {
+        try {
+            datenbank.schuelerLoeschen(schild_id);
+            abitur.schuelerLoeschen(schild_id);
+            schuelerStammdatenPanel.aktualisieren();
+            nachAenderungPruefungsbestand.run();
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Der Schüler konnte nicht gelöscht werden.\nStarten Sie die Anwendung neu.", "Datenbankfehler",
+                    JOptionPane.ERROR_MESSAGE);
         }
     }
 }

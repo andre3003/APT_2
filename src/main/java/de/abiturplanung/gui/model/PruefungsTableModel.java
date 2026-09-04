@@ -21,11 +21,22 @@ public class PruefungsTableModel extends AbstractTableModel {
     private final List<Pruefung> pruefungen = new ArrayList<>();
 
     public PruefungsTableModel(List<Pruefung> allePruefungen) {
+        pruefungenEinlesen(allePruefungen);
+    }
+
+    private void pruefungenEinlesen(List<Pruefung> allePruefungen) {
+        pruefungen.clear();
+
         for (Pruefung pruefung : allePruefungen) {
             if (pruefung.getAbiturfach() == Abiturfach.AB4) {
                 pruefungen.add(pruefung);
             }
         }
+    }
+
+    public void aktualisieren(List<Pruefung> allePruefungen) {
+        pruefungenEinlesen(allePruefungen);
+        fireTableDataChanged();
     }
 
     @Override

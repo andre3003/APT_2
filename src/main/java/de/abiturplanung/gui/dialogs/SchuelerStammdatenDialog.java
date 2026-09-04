@@ -82,10 +82,7 @@ public class SchuelerStammdatenDialog extends JDialog {
         }
 
         if (!schildId.matches("\\d{4}")) {
-            JOptionPane.showMessageDialog(this,
-                    "Die Schild-ID muss aus genau vier Ziffern bestehen.",
-                    "Ungültige Schild-ID",
-                    JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Die Schild-ID muss aus genau vier Ziffern bestehen.", "Ungültige Schild-ID", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
