@@ -207,7 +207,7 @@ public class PlanungsvorratPanel extends JPanel {
         return tabelle;
     }
 
-    public void aktualisieren() {
+    public void ansichtAktualisieren() {
         tableModel.aktualisieren(abitur.getPruefungen());
     }
 }

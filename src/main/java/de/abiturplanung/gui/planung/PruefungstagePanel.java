@@ -23,19 +23,19 @@ public class PruefungstagePanel extends JPanel implements PruefungsKartenAktione
     private Datenbank datenbank;
     private Kollisionspruefer kollisionspruefer;
     private Pruefung kopiertePruefung;
-    private final Runnable planungsvorratAktualisieren;
+    private final Runnable planungsvorratAnsichtAktualisieren;
 
     public PruefungstagePanel(Abitur abitur, Datenbank datenbank, Runnable planungsvorratAktualisieren) {
         this.abitur = abitur;
         this.datenbank = datenbank;
-        this.planungsvorratAktualisieren = planungsvorratAktualisieren;
+        this.planungsvorratAnsichtAktualisieren = planungsvorratAktualisieren;
         this.kollisionspruefer = new Kollisionspruefer(abitur);
         setLayout(new BorderLayout());
         add(tabbedPane, BorderLayout.CENTER);
-        aktualisieren();
+        ansichtAktualisieren();
     }
 
-    private void aktualisieren() {
+    public void ansichtAktualisieren() {
         tabbedPane.removeAll();
         matrixPanels.clear();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
@@ -45,7 +45,7 @@ public class PruefungstagePanel extends JPanel implements PruefungsKartenAktione
             matrixPanels.add(matrixPanel);
             matrixPanel.setKollisionen(alleKollisionen);
             matrixPanel.setzePruefungskartenAktionen(this);
-            matrixPanel.aktualisieren();
+            matrixPanel.ansichtAktualisieren();
             tabbedPane.addTab(pruefungstag.getDatum().format(formatter), matrixPanel);
         }
         revalidate();
@@ -66,9 +66,9 @@ public class PruefungstagePanel extends JPanel implements PruefungsKartenAktione
         Map<Pruefung, List<Pruefung>> aktuelleKollisionen = kollisionspruefer.findeAlleKollisionen();
         for (PlanungsMatrixPanel panel : matrixPanels) {
             panel.setKollisionen(aktuelleKollisionen);
-            panel.aktualisieren();
+            panel.ansichtAktualisieren();
         }
-        planungsvorratAktualisieren.run();
+        planungsvorratAnsichtAktualisieren.run();
     }
 
     public void pruefungstagHinzufuegen() {
@@ -83,9 +83,9 @@ public class PruefungstagePanel extends JPanel implements PruefungsKartenAktione
         }
         Pruefungstag pruefungstag = new Pruefungstag(datum);
         try {
-            datenbank.speicherePruefungstag(pruefungstag);
+            datenbank.fuegePruefungstagHinzu(pruefungstag);
             abitur.addPruefungstag(pruefungstag);
-            aktualisieren();;
+            ansichtAktualisieren();;
 
         } catch (SQLException exception) {
             JOptionPane.showMessageDialog(this, "Der Prüfungstag konnte nicht gespeichert werden:\n" + exception.getMessage(), "Datenbankfehler", JOptionPane.ERROR_MESSAGE);
@@ -110,7 +110,7 @@ public class PruefungstagePanel extends JPanel implements PruefungsKartenAktione
                 if (bestaetigung == JOptionPane.YES_OPTION) {
                     abitur.loeschePruefungstag(pruefungstag, true);
                     datenbank.loeschePruefungstag(pruefungstag);
-                    aktualisieren();
+                    ansichtAktualisieren();
                 }
                 return;
             }
@@ -132,8 +132,8 @@ public class PruefungstagePanel extends JPanel implements PruefungsKartenAktione
                 datenbank.aktualisierePruefungsplanung(p);
             }
             datenbank.loeschePruefungstag(pruefungstag);
-            planungsvorratAktualisieren.run();
-            aktualisieren();
+            planungsvorratAnsichtAktualisieren.run();
+            ansichtAktualisieren();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -165,8 +165,8 @@ public class PruefungstagePanel extends JPanel implements PruefungsKartenAktione
                     pruefung.setPruefungstag(neuesDatum);
                 }
             }
-            planungsvorratAktualisieren.run();
-            aktualisieren();
+            planungsvorratAnsichtAktualisieren.run();
+            ansichtAktualisieren();
             int neuerIndex = abitur.getPruefungstage().indexOf(pruefungstag);
             if (neuerIndex >= 0) {
                 tabbedPane.setSelectedIndex(neuerIndex);

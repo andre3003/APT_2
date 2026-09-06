@@ -51,7 +51,7 @@ public class PruefungsfolgenImportServide {
                 Pruefung pruefung = pruefungMap.get(pruefungId);
 
                 if (pruefung == null) {
-                    throw new IOException("Keine Prüfung mit der ID " + pruefungId + " gefunden.");
+                    continue;
                 }
 
                 String pruefungsfolge = null;

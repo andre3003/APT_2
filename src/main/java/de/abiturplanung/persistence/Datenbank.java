@@ -7,6 +7,7 @@ import java.sql.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class Datenbank {
@@ -155,7 +156,7 @@ public class Datenbank {
         }
     }
 
-    private void speicherePruefungsplanung(Connection connection, long pruefungId, Pruefung pruefung, Abitur abitur) throws SQLException {
+    private void speicherePruefungsplanung(Connection connection, long pruefungId, Pruefung pruefung) throws SQLException {
         String sql = """
                 INSERT INTO pruefungsplanung (pruefung_id, pruefungstag_id, beginn, planungsspalte, raum_bezeichnung, pruefer_kuerzel, schriftfuehrer_kuerzel, vorsitz_kuerzel) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """;
@@ -516,7 +517,7 @@ public class Datenbank {
         }
     }
 
-    public void aktualisiereSchueler(Abitur abitur) throws SQLException {
+    public void synchronisiereSchueler(Abitur abitur) throws SQLException {
         String sql = """
                 INSERT INTO schueler (schild_id, nachname, vorname, geburtsdatum, geschlecht) VALUES (?, ?, ?, ?, ?) ON CONFLICT(schild_id) DO UPDATE SET
                 nachname = excluded.nachname, vorname = excluded.vorname,
@@ -546,10 +547,10 @@ public class Datenbank {
 
     public void aktualisiereSchueler(Schueler schueler) throws SQLException {
         String sql = """
-            UPDATE schueler
-            SET nachname = ?, vorname = ?, geburtsdatum = ?, geschlecht = ?
-            WHERE schild_id = ?
-            """;
+                UPDATE schueler
+                SET nachname = ?, vorname = ?, geburtsdatum = ?, geschlecht = ?
+                WHERE schild_id = ?
+                """;
 
         try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, schueler.getNachname());
@@ -564,7 +565,7 @@ public class Datenbank {
             statement.setString(4, schueler.getGeschlecht() == null ? null : schueler.getGeschlecht().name());
             statement.setString(5, schueler.getSchildId());
 
-           int anzahl = statement.executeUpdate();
+            int anzahl = statement.executeUpdate();
 
             if (anzahl != 1) {
                 throw new SQLException("Schüler konnte nicht eindeutig aktualisiert werden.");
@@ -572,11 +573,11 @@ public class Datenbank {
         }
     }
 
-    public void fuegeSchuelerHinzu(Schueler schueler) throws SQLException {
+    private void fuegeSchuelerDatensatzHinzu(Connection connection, Schueler schueler) throws SQLException {
         String sql = """
-                INSERT INTO schueler (schild_id, nachname, vorname, geburtsdatum, geschlecht) VALUES (?, ?, ?, ?, ?)
-                """;
-        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+                INSERT INTO schueler (schild_id, nachname, vorname, geburtsdatum, geschlecht) VALUES (?, ?, ?, ?, ?)""";
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, schueler.getSchildId());
             statement.setString(2, schueler.getNachname());
             statement.setString(3, schueler.getVorname());
@@ -586,16 +587,64 @@ public class Datenbank {
             } else {
                 statement.setString(4, schueler.getGeburtsdatum().toString());
             }
+
             statement.setString(5, schueler.getGeschlecht() == null ? null : schueler.getGeschlecht().name());
 
-            int anzahl = statement.executeUpdate();
-            if (anzahl != 1) {
+            if (statement.executeUpdate() != 1) {
                 throw new SQLException("Schüler konnte nicht eindeutig eingefügt werden.");
             }
         }
     }
 
-    public void schuelerLoeschen(String schild_id) throws SQLException{
+    public void fuegeSchuelerHinzu(Schueler schueler, List<Pruefung> pruefungen) throws SQLException {
+        try (Connection connection = getConnection()) {
+            connection.setAutoCommit(false);
+
+            try {
+                fuegeSchuelerDatensatzHinzu(connection, schueler);
+
+                for (Pruefung pruefung : pruefungen) {
+                    fuegePruefungHinzu(connection, pruefung);
+                }
+
+                connection.commit();
+            } catch (SQLException e) {
+                connection.rollback();
+                throw e;
+            }
+        }
+    }
+
+    private void fuegePruefungHinzu(Connection connection, Pruefung pruefung) throws SQLException {
+        String sql = """
+                INSERT INTO pruefung (schueler_id, kurs_bezeichnung, abiturfach, pruefungsform, pruefungsfolge) VALUES (?, ?, ?, ?, ?)
+                """;
+
+        try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            statement.setString(1, pruefung.getSchueler().getSchildId());
+            statement.setString(2, pruefung.getKurs().getBezeichnung());
+            statement.setString(3, pruefung.getAbiturfach().name());
+            statement.setString(4, pruefung.getPruefungsform().name());
+            statement.setString(5, pruefung.getPruefungsFolge());
+
+            if (statement.executeUpdate() != 1) {
+                throw new SQLException("Prüfung konnte nicht eindeutig eingefügt werden.");
+            }
+
+            try (ResultSet keys = statement.getGeneratedKeys()) {
+                if (!keys.next()) {
+                    throw new SQLException("Keine ID für neue Prüfung erzeugt.");
+                }
+
+                long pruefungId = keys.getLong(1);
+                pruefung.setPruefungId(pruefungId);
+
+                speicherePruefungsplanung(connection, pruefungId, pruefung);
+            }
+        }
+    }
+
+    public void loescheSchueler(String schild_id) throws SQLException {
         String sql = "DELETE FROM schueler WHERE schild_id = ?";
         try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, schild_id);
@@ -605,7 +654,7 @@ public class Datenbank {
         }
     }
 
-    public void aktualisiereLehrer(Abitur abitur) throws SQLException {
+    public void synchronisiereLehrer(Abitur abitur) throws SQLException {
         String lehrerSql = """
                 INSERT INTO lehrer
                 (kuerzel, anrede, nachname, vorname, amtsbezeichnung) VALUES (?, ?, ?, ?, ?) ON CONFLICT(kuerzel) DO UPDATE SET
@@ -659,7 +708,7 @@ public class Datenbank {
         }
     }
 
-    public void aktualisiereRaeume(Abitur abitur) throws SQLException {
+    public void synchronisiereRaeume(Abitur abitur) throws SQLException {
         String raeumeSql = """
                 INSERT INTO raum (bezeichnung, kapazitaet) VALUES (?, ?) ON CONFLICT(bezeichnung) DO UPDATE SET
                     kapazitaet = excluded.kapazitaet
@@ -675,7 +724,7 @@ public class Datenbank {
         }
     }
 
-    private void aktualisiereKurse(Connection connection, Abitur abitur) throws SQLException {
+    private void synchronisiereKurse(Connection connection, Abitur abitur) throws SQLException {
         String sql = """
                 INSERT INTO kurs (bezeichnung, fach, fachlehrer_kuerzel) VALUES (?, ?, ?) ON CONFLICT(bezeichnung) DO UPDATE SET
                     fach = excluded.fach,
@@ -698,18 +747,11 @@ public class Datenbank {
         }
     }
 
-    private void aktualisierePruefungen(Connection connection, Abitur abitur) throws SQLException {
+    private void synchronisierePruefungen(Connection connection, Abitur abitur) throws SQLException {
         String updateSql = """
                 UPDATE pruefung SET schueler_id = ?, kurs_bezeichnung = ?, abiturfach = ?, pruefungsform = ?, pruefungsfolge = ? WHERE pruefung_id = ?
                 """;
-
-        String insertSql = """
-                INSERT INTO pruefung (schueler_id, kurs_bezeichnung, abiturfach, pruefungsform, pruefungsfolge)
-                VALUES (?, ?, ?, ?,?)
-                """;
-
-        try (PreparedStatement updateStatement = connection.prepareStatement(updateSql);
-             PreparedStatement insertStatement = connection.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement updateStatement = connection.prepareStatement(updateSql)) {
 
             for (Pruefung pruefung : abitur.getPruefungen()) {
                 if (pruefung.getPruefungId() != null) {
@@ -723,35 +765,18 @@ public class Datenbank {
                     updateStatement.executeUpdate();
 
                 } else {
-                    insertStatement.setString(1, pruefung.getSchueler().getSchildId());
-                    insertStatement.setString(2, pruefung.getKurs().getBezeichnung());
-                    insertStatement.setString(3, pruefung.getAbiturfach().name());
-                    insertStatement.setString(4, pruefung.getPruefungsform().name());
-                    insertStatement.setString(5, pruefung.getPruefungsFolge());
-
-                    insertStatement.executeUpdate();
-
-                    try (ResultSet keys = insertStatement.getGeneratedKeys()) {
-                        if (!keys.next()) {
-                            throw new SQLException("Keine ID für neue Prüfung erzeugt.");
-                        }
-
-                        long pruefungId = keys.getLong(1);
-                        pruefung.setPruefungId(pruefungId);
-
-                        speicherePruefungsplanung(connection, pruefungId, pruefung, abitur);
-                    }
+                    fuegePruefungHinzu(connection, pruefung);
                 }
             }
         }
     }
 
-    public void aktualisiereLeistungsdaten(Abitur abitur) throws SQLException {
+    public void synchronisiereLeistungsdaten(Abitur abitur) throws SQLException {
         try (Connection connection = getConnection()) {
             connection.setAutoCommit(false);
             try {
-                aktualisiereKurse(connection, abitur);
-                aktualisierePruefungen(connection, abitur);
+                synchronisiereKurse(connection, abitur);
+                synchronisierePruefungen(connection, abitur);
                 connection.commit();
             } catch (SQLException exception) {
                 connection.rollback();
@@ -760,7 +785,7 @@ public class Datenbank {
         }
     }
 
-    public void speicherePruefungstag(Pruefungstag pruefungstag) throws SQLException {
+    public void fuegePruefungstagHinzu(Pruefungstag pruefungstag) throws SQLException {
         String sql = """
                 INSERT INTO pruefungstag (datum) VALUES (?) ON CONFLICT(datum) DO NOTHING
                 """;
@@ -781,19 +806,6 @@ public class Datenbank {
         }
     }
 
-    public void aktualisierePruefungsfolge(Pruefung pruefung) {
-        String sql = """
-                UPDATE pruefung SET pruefungsfolge = ? WHERE pruefung_id = ?
-                """;
-        try (Connection connection = getConnection(); PreparedStatement statement =  connection.prepareStatement(sql)){
-            statement.setString(1, pruefung.getPruefungsFolge());
-            statement.setLong(2, pruefung.getPruefungId());
-            statement.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     public void aktualisierePruefungstagDatum(LocalDate altesDatum, LocalDate neuesDatum) throws SQLException {
         String sql = "UPDATE pruefungstag SET datum = ? WHERE datum = ?";
         try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -802,4 +814,19 @@ public class Datenbank {
             statement.executeUpdate();
         }
     }
+
+    public void aktualisierePruefungsfolge(Pruefung pruefung) {
+        String sql = """
+                UPDATE pruefung SET pruefungsfolge = ? WHERE pruefung_id = ?
+                """;
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, pruefung.getPruefungsFolge());
+            statement.setLong(2, pruefung.getPruefungId());
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
 }

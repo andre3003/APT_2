@@ -63,7 +63,7 @@ public class MainFrame extends JFrame implements HauptmenueAktionen {
         muendlichePruefungenPanel = new MuendlichePruefungenPanel(abitur, datenbank);
 
         stammdatenPanel = new StammdatenPanel(abitur, datenbank);
-        stammdatenPanel.setNachAenderungPruefungsbestand(muendlichePruefungenPanel::planungsvorratAktualisieren);
+        stammdatenPanel.setNachStammdatenAenderung(this::ansichtenAktualisieren);
         modulPanel.add(muendlichePruefungenPanel, "MUENDLICH");
         modulPanel.add(stammdatenPanel, "STAMMDATEN");
         modulLayout.show(modulPanel, "MUENDLICH");
@@ -102,7 +102,7 @@ public class MainFrame extends JFrame implements HauptmenueAktionen {
         try {
             ImportService importService = new ImportService(abitur);
             importService.importiereLeistungsdaten(importPfad);
-            datenbank.aktualisiereLeistungsdaten(abitur);
+            datenbank.synchronisiereLeistungsdaten(abitur);
             initialisierePlanung(abitur, datenbank);
             JOptionPane.showMessageDialog(this, "Die Leistungsdaten wurden erfolgreich importiert.", "Import abgeschlossen", JOptionPane.INFORMATION_MESSAGE);
 
@@ -129,7 +129,7 @@ public class MainFrame extends JFrame implements HauptmenueAktionen {
             ImportService importService = new ImportService(abitur);
             importService.importiereRaeume(importPfad);
 
-            datenbank.aktualisiereRaeume(abitur);
+            datenbank.synchronisiereRaeume(abitur);
 
             initialisierePlanung(abitur, datenbank);
 
@@ -157,7 +157,7 @@ public class MainFrame extends JFrame implements HauptmenueAktionen {
             ImportService importService = new ImportService(abitur);
             importService.importiereLehrer(importPfad);
 
-            datenbank.aktualisiereLehrer(abitur);
+            datenbank.synchronisiereLehrer(abitur);
 
             initialisierePlanung(abitur, datenbank);
 
@@ -185,7 +185,7 @@ public class MainFrame extends JFrame implements HauptmenueAktionen {
             ImportService importService = new ImportService(abitur);
             importService.importiereSchueler(importPfad);
 
-            datenbank.aktualisiereSchueler(abitur);
+            datenbank.synchronisiereSchueler(abitur);
 
             initialisierePlanung(abitur, datenbank);
 
@@ -264,8 +264,6 @@ public class MainFrame extends JFrame implements HauptmenueAktionen {
         muendlichePruefungenPanel.datumPreufungstagAendern();
 
     }
-
-
 
     @Override
     public void planungOeffnenAction() {
@@ -421,5 +419,10 @@ public class MainFrame extends JFrame implements HauptmenueAktionen {
     @Override
     public void zeigeStammdaten() {
         modulLayout.show(modulPanel, "STAMMDATEN");
+    }
+
+    private void ansichtenAktualisieren() {
+        stammdatenPanel.ansichtAktualisieren();
+        muendlichePruefungenPanel.ansichtAktualisieren();
     }
 }

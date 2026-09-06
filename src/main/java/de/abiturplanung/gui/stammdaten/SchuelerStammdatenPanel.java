@@ -4,7 +4,7 @@ import de.abiturplanung.Utilities;
 import de.abiturplanung.gui.dialogs.SchuelerStammdatenDialog;
 import de.abiturplanung.model.Abitur;
 import de.abiturplanung.model.Geschlecht;
-import de.abiturplanung.model.Schueler;
+import de.abiturplanung.model.Kurs;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -12,6 +12,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.time.LocalDate;
 import java.util.function.Consumer;
+import java.util.*;
 
 public class SchuelerStammdatenPanel extends JPanel {
     Abitur abitur;
@@ -25,9 +26,9 @@ public class SchuelerStammdatenPanel extends JPanel {
         setLayout(new BorderLayout());
         JPanel steuerleiste = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JButton neuButton = new JButton("Neuen Schüler anlegen");
-        neuButton.addActionListener(this::neuAction);
+        neuButton.addActionListener(this::anlegenButtonAction);
         JButton loeschenButton = new JButton("Schüler Löschen");
-        loeschenButton.addActionListener(this::loeschenAction);
+        loeschenButton.addActionListener(this::loeschenButtonAction);
         steuerleiste.add(neuButton);
         steuerleiste.add(loeschenButton);
         add(steuerleiste, BorderLayout.NORTH);
@@ -40,7 +41,7 @@ public class SchuelerStammdatenPanel extends JPanel {
         schuelerTabelle.getColumnModel().getColumn(4).setCellEditor(new DefaultCellEditor(geschlechtComboBox));
     }
 
-    private void loeschenAction(ActionEvent actionEvent) {
+    private void loeschenButtonAction(ActionEvent actionEvent) {
         int zeile = schuelerTabelle.getSelectedRow();
         if (zeile == -1) {
             JOptionPane.showMessageDialog(this, "Bitte wählen Sie zunächst einen Schüler aus.", "Kein Schüler ausgewählt", JOptionPane.INFORMATION_MESSAGE);
@@ -51,6 +52,14 @@ public class SchuelerStammdatenPanel extends JPanel {
         int bestaetigung = JOptionPane.showConfirmDialog(this, "Den Schüler wirklich löschen?\n Alle zugehörigem Prüfungen werden ebenfalls gelöscht", "Schüler löschen", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
         if (bestaetigung == JOptionPane.YES_OPTION) {
             schuelerLoeschen.accept(schild_ID);
+        }
+    }
+
+    private void anlegenButtonAction(ActionEvent e) {
+        SchuelerStammdatenDialog dialog = new SchuelerStammdatenDialog(SwingUtilities.getWindowAncestor(this), abitur.getKurse());
+        SchuelerStammdatenDialog.SchuelerEingabe eingabe = dialog.anzeigen();
+        if (eingabe != null && schuelerAnlegen != null) {
+            schuelerAnlegen.accept(eingabe);
         }
     }
 
@@ -74,15 +83,9 @@ public class SchuelerStammdatenPanel extends JPanel {
         }
     }
 
-    private void neuAction(ActionEvent e) {
-        SchuelerStammdatenDialog dialog = new SchuelerStammdatenDialog(SwingUtilities.getWindowAncestor(this));
-        SchuelerStammdatenDialog.SchuelerEingabe eingabe = dialog.anzeigen();
-        if (eingabe != null && schuelerAnlegen != null) {
-            schuelerAnlegen.accept(eingabe);
-        }
-    }
 
-    public void aktualisieren() {
+
+    public void ansichtAktualisieren() {
         tableModel.aktualisieren();
     }
 

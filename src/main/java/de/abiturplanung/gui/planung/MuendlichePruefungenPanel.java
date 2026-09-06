@@ -8,12 +8,12 @@ import java.awt.*;
 
 public class MuendlichePruefungenPanel extends JPanel {
     private final PruefungstagePanel pruefungstagePanel;
-    PlanungsvorratPanel planungsvorratPanel;
+    private final PlanungsvorratPanel planungsvorratPanel;
 
     public MuendlichePruefungenPanel(Abitur abitur, Datenbank datenbank) {
         this.setLayout(new BorderLayout());
         planungsvorratPanel = new PlanungsvorratPanel(abitur);
-        pruefungstagePanel = new PruefungstagePanel(abitur, datenbank, planungsvorratPanel::aktualisieren);
+        pruefungstagePanel = new PruefungstagePanel(abitur, datenbank, planungsvorratPanel::ansichtAktualisieren);
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, planungsvorratPanel, pruefungstagePanel);
         splitPane.setOneTouchExpandable(true);
         splitPane.setResizeWeight(0.32);
@@ -21,8 +21,13 @@ public class MuendlichePruefungenPanel extends JPanel {
         this.add(splitPane);
     }
 
+    public void ansichtAktualisieren() {
+        planungsvorratPanel.ansichtAktualisieren();
+        pruefungstagePanel.ansichtAktualisieren();
+    }
+
     public void planungsvorratAktualisieren() {
-        planungsvorratPanel.aktualisieren();
+        planungsvorratPanel.ansichtAktualisieren();
     }
 
     public void pruefungstagHinzufuegen() {

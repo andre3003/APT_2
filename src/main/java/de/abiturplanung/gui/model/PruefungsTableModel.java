@@ -5,6 +5,7 @@ import de.abiturplanung.model.Pruefung;
 
 import javax.swing.table.AbstractTableModel;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 public class PruefungsTableModel extends AbstractTableModel {
@@ -32,6 +33,9 @@ public class PruefungsTableModel extends AbstractTableModel {
                 pruefungen.add(pruefung);
             }
         }
+        pruefungen.sort(Comparator
+                .comparing((Pruefung p) -> p.getSchueler().getNachname(), String.CASE_INSENSITIVE_ORDER)
+                .thenComparing(p -> p.getSchueler().getVorname(), String.CASE_INSENSITIVE_ORDER));
     }
 
     public void aktualisieren(List<Pruefung> allePruefungen) {

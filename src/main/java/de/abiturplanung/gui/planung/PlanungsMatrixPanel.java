@@ -14,7 +14,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 
 public class PlanungsMatrixPanel extends JPanel {
 
@@ -48,14 +47,12 @@ public class PlanungsMatrixPanel extends JPanel {
         return pruefungstag.getDatum();
     }
 
-    public void aktualisieren() {
+    public void ansichtAktualisieren() {
         matrixPanel.removeAll();
         matrixPanel.setLayout(new GridBagLayout());
-
         erzeugeKopfzeile();
         erzeugeLeereMatrix();
         zeigeGeplantePruefungen();
-
         matrixPanel.revalidate();
         matrixPanel.repaint();
     }
