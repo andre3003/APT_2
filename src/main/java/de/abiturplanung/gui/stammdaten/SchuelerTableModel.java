@@ -59,7 +59,6 @@ public class SchuelerTableModel extends AbstractTableModel {
     @Override
     public void setValueAt(Object value, int rowIndex, int columnIndex) {
         Schueler aktuellerSchueler = schueler.get(rowIndex);
-
         if (nachAenderung != null) {
             nachAenderung.accept(new SchuelerAenderung(aktuellerSchueler, columnIndex, value));
         }
@@ -67,5 +66,9 @@ public class SchuelerTableModel extends AbstractTableModel {
 
     public void aktualisieren() {
         fireTableDataChanged();
+    }
+
+    public Schueler getSchueler(int modelRow) {
+        return schueler.get(modelRow);
     }
 }

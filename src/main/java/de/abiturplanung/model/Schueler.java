@@ -3,10 +3,7 @@ package de.abiturplanung.model;
 import de.abiturplanung.importer.SchuelerDatensatz;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 public class Schueler {
     private String schildId;
@@ -38,6 +35,7 @@ public class Schueler {
 
     public void addPruefung(Pruefung pruefung) {
         pruefungen.add(pruefung);
+        pruefungen.sort(Comparator.comparing(Pruefung::getAbiturfach));
     }
 
     public List<Pruefung> getPruefungen() {

@@ -33,9 +33,7 @@ public class PruefungsTableModel extends AbstractTableModel {
                 pruefungen.add(pruefung);
             }
         }
-        pruefungen.sort(Comparator
-                .comparing((Pruefung p) -> p.getSchueler().getNachname(), String.CASE_INSENSITIVE_ORDER)
-                .thenComparing(p -> p.getSchueler().getVorname(), String.CASE_INSENSITIVE_ORDER));
+        pruefungen.sort(Comparator.comparing((Pruefung p) -> p.getSchueler().getNachname(), String.CASE_INSENSITIVE_ORDER).thenComparing(p -> p.getSchueler().getVorname(), String.CASE_INSENSITIVE_ORDER));
     }
 
     public void aktualisieren(List<Pruefung> allePruefungen) {

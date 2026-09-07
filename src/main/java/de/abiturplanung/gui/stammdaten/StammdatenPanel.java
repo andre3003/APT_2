@@ -25,6 +25,7 @@ public class StammdatenPanel extends JPanel {
         schuelerStammdatenPanel.setNachAenderung(this::schuelerAktualisieren);
         schuelerStammdatenPanel.setSchuelerAnlegen(this::neuenSchuelerAnlegen);
         schuelerStammdatenPanel.setSchuelerLoeschenAction(this::schuelerLoeschen);
+        schuelerStammdatenPanel.setAbiturfaecherAendern(this::abiturfaecherAendern);
         tabbedPane.addTab("Schüler", schuelerStammdatenPanel);
         add(tabbedPane, BorderLayout.CENTER);
     }
@@ -98,6 +99,10 @@ public class StammdatenPanel extends JPanel {
             JOptionPane.showMessageDialog(this, "Der Schüler konnte nicht gelöscht werden.\nStarten Sie die Anwendung neu.", "Datenbankfehler",
                     JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    private void abiturfaecherAendern(AbiturfaecherPanel.AbiturfaecherEingabe eingabe) {
+        System.out.println("TEST");
     }
 
     public void ansichtAktualisieren() {
