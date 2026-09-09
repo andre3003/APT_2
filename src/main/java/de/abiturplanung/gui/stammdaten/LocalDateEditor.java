@@ -1,7 +1,5 @@
 package de.abiturplanung.gui.stammdaten;
-
 import de.abiturplanung.Utilities;
-
 import javax.swing.*;
 import java.awt.*;
 import java.time.LocalDate;

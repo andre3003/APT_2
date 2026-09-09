@@ -2,6 +2,7 @@ package de.abiturplanung.persistence;
 
 import de.abiturplanung.model.*;
 
+import javax.swing.*;
 import java.nio.file.Path;
 import java.sql.*;
 import java.time.LocalDate;
@@ -825,6 +826,41 @@ public class Datenbank {
             statement.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    public void aktualisierePruefungskurse(Map<Pruefung, Kurs> aenderungen) throws SQLException {
+        String sql = """
+                UPDATE pruefung
+                SET kurs_bezeichnung = ?
+                WHERE pruefung_id = ?
+                """;
+
+        try (Connection connection = getConnection()) {
+            connection.setAutoCommit(false);
+
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                for (Map.Entry<Pruefung, Kurs> eintrag : aenderungen.entrySet()) {
+                    statement.setString(1, eintrag.getValue().getBezeichnung());
+                    statement.setLong(2, eintrag.getKey().getPruefungId());
+                    statement.addBatch();
+                }
+                statement.executeBatch();
+                connection.commit();
+
+                int[] ergebnisse = statement.executeBatch();
+
+                for (int ergebnis : ergebnisse) {
+                    if (ergebnis == 0) {
+                        throw new SQLException("Eine Prüfung konnte nicht aktualisiert werden.");
+                    }
+                }
+                connection.commit();
+
+            } catch (SQLException e) {
+                connection.rollback();
+                throw e;
+            }
         }
     }
 

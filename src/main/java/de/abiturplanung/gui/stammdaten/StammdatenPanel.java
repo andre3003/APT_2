@@ -8,7 +8,10 @@ import javax.swing.*;
 import java.awt.*;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class StammdatenPanel extends JPanel {
     private final JTabbedPane tabbedPane = new JTabbedPane();
@@ -60,8 +63,7 @@ public class StammdatenPanel extends JPanel {
 
     private void neuenSchuelerAnlegen(SchuelerStammdatenDialog.SchuelerEingabe eingabe) {
         if (abitur.findeSchueler(eingabe.schildId()) != null) {
-            JOptionPane.showMessageDialog(this, "Ein Schüler mit dieser Schild-ID ist bereits vorhanden.", "Schild-ID bereits vergeben",
-                    JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Ein Schüler mit dieser Schild-ID ist bereits vorhanden.", "Schild-ID bereits vergeben", JOptionPane.WARNING_MESSAGE);
             return;
         }
         Schueler neu = new Schueler(eingabe.schildId());
@@ -102,7 +104,42 @@ public class StammdatenPanel extends JPanel {
     }
 
     private void abiturfaecherAendern(AbiturfaecherPanel.AbiturfaecherEingabe eingabe) {
-        System.out.println("TEST");
+        Schueler schueler = eingabe.schueler();
+        Map<Pruefung, Kurs> aenderungen = new HashMap<>();
+        pruefeAenderung(aenderungen, schueler, Abiturfach.AB1, eingabe.ab1());
+        pruefeAenderung(aenderungen, schueler, Abiturfach.AB2, eingabe.ab2());
+        pruefeAenderung(aenderungen, schueler, Abiturfach.AB3, eingabe.ab3());
+        pruefeAenderung(aenderungen, schueler, Abiturfach.AB4, eingabe.ab4());
+
+        if (aenderungen.isEmpty()) {
+            return;
+        }
+        try {
+            //DB aktualisieren:
+            datenbank.aktualisierePruefungskurse(aenderungen);
+            //Domäne aktualisieren:
+            for (Map.Entry<Pruefung, Kurs> aenderung : aenderungen.entrySet()) {
+                Pruefung pruefung = aenderung.getKey();
+                Kurs neuerKurs = aenderung.getValue();
+                pruefung.setKurs(neuerKurs);
+            }
+            //GUI aktualisieren:
+            nachStammdatenAenderung.run();
+
+            JOptionPane.showMessageDialog(this, "Es wurden " + aenderungen.size() + " Prüfungskurse geändert.");
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Änderungen konnten nicht gespeichert übernommen.", "Änderungen der Prüfungskurse gescheitert.", JOptionPane.WARNING_MESSAGE);
+        }
+    }
+
+    private void pruefeAenderung(Map<Pruefung, Kurs> aenderungen, Schueler schueler, Abiturfach abiturfach, Kurs neuerKurs) {
+        Pruefung pruefung = schueler.getPruefung(abiturfach);
+        if (pruefung == null) {
+            throw new IllegalStateException("Keine Prüfung für " + abiturfach + " vorhanden.");
+        }
+        if (!pruefung.getKurs().equals(neuerKurs)) {
+            aenderungen.put(pruefung, neuerKurs);
+        }
     }
 
     public void ansichtAktualisieren() {

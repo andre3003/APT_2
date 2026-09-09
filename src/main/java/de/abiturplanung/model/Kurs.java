@@ -2,6 +2,8 @@ package de.abiturplanung.model;
 
 import de.abiturplanung.model.Lehrer;
 
+import java.util.Objects;
+
 public class Kurs {
 
     private final String bezeichnung;
@@ -46,6 +48,18 @@ public class Kurs {
             case 'G' -> Kursart.GRUNDKURS;
             default -> throw new IllegalStateException("Unbekannte Kursart in Kursbezeichnung: " + bezeichnung);
         };
+    }
+
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Kurs kurs)) return false; //Pattern Matching: Die moderne Java-Schreibweise kombiniert Typprüfung und Cast: Prüfe, ob o ein Kurs ist. Wenn ja, stelle mir dieses Objekt zugleich als Variable kurs vom Typ Kurs zur Verfügung.
+        return Objects.equals(bezeichnung, kurs.bezeichnung);
+    }
+
+    //Zwei Objekte, für die equals() true ergibt, müssen denselben Hashcode besitzen. Deshalb:
+    @Override
+    public int hashCode() {
+        return Objects.hash(bezeichnung);
     }
 
 }
