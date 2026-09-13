@@ -1,18 +1,15 @@
 package de.abiturplanung.model;
-
-import de.abiturplanung.model.Lehrer;
-
 import java.util.Objects;
 
 public class Kurs {
 
     private final String bezeichnung;
-    private String fach;
+    private String fachbezeichnung;
     private Lehrer fachlehrer;
 
     public Kurs(String bezeichnung, String fach, Lehrer fachlehrer) {
         this.bezeichnung = bezeichnung;
-        this.fach = fach;
+        this.fachbezeichnung = fach;
         this.fachlehrer = fachlehrer;
     }
 
@@ -21,7 +18,11 @@ public class Kurs {
     }
 
     public String getFach() {
-        return fach;
+        return fachbezeichnung;
+    }
+
+    public Fach getFachObjekt() {
+        return Fach.ausFachbezeichnung(fachbezeichnung);
     }
 
     public Lehrer getFachlehrer() {
@@ -33,7 +34,7 @@ public class Kurs {
     }
 
     public void setFach(String fach) {
-        this.fach = fach;
+        this.fachbezeichnung = fach;
     }
 
     public Kursart getKursart() {

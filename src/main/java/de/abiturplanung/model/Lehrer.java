@@ -1,39 +1,24 @@
 package de.abiturplanung.model;
 
-import de.abiturplanung.importer.LehrerDatensatz;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 public class Lehrer {
-    private String kuerzel;
+    private final String kuerzel;
     private String anrede;
     private String nachname;
     private String vorname;
     private String amtsbez;
-    private List<String> fakultas = new ArrayList<>();
+    private List<Fach> fakultas = new ArrayList<>();
 
     public Lehrer(String kuerzel) {
         this.kuerzel = kuerzel;
     }
 
-    public void aktualisiereStammdaten(LehrerDatensatz datensatz) {//Nur für den Initialimport
-        aktualisiereStammdaten(datensatz.getAnrede(), datensatz.getNachname(), datensatz.getVorname(), datensatz.getAmtsbez());
-
-        fakultas.clear();
-
-        if (!datensatz.getFak1().isEmpty()) {
-            fakultas.add(datensatz.getFak1());
-        }
-        if (!datensatz.getFak2().isEmpty()) {
-            fakultas.add(datensatz.getFak2());
-        }
-        if (!datensatz.getFak3().isEmpty()) {
-            fakultas.add(datensatz.getFak3());
-        }
-        if (!datensatz.getFak4().isEmpty()) {
-            fakultas.add(datensatz.getFak4());
-        }
+    public void aktualisiereFakultas(List<Fach> fakultas) {
+        this.fakultas.clear();
+        this.fakultas.addAll(fakultas);
     }
 
     public void aktualisiereStammdaten(String anrede, String nachname, String vorname, String amtsbez) {
@@ -42,7 +27,6 @@ public class Lehrer {
         this.vorname = vorname;
         this.amtsbez = amtsbez;
     }
-
 
     public String getKuerzel() {
         return kuerzel;
@@ -64,7 +48,7 @@ public class Lehrer {
         return amtsbez;
     }
 
-    public List<String> getFakultas() {
+    public List<Fach> getFakultas() {
         return fakultas;
     }
 

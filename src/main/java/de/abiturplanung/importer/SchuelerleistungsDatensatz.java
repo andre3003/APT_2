@@ -29,12 +29,9 @@ public class SchuelerleistungsDatensatz {
         this.nachname = nachname;
         this.vorname = vorname;
         this.geburtsdatum = geburtsdatum;
-
         this.fach = fach;
         this.kursbezeichnung = kursbezeichnung;
-
         this.lehrerkuerzel = lehrerkuerzel;
-
         this.abiturfach = abiturfach;
     }
 

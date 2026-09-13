@@ -159,8 +159,7 @@ public class Abitur {
     public Kurs findeKurs(String bezeichnung) {
         String gesucht = normalisiere(bezeichnung);
         for (Kurs kurs : kurse) {
-            if (normalisiere(kurs.getBezeichnung())
-                    .equalsIgnoreCase(gesucht)) {
+            if (normalisiere(kurs.getBezeichnung()).equalsIgnoreCase(gesucht)) {
                 return kurs;
             }
         }

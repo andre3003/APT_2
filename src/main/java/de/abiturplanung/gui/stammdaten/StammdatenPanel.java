@@ -122,6 +122,13 @@ public class StammdatenPanel extends JPanel {
                 Pruefung pruefung = aenderung.getKey();
                 Kurs neuerKurs = aenderung.getValue();
                 pruefung.setKurs(neuerKurs);
+                pruefung.setPruefer(neuerKurs.getFachlehrer());
+                pruefung.setPruefungstag(null);
+                pruefung.setBeginn(null);
+                pruefung.setPlanungsspalte(null);
+                pruefung.setRaum(null);
+                pruefung.setVorsitz(null);
+                pruefung.setSchriftfuehrer(null);
             }
             //GUI aktualisieren:
             nachStammdatenAenderung.run();
@@ -131,6 +138,7 @@ public class StammdatenPanel extends JPanel {
             JOptionPane.showMessageDialog(this, "Änderungen konnten nicht gespeichert übernommen.", "Änderungen der Prüfungskurse gescheitert.", JOptionPane.WARNING_MESSAGE);
         }
     }
+
 
     private void pruefeAenderung(Map<Pruefung, Kurs> aenderungen, Schueler schueler, Abiturfach abiturfach, Kurs neuerKurs) {
         Pruefung pruefung = schueler.getPruefung(abiturfach);

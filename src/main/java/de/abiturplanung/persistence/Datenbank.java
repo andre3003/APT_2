@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.sql.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -302,11 +303,12 @@ public class Datenbank {
 
     private void ladeFakultas(Connection connection, Map<String, Lehrer> lehrerMap) throws SQLException {
         String sql = "SELECT lehrer_kuerzel, fach FROM lehrer_fakultaet";
+        Map<Lehrer, List<Fach>> fakultas = new HashMap<>();
 
         try (Statement statement = connection.createStatement(); ResultSet resultSet = statement.executeQuery(sql)) {
             while (resultSet.next()) {
                 String kuerzel = resultSet.getString("lehrer_kuerzel");
-                String fach = resultSet.getString("fach");
+                String fachKuerzel = resultSet.getString("fach");
 
                 Lehrer lehrer = lehrerMap.get(kuerzel);
 
@@ -314,8 +316,12 @@ public class Datenbank {
                     throw new SQLException("Lehrer für Fakultas nicht gefunden: " + kuerzel);
                 }
 
-                lehrer.getFakultas().add(fach);
+                fakultas.computeIfAbsent(lehrer, k -> new ArrayList<>()).add(Fach.ausFachbezeichnung(fachKuerzel));
             }
+        }
+
+        for (Map.Entry<Lehrer, List<Fach>> eintrag : fakultas.entrySet()) {
+            eintrag.getKey().aktualisiereFakultas(eintrag.getValue());
         }
     }
 
@@ -689,10 +695,10 @@ public class Datenbank {
                     fakultasLoeschenStatement.setString(1, lehrer.getKuerzel());
                     fakultasLoeschenStatement.executeUpdate();
 
-                    for (String fakultas : lehrer.getFakultas()) {
-                        if (fakultas != null && !fakultas.isBlank()) {
+                    for (Fach fakultas : lehrer.getFakultas()) {
+                        if (fakultas != null) {
                             fakultasEinfuegenStatement.setString(1, lehrer.getKuerzel());
-                            fakultasEinfuegenStatement.setString(2, fakultas);
+                            fakultasEinfuegenStatement.setString(2, fakultas.getKuerzel());
                             fakultasEinfuegenStatement.addBatch();
                         }
                     }
@@ -845,21 +851,47 @@ public class Datenbank {
                     statement.setLong(2, eintrag.getKey().getPruefungId());
                     statement.addBatch();
                 }
-                statement.executeBatch();
-                connection.commit();
 
-                int[] ergebnisse = statement.executeBatch();
+              int[] ergebnisse = statement.executeBatch();
 
                 for (int ergebnis : ergebnisse) {
                     if (ergebnis == 0) {
                         throw new SQLException("Eine Prüfung konnte nicht aktualisiert werden.");
                     }
                 }
+
+                for (Map.Entry<Pruefung, Kurs> eintrag : aenderungen.entrySet()) {
+                    setzePruefungsplanungZurueck(connection, eintrag.getKey(), eintrag.getValue());
+                }
+
                 connection.commit();
 
             } catch (SQLException e) {
                 connection.rollback();
                 throw e;
+            }
+        }
+    }
+
+    private void setzePruefungsplanungZurueck(Connection connection, Pruefung pruefung, Kurs neuerKurs) throws SQLException {
+        String sql = """
+            UPDATE pruefungsplanung
+            SET pruefungstag_id = NULL,
+                beginn = NULL,
+                planungsspalte = NULL,
+                raum_bezeichnung = NULL,
+                pruefer_kuerzel = ?,
+                schriftfuehrer_kuerzel = NULL,
+                vorsitz_kuerzel = NULL
+            WHERE pruefung_id = ?
+            """;
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            setLehrer(statement, 1, neuerKurs.getFachlehrer());
+            statement.setLong(2, pruefung.getPruefungId());
+
+            if (statement.executeUpdate() != 1) {
+                throw new SQLException("Die Prüfungsplanung konnte nicht zurückgesetzt werden.");
             }
         }
     }

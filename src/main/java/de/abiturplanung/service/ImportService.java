@@ -23,7 +23,28 @@ public class ImportService {
                 lehrer = new Lehrer(datensatz.getKuerzel());
                 abitur.addLehrer(lehrer);
             }
-            lehrer.aktualisiereStammdaten(datensatz);
+            lehrer.aktualisiereStammdaten(datensatz.getAnrede(), datensatz.getNachname(), datensatz.getVorname(), datensatz.getAmtsbez());
+            lehrer.aktualisiereFakultas(erstelleFakultas(datensatz));
+        }
+    }
+
+    private List<Fach> erstelleFakultas(LehrerDatensatz datensatz) {
+        List<Fach> fakultas = new java.util.ArrayList<>();
+        fuegeFakultasHinzu(fakultas, datensatz.getFak1());
+        fuegeFakultasHinzu(fakultas, datensatz.getFak2());
+        fuegeFakultasHinzu(fakultas, datensatz.getFak3());
+        fuegeFakultasHinzu(fakultas, datensatz.getFak4());
+        return fakultas;
+    }
+
+    private void fuegeFakultasHinzu(List<Fach> fakultas, String kuerzel) {
+        if (kuerzel == null || kuerzel.isBlank()) {
+            return;
+        }
+
+        Fach fach = new Fach(kuerzel);
+        if (!fakultas.contains(fach)) {
+            fakultas.add(fach);
         }
     }
 
