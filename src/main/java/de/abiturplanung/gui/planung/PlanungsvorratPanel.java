@@ -86,7 +86,7 @@ public class PlanungsvorratPanel extends JPanel {
         TreeSet<String> kurse = new TreeSet<>();
         for (int i = 0; i < tableModel.getRowCount(); i++) {
             Pruefung pruefung = tableModel.getPruefung(i);
-            faecher.add(pruefung.getKurs().getFach());
+            faecher.add(pruefung.getKurs().getFach().getKuerzel());
             kurse.add(pruefung.getKurs().getBezeichnung());
         }
 

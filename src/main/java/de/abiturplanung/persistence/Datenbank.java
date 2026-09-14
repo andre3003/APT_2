@@ -69,6 +69,16 @@ public class Datenbank {
                     """);
 
             statement.execute("""
+                    CREATE TABLE IF NOT EXISTS fach (
+                        kuerzel TEXT PRIMARY KEY,
+                        bezeichnung TEXT,
+                        stammfach_kuerzel TEXT,
+                        faechergruppe TEXT,
+                        FOREIGN KEY (stammfach_kuerzel) REFERENCES fach(kuerzel)
+                    )
+                    """);
+
+            statement.execute("""
                     CREATE TABLE IF NOT EXISTS lehrer_fakultaet (
                         lehrer_kuerzel TEXT NOT NULL,
                         fach TEXT NOT NULL,
@@ -244,9 +254,10 @@ public class Datenbank {
         Map<Long, Pruefung> pruefungMap = new HashMap<>();
 
         try (Connection connection = getConnection()) {
+            ladeFaecher(connection, abitur);
             ladeSchueler(connection, abitur, schuelerMap);
             ladeLehrer(connection, abitur, lehrerMap);
-            ladeFakultas(connection, lehrerMap);
+            ladeFakultas(connection, abitur, lehrerMap);
             ladeRaeume(connection, abitur, raumMap);
             ladeKurse(connection, abitur, lehrerMap, kursMap);
             ladePruefungstage(connection, abitur, pruefungstagMap);
@@ -301,7 +312,47 @@ public class Datenbank {
         }
     }
 
-    private void ladeFakultas(Connection connection, Map<String, Lehrer> lehrerMap) throws SQLException {
+    private void ladeFaecher(Connection connection, Abitur abitur) throws SQLException {
+        String sql = "SELECT kuerzel, bezeichnung, stammfach_kuerzel, faechergruppe FROM fach";
+
+        Map<String, String> stammfachKuerzel = new HashMap<>();
+
+        try (Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery(sql)) {
+
+            while (resultSet.next()) {
+                String kuerzel = resultSet.getString("kuerzel");
+                String bezeichnung = resultSet.getString("bezeichnung");
+                String stammfach = resultSet.getString("stammfach_kuerzel");
+                String faechergruppe = resultSet.getString("faechergruppe");
+
+                Fach fach = new Fach(kuerzel);
+                fach.aktualisiereStammdaten(bezeichnung, faechergruppe);
+                abitur.addFach(fach);
+
+                if (stammfach != null) {
+                    stammfachKuerzel.put(kuerzel, stammfach);
+                }
+            }
+        }
+
+        for (Map.Entry<String, String> eintrag : stammfachKuerzel.entrySet()) {
+            Fach fach = abitur.findeFach(eintrag.getKey());
+            Fach stammfach = abitur.findeFach(eintrag.getValue());
+
+            if (fach == null || stammfach == null) {
+                throw new SQLException(
+                        "Stammfachzuordnung konnte nicht geladen werden: "
+                                + eintrag.getKey() + " -> " + eintrag.getValue());
+            }
+
+            fach.setStammfach(stammfach);
+        }
+
+        abitur.sortiereFaecher();
+    }
+
+    private void ladeFakultas(Connection connection, Abitur abitur, Map<String, Lehrer> lehrerMap) throws SQLException {
         String sql = "SELECT lehrer_kuerzel, fach FROM lehrer_fakultaet";
         Map<Lehrer, List<Fach>> fakultas = new HashMap<>();
 
@@ -309,14 +360,16 @@ public class Datenbank {
             while (resultSet.next()) {
                 String kuerzel = resultSet.getString("lehrer_kuerzel");
                 String fachKuerzel = resultSet.getString("fach");
-
                 Lehrer lehrer = lehrerMap.get(kuerzel);
-
                 if (lehrer == null) {
                     throw new SQLException("Lehrer für Fakultas nicht gefunden: " + kuerzel);
                 }
-
-                fakultas.computeIfAbsent(lehrer, k -> new ArrayList<>()).add(Fach.ausFachbezeichnung(fachKuerzel));
+                Fach fach = abitur.findeFach(fachKuerzel);
+                if (fach == null) {
+                    System.err.println("Fakultas ignoriert: Fach nicht gefunden: " + fachKuerzel + " bei Lehrer " + kuerzel);
+                    continue;
+                }
+                fakultas.computeIfAbsent(lehrer, k -> new ArrayList<>()).add(fach);
             }
         }
 
@@ -355,9 +408,11 @@ public class Datenbank {
                 if (fachlehrerKuerzel != null && fachlehrer == null) {
                     throw new SQLException("Fachlehrer für Kurs " + bezeichnung + " nicht gefunden: " + fachlehrerKuerzel);
                 }
-
-                Kurs kurs = new Kurs(bezeichnung, fach, fachlehrer);
-
+                Fach kursFach = abitur.findeFach(fach);
+                if (kursFach == null) {
+                    throw new SQLException("Fach für Kurs nicht gefunden: " + fach);
+                }
+                Kurs kurs = new Kurs(bezeichnung, kursFach, fachlehrer);
                 abitur.addKurs(kurs);
                 kursMap.put(bezeichnung, kurs);
             }
@@ -580,6 +635,60 @@ public class Datenbank {
         }
     }
 
+    public void aktualisiereLehrer(Lehrer lehrer) throws SQLException {
+        String sqlLehrer = """
+            UPDATE lehrer
+            SET nachname = ?, vorname = ?, amtsbezeichnung = ?
+            WHERE kuerzel = ?
+            """;
+
+        String sqlFakultaetLoeschen = """
+            DELETE FROM lehrer_fakultaet
+            WHERE lehrer_kuerzel = ?
+            """;
+
+        String sqlFakultaetEinfuegen = """
+            INSERT INTO lehrer_fakultaet (lehrer_kuerzel, fach)
+            VALUES (?, ?)
+            """;
+
+        try (Connection connection = getConnection()) {
+            connection.setAutoCommit(false);
+
+            try {
+                try (PreparedStatement statement = connection.prepareStatement(sqlLehrer)) {
+                    statement.setString(1, lehrer.getNachname());
+                    statement.setString(2, lehrer.getVorname());
+                    statement.setString(3, lehrer.getAmtsbez());
+                    statement.setString(4, lehrer.getKuerzel());
+                    statement.executeUpdate();
+                }
+
+                try (PreparedStatement statement = connection.prepareStatement(sqlFakultaetLoeschen)) {
+                    statement.setString(1, lehrer.getKuerzel());
+                    statement.executeUpdate();
+                }
+
+                try (PreparedStatement statement = connection.prepareStatement(sqlFakultaetEinfuegen)) {
+                    for (Fach fach : lehrer.getFakultas()) {
+                        statement.setString(1, lehrer.getKuerzel());
+                        statement.setString(2, fach.getKuerzel());
+                        statement.addBatch();
+                    }
+
+                    statement.executeBatch();
+                }
+
+                connection.commit();
+
+            } catch (SQLException e) {
+                System.out.println(e.getMessage());
+                connection.rollback();
+                throw e;
+            }
+        }
+    }
+
     private void fuegeSchuelerDatensatzHinzu(Connection connection, Schueler schueler) throws SQLException {
         String sql = """
                 INSERT INTO schueler (schild_id, nachname, vorname, geburtsdatum, geschlecht) VALUES (?, ?, ?, ?, ?)""";
@@ -715,6 +824,57 @@ public class Datenbank {
         }
     }
 
+    public void synchronisiereFaecher(Abitur abitur) throws SQLException {
+        String fachSql = """
+            INSERT INTO fach
+            (kuerzel, bezeichnung, stammfach_kuerzel, faechergruppe)
+            VALUES (?, ?, NULL, ?)
+            ON CONFLICT(kuerzel) DO UPDATE SET
+                bezeichnung = excluded.bezeichnung,
+                stammfach_kuerzel = NULL,
+                faechergruppe = excluded.faechergruppe
+            """;
+
+        String stammfachSql = """
+            UPDATE fach
+            SET stammfach_kuerzel = ?
+            WHERE kuerzel = ?
+            """;
+
+        try (Connection connection = getConnection()) {
+            connection.setAutoCommit(false);
+
+            try (PreparedStatement fachStatement = connection.prepareStatement(fachSql);
+                 PreparedStatement stammfachStatement = connection.prepareStatement(stammfachSql)) {
+
+                for (Fach fach : abitur.getFaecher()) {
+                    fachStatement.setString(1, fach.getKuerzel());
+                    fachStatement.setString(2, fach.getBezeichnung());
+                    fachStatement.setString(3, fach.getFaechergruppe());
+                    fachStatement.addBatch();
+                }
+
+                fachStatement.executeBatch();
+
+                for (Fach fach : abitur.getFaecher()) {
+                    if (fach.getStammfach() != null) {
+                        stammfachStatement.setString(1, fach.getStammfach().getKuerzel());
+                        stammfachStatement.setString(2, fach.getKuerzel());
+                        stammfachStatement.addBatch();
+                    }
+                }
+
+                stammfachStatement.executeBatch();
+
+                connection.commit();
+
+            } catch (SQLException exception) {
+                connection.rollback();
+                throw exception;
+            }
+        }
+    }
+
     public void synchronisiereRaeume(Abitur abitur) throws SQLException {
         String raeumeSql = """
                 INSERT INTO raum (bezeichnung, kapazitaet) VALUES (?, ?) ON CONFLICT(bezeichnung) DO UPDATE SET
@@ -741,7 +901,7 @@ public class Datenbank {
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             for (Kurs kurs : abitur.getKurse()) {
                 statement.setString(1, kurs.getBezeichnung());
-                statement.setString(2, kurs.getFach());
+                statement.setString(2, kurs.getFach().getKuerzel());
 
                 if (kurs.getFachlehrer() == null) {
                     statement.setNull(3, Types.VARCHAR);
@@ -852,7 +1012,7 @@ public class Datenbank {
                     statement.addBatch();
                 }
 
-              int[] ergebnisse = statement.executeBatch();
+                int[] ergebnisse = statement.executeBatch();
 
                 for (int ergebnis : ergebnisse) {
                     if (ergebnis == 0) {
@@ -875,16 +1035,16 @@ public class Datenbank {
 
     private void setzePruefungsplanungZurueck(Connection connection, Pruefung pruefung, Kurs neuerKurs) throws SQLException {
         String sql = """
-            UPDATE pruefungsplanung
-            SET pruefungstag_id = NULL,
-                beginn = NULL,
-                planungsspalte = NULL,
-                raum_bezeichnung = NULL,
-                pruefer_kuerzel = ?,
-                schriftfuehrer_kuerzel = NULL,
-                vorsitz_kuerzel = NULL
-            WHERE pruefung_id = ?
-            """;
+                UPDATE pruefungsplanung
+                SET pruefungstag_id = NULL,
+                    beginn = NULL,
+                    planungsspalte = NULL,
+                    raum_bezeichnung = NULL,
+                    pruefer_kuerzel = ?,
+                    schriftfuehrer_kuerzel = NULL,
+                    vorsitz_kuerzel = NULL
+                WHERE pruefung_id = ?
+                """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             setLehrer(statement, 1, neuerKurs.getFachlehrer());

@@ -18,6 +18,7 @@ public class StammdatenPanel extends JPanel {
     private final Datenbank datenbank;
     private final Abitur abitur;
     private final SchuelerStammdatenPanel schuelerStammdatenPanel;
+    private final LehrerStammdatenPanel lehrerStammdatenPanel;
     private Runnable nachStammdatenAenderung;
 
     public StammdatenPanel(Abitur abitur, Datenbank datenbank) {
@@ -30,17 +31,19 @@ public class StammdatenPanel extends JPanel {
         schuelerStammdatenPanel.setSchuelerLoeschenAction(this::schuelerLoeschen);
         schuelerStammdatenPanel.setAbiturfaecherAendern(this::abiturfaecherAendern);
         tabbedPane.addTab("Schüler", schuelerStammdatenPanel);
+
+        lehrerStammdatenPanel = new LehrerStammdatenPanel(abitur);
+        lehrerStammdatenPanel.setNachAenderung(this::lehrerAktualisieren);
+        tabbedPane.add("Lehrer", lehrerStammdatenPanel);
         add(tabbedPane, BorderLayout.CENTER);
     }
 
     private void schuelerAktualisieren(SchuelerTableModel.SchuelerAenderung aenderung) {
         Schueler schueler = aenderung.schueler();
-
         String nachname = schueler.getNachname();
         String vorname = schueler.getVorname();
         LocalDate geburtsdatum = schueler.getGeburtsdatum();
         Geschlecht geschlecht = schueler.getGeschlecht();
-
         switch (aenderung.spalte()) {
             case 1 -> nachname = (String) aenderung.wert();
             case 2 -> vorname = (String) aenderung.wert();
@@ -52,8 +55,7 @@ public class StammdatenPanel extends JPanel {
             datenbank.aktualisiereSchueler(schueler);
             nachStammdatenAenderung.run();
         } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Die Änderung konnte nicht gespeichert werden.\nStarten Sie die Anwendung neu.", "Datenbankfehler",
-                    JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Die Änderung konnte nicht gespeichert werden.\nStarten Sie die Anwendung neu.", "Datenbankfehler", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -139,7 +141,6 @@ public class StammdatenPanel extends JPanel {
         }
     }
 
-
     private void pruefeAenderung(Map<Pruefung, Kurs> aenderungen, Schueler schueler, Abiturfach abiturfach, Kurs neuerKurs) {
         Pruefung pruefung = schueler.getPruefung(abiturfach);
         if (pruefung == null) {
@@ -150,7 +151,58 @@ public class StammdatenPanel extends JPanel {
         }
     }
 
+    private void lehrerAktualisieren(LehrerTableModel.LehrerAenderung aenderung) {
+        Lehrer lehrer = aenderung.lehrer();
+        String nachname = lehrer.getNachname();
+        String vorname = lehrer.getVorname();
+        String amtsbez = lehrer.getAmtsbez();
+        List<Fach> fakultas = new ArrayList<>(lehrer.getFakultas());
+
+        switch (aenderung.spalte()) {
+            case 1 -> nachname = (String) aenderung.wert();
+            case 2 -> vorname = (String) aenderung.wert();
+            case 3 -> amtsbez = (String) aenderung.wert();
+            case 4, 5, 6, 7 -> {
+                int index = aenderung.spalte() - 4;
+                Fach fach = (Fach) aenderung.wert();
+
+                if (fach == null) {
+                    if (index < fakultas.size()) {
+                        fakultas.remove(index);
+                    }
+                } else {
+                    if (fakultas.contains(fach) && (index >= fakultas.size() || !fach.equals(fakultas.get(index)))) {
+                        JOptionPane.showMessageDialog(this, "Das Fach ist bereits als Fakultas eingetragen.", "Ungültige Eingabe", JOptionPane.WARNING_MESSAGE);
+                        nachStammdatenAenderung.run();
+                        return;
+                    }
+
+                    if (index < fakultas.size()) {
+                        fakultas.set(index, fach);
+                    } else {
+                        fakultas.add(fach);
+                    }
+                }
+            }
+        }
+
+        if (!abitur.aendereLehrer(lehrer, nachname, vorname, amtsbez, fakultas)) {
+            JOptionPane.showMessageDialog(this, "Der Lehrer konnte nicht aktualisiert werden.", "Fehler", JOptionPane.ERROR_MESSAGE);
+            nachStammdatenAenderung.run();
+            return;
+        }
+
+        try {
+            datenbank.aktualisiereLehrer(lehrer);
+            nachStammdatenAenderung.run();
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this,
+                    "Die Änderung konnte nicht gespeichert werden.\nStarten Sie die Anwendung neu.", "Datenbankfehler", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
     public void ansichtAktualisieren() {
         schuelerStammdatenPanel.ansichtAktualisieren();
+        lehrerStammdatenPanel.ansichtAktualisieren();
     }
 }

@@ -103,6 +103,9 @@ public class Hauptmenue {
         JMenuItem lehrerImportEintrag = new JMenuItem("Lehrer laden");
         lehrerImportEintrag.addActionListener(e -> aktionen.lehrerImportAction());
 
+        JMenuItem faecherImportEintrag = new JMenuItem("Fächer laden");
+        faecherImportEintrag.addActionListener(e -> aktionen.faecherImportAction());
+
         JMenuItem raeumeImportEintrag = new JMenuItem("Räume laden");
         raeumeImportEintrag.addActionListener(e -> aktionen.raeumeImportAction());
 
@@ -113,6 +116,8 @@ public class Hauptmenue {
         importMenue.add(schuelerImportEintrag);
         importMenue.addSeparator();
         importMenue.add(lehrerImportEintrag);
+        importMenue.addSeparator();
+        importMenue.add(faecherImportEintrag);
         importMenue.addSeparator();
         importMenue.add(raeumeImportEintrag);
         importMenue.addSeparator();

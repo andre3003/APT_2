@@ -57,19 +57,18 @@ public class LehrerTableModel extends AbstractTableModel {
             case 1 -> lehrer.getNachname();
             case 2 -> lehrer.getVorname();
             case 3 -> lehrer.getAmtsbez();
-            case 4 -> getFakultas(lehrer, 0);
-            case 5 -> getFakultas(lehrer, 1);
-            case 6 -> getFakultas(lehrer, 2);
-            case 7 -> getFakultas(lehrer, 3);
+            case 4 -> getFakultaet(lehrer, 0);
+            case 5 -> getFakultaet(lehrer, 1);
+            case 6 -> getFakultaet(lehrer, 2);
+            case 7 -> getFakultaet(lehrer, 3);
             default -> null;
         };
     }
 
-    private Fach getFakultas(Lehrer lehrer, int index) {
+    private Fach getFakultaet(Lehrer lehrer, int index) {
         if (index >= lehrer.getFakultas().size()) {
             return null;
         }
-
         return lehrer.getFakultas().get(index);
     }
 
@@ -81,7 +80,6 @@ public class LehrerTableModel extends AbstractTableModel {
     @Override
     public void setValueAt(Object value, int rowIndex, int columnIndex) {
         Lehrer aktuellerLehrer = lehrer.get(rowIndex);
-
         if (nachAenderung != null) {
             nachAenderung.accept(new LehrerAenderung(aktuellerLehrer, columnIndex, value));
         }
@@ -98,5 +96,15 @@ public class LehrerTableModel extends AbstractTableModel {
     public void aktualisieren() {
         lehrer = new ArrayList<>(abitur.getLehrer());
         fireTableDataChanged();
+    }
+
+
+    @Override
+    public Class<?> getColumnClass(int columnIndex) {
+        return switch (columnIndex) {
+            case 0, 1, 2, 3 -> String.class;
+            case 4, 5, 6, 7 -> Fach.class;
+            default -> Object.class;
+        };
     }
 }

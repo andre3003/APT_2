@@ -41,7 +41,7 @@ public class PruefungsDialog extends JDialog {
         JPanel stammdatenPanel =  new JPanel(new GridLayout(0, 2, 10, 8));
         addZeile(stammdatenPanel, "Schüler:", pruefung.getSchueler().getNachname()  + ", " + pruefung.getSchueler().getVorname() );
         addZeile(stammdatenPanel, "Abiturfach:",  pruefung.getAbiturfach().name());
-        addZeile(stammdatenPanel, "Fach:", pruefung.getKurs().getFach() );
+        addZeile(stammdatenPanel, "Fach:", pruefung.getKurs().getFach().getKuerzel());
         addZeile(stammdatenPanel, "Kurs:", pruefung.getKurs().getBezeichnung());
         addZeile( stammdatenPanel, "Fachlehrer:", lehrerText( pruefung.getKurs().getFachlehrer()));
 

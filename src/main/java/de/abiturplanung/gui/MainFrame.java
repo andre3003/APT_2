@@ -196,6 +196,26 @@ public class MainFrame extends JFrame implements HauptmenueAktionen {
         }
     }
 
+    public void faecherImportAction() {
+            if (abitur == null || datenbank == null) {
+                return;
+            }
+            Path importPfad = AppPfade.getImportVerzeichnis().resolve("Faecher.csv");
+            if (!Files.exists(importPfad)) {
+                JOptionPane.showMessageDialog(this, "Die Importdatei wurde nicht gefunden:\n" + importPfad, "Importfehler", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            try {
+                ImportService importService = new ImportService(abitur);
+                importService.importiereFaecher(importPfad);
+                datenbank.synchronisiereFaecher(abitur);
+                initialisierePlanung(abitur, datenbank);
+                JOptionPane.showMessageDialog(this, "Fächerdaten wurden erfolgreich importiert.", "Import abgeschlossen", JOptionPane.INFORMATION_MESSAGE);
+            } catch (IOException | SQLException | IllegalArgumentException exception) {
+                JOptionPane.showMessageDialog(this, "Die Fächerdaten konnten nicht importiert werden:\n" + exception.getMessage(), "Importfehler", JOptionPane.ERROR_MESSAGE);
+            }
+    }
+
     @Override
     public void backupErstellenAction() {
         if (datenbank == null) {

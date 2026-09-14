@@ -1,15 +1,16 @@
 package de.abiturplanung.model;
+
 import java.util.Objects;
 
 public class Kurs {
 
     private final String bezeichnung;
-    private String fachbezeichnung;
+    private Fach fach;
     private Lehrer fachlehrer;
 
-    public Kurs(String bezeichnung, String fach, Lehrer fachlehrer) {
+    public Kurs(String bezeichnung, Fach fach, Lehrer fachlehrer) {
         this.bezeichnung = bezeichnung;
-        this.fachbezeichnung = fach;
+        this.fach = fach;
         this.fachlehrer = fachlehrer;
     }
 
@@ -17,24 +18,20 @@ public class Kurs {
         return bezeichnung;
     }
 
-    public String getFach() {
-        return fachbezeichnung;
-    }
-
-    public Fach getFachObjekt() {
-        return Fach.ausFachbezeichnung(fachbezeichnung);
+    public Fach getFach() {
+        return fach;
     }
 
     public Lehrer getFachlehrer() {
         return fachlehrer;
     }
 
-    public void setFachlehrer(Lehrer fachlehrer) {
-        this.fachlehrer = fachlehrer;
+    public void setFach(Fach fach) {
+        this.fach = fach;
     }
 
-    public void setFach(String fach) {
-        this.fachbezeichnung = fach;
+    public void setFachlehrer(Lehrer fachlehrer) {
+        this.fachlehrer = fachlehrer;
     }
 
     public Kursart getKursart() {
@@ -51,16 +48,15 @@ public class Kurs {
         };
     }
 
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof Kurs kurs)) return false; //Pattern Matching: Die moderne Java-Schreibweise kombiniert Typprüfung und Cast: Prüfe, ob o ein Kurs ist. Wenn ja, stelle mir dieses Objekt zugleich als Variable kurs vom Typ Kurs zur Verfügung.
+        if (!(o instanceof Kurs kurs)) return false;
         return Objects.equals(bezeichnung, kurs.bezeichnung);
     }
 
-    //Zwei Objekte, für die equals() true ergibt, müssen denselben Hashcode besitzen. Deshalb:
     @Override
     public int hashCode() {
         return Objects.hash(bezeichnung);
     }
-
 }

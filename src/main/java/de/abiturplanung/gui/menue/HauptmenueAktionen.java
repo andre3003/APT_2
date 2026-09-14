@@ -10,6 +10,8 @@ public interface HauptmenueAktionen {
 
     void schuelerImportAction();
 
+    void faecherImportAction();
+
     void backupErstellenAction();
 
     void pruefungstagHinzufuegenAction();
@@ -33,6 +35,7 @@ public interface HauptmenueAktionen {
     void zeigeMuendlichePruefungen();
 
     void zeigeStammdaten();
+
 
 
 }

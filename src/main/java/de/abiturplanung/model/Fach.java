@@ -1,42 +1,41 @@
 package de.abiturplanung.model;
 
-import java.util.Locale;
 import java.util.Objects;
 
 public class Fach implements Comparable<Fach> {
 
     private final String kuerzel;
+    private String bezeichnung;
+    private Fach stammfach;
+    private String faechergruppe;
 
     public Fach(String kuerzel) {
-        this.kuerzel = normalisiereKuerzel(kuerzel);
-    }
-
-    private static String normalisiereKuerzel(String kuerzel) {
-        String normalisiert = kuerzel == null ? "" : kuerzel.trim().toUpperCase(Locale.ROOT);
-
-        return switch (normalisiert) {
-            case "E5" -> "E";
-            case "S7", "S9", "S0" -> "S";
-            case "L7", "L0" -> "L";
-            case "F7", "F9", "F0" -> "F";
-            default -> normalisiert;
-        };
+        this.kuerzel = kuerzel;
     }
 
     public String getKuerzel() {
         return kuerzel;
     }
 
-    public static Fach ausFachbezeichnung(String fachbezeichnung) {
-        String kuerzel = switch (fachbezeichnung) {
-            case "E5" -> "E";
-            case "S7", "S9", "S0" -> "S";
-            case "L7", "L0" -> "L";
-            case "F7", "F9", "F0" -> "F";
-            default -> fachbezeichnung;
-        };
+    public String getBezeichnung() {
+        return bezeichnung;
+    }
 
-        return new Fach(kuerzel);
+    public Fach getStammfach() {
+        return stammfach;
+    }
+
+    public String getFaechergruppe() {
+        return faechergruppe;
+    }
+
+    public void aktualisiereStammdaten(String bezeichnung, String faechergruppe) {
+        this.bezeichnung = bezeichnung;
+        this.faechergruppe = faechergruppe;
+    }
+
+    public void setStammfach(Fach stammfach) {
+        this.stammfach = stammfach;
     }
 
     @Override
@@ -51,6 +50,7 @@ public class Fach implements Comparable<Fach> {
 
     @Override
     public boolean equals(Object o) {
+        if (this == o) return true;
         if (!(o instanceof Fach fach)) return false;
         return Objects.equals(kuerzel, fach.kuerzel);
     }

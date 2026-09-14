@@ -14,7 +14,6 @@ public class SchuelerStammdatenPanel extends JPanel {
 
     public SchuelerStammdatenPanel(Abitur abitur) {
         this.abitur = abitur;
-
         stammdatenTabellePanel = new StammdatenTabellePanel(abitur);
         abiturfaecherPanel = new AbiturfaecherPanel(abitur.getKurse());
         stammdatenTabellePanel.setNachAuswahl(abiturfaecherPanel::setSchueler);
@@ -32,7 +31,7 @@ public class SchuelerStammdatenPanel extends JPanel {
     }
 
     public void setNachAenderung(Consumer<SchuelerTableModel.SchuelerAenderung> nachAenderung) {
-        stammdatenTabellePanel.setNachAenderung( nachAenderung);
+        stammdatenTabellePanel.setNachAenderung(nachAenderung);
     }
 
     public void setSchuelerAnlegen(Consumer<SchuelerStammdatenDialog.SchuelerEingabe> schuelerAnlegen) {

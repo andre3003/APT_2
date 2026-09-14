@@ -41,7 +41,6 @@ public class ImportService {
         if (kuerzel == null || kuerzel.isBlank()) {
             return;
         }
-
         Fach fach = new Fach(kuerzel);
         if (!fakultas.contains(fach)) {
             fakultas.add(fach);
@@ -63,6 +62,42 @@ public class ImportService {
         }
         abitur.sortiereSchueler();
     }
+
+    public void importiereFaecher(Path datei) throws IOException {
+        FachImporter importer = new FachImporter();
+        List<FachDatensatz> datensaetze = importer.lese(datei);
+
+
+        // 1. Alle Fächer anlegen bzw. Stammdaten aktualisieren
+        for (FachDatensatz datensatz : datensaetze) {
+            Fach fach = abitur.findeFach(datensatz.getKuerzel());
+            if (fach == null) {
+                fach = new Fach(datensatz.getKuerzel());
+                abitur.addFach(fach);
+            }
+
+            fach.aktualisiereStammdaten(datensatz.getBezeichnung(), datensatz.getFaechergruppe());
+        }
+
+        // 2. Stammfächer zuordnen
+        for (FachDatensatz datensatz : datensaetze) {
+            Fach fach = abitur.findeFach(datensatz.getKuerzel());
+            if (datensatz.getStammfachKuerzel() == null) {
+                fach.setStammfach(null);
+                continue;
+            }
+            Fach stammfach = abitur.findeFach(datensatz.getStammfachKuerzel());
+            if (stammfach == null) {
+                System.err.println("Stammfach nicht gefunden: " + datensatz.getStammfachKuerzel() + " für Fach " + datensatz.getKuerzel());
+                fach.setStammfach(null);
+                continue;
+            }
+            fach.setStammfach(stammfach);
+        }
+        abitur.sortiereFaecher();
+    }
+
+
 
     private void importiereLeistungsdatensatz(SchuelerleistungsDatensatz ds) {
         Schueler schueler = abitur.findeSchueler(ds.getNachname(), ds.getVorname(), ds.getGeburtsdatum());

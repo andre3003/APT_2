@@ -15,6 +15,8 @@ public class Abitur {
 
     private final List<Raum> raeume = new ArrayList<>();
 
+    private final List<Fach> faecher = new ArrayList<>();
+
     private final List<Pruefungstag> pruefungstage = new ArrayList<>();
 
 
@@ -81,8 +83,23 @@ public class Abitur {
                 .thenComparing(Schueler::getSchildId));
     }
 
+    public boolean aendereLehrer(Lehrer lehrer, String nachname, String vorname, String amtsbez, List<Fach> fakultas) {
+        Lehrer l = findeLehrer(lehrer.getKuerzel());
+
+        if (l == null) {
+            return false;
+        }
+        l.aktualisiereStammdaten(l.getAnrede(), nachname, vorname, amtsbez);
+        l.aktualisiereFakultas(fakultas);
+        return true;
+    }
+
     public void addLehrer(Lehrer lehrer) {
         this.lehrer.add(lehrer);
+    }
+
+    public void addFach(Fach fach) {
+        faecher.add(fach);
     }
 
     public void addKurs(Kurs kurs) {
@@ -122,6 +139,10 @@ public class Abitur {
         return Collections.unmodifiableList(raeume);
     }
 
+    public List<Fach> getFaecher() {
+        return Collections.unmodifiableList(faecher);
+    }
+
 
     /*--------------------------------------------------
      * Suchen
@@ -155,6 +176,15 @@ public class Abitur {
         return null;
     }
 
+    public Fach findeFach(String kuerzel) {
+        for (Fach fach : faecher) {
+            if (fach.getKuerzel().equalsIgnoreCase(kuerzel)) {
+                return fach;
+            }
+        }
+        return null;
+    }
+
 
     public Kurs findeKurs(String bezeichnung) {
         String gesucht = normalisiere(bezeichnung);
@@ -166,8 +196,15 @@ public class Abitur {
         return null;
     }
 
-    public Kurs findeOderErzeugeKurs(String bezeichnung, String fach, Lehrer fachlehrer) {
+    public Kurs findeOderErzeugeKurs(String bezeichnung, String fachKuerzel, Lehrer fachlehrer) {
+        Fach fach = findeFach(fachKuerzel);
+
+        if (fach == null) {
+            throw new IllegalArgumentException("Fach nicht gefunden: " + fachKuerzel);
+        }
+
         Kurs kurs = findeKurs(bezeichnung);
+
         if (kurs != null) {
             kurs.setFach(fach);
             kurs.setFachlehrer(fachlehrer);
@@ -207,5 +244,7 @@ public class Abitur {
                 .thenComparing(Schueler::getVorname, String.CASE_INSENSITIVE_ORDER));
     }
 
-
+    public void sortiereFaecher() {
+        faecher.sort(Comparator.comparing(Fach::getKuerzel));
+    }
 }
