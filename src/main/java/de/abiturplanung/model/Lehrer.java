@@ -9,7 +9,7 @@ public class Lehrer {
     private String anrede;
     private String nachname;
     private String vorname;
-    private String amtsbez;
+    private Amtsbezeichnung amtsbezeichnung;
     private List<Fach> fakultas = new ArrayList<>();
 
     public Lehrer(String kuerzel) {
@@ -21,11 +21,11 @@ public class Lehrer {
         this.fakultas.addAll(fakultas);
     }
 
-    public void aktualisiereStammdaten(String anrede, String nachname, String vorname, String amtsbez) {
+    public void aktualisiereStammdaten(String anrede, String nachname, String vorname, Amtsbezeichnung amtsbez) {
         this.anrede = anrede;
         this.nachname = nachname;
         this.vorname = vorname;
-        this.amtsbez = amtsbez;
+        this.amtsbezeichnung = amtsbez;
     }
 
     public String getKuerzel() {
@@ -44,8 +44,28 @@ public class Lehrer {
         return vorname;
     }
 
-    public String getAmtsbez() {
-        return amtsbez;
+    public void setAnrede(String anrede) {
+        this.anrede = anrede;
+    }
+
+    public void setNachname(String nachname) {
+        this.nachname = nachname;
+    }
+
+    public void setVorname(String vorname) {
+        this.vorname = vorname;
+    }
+
+    public void setAmtsbezeichnung(Amtsbezeichnung amtsbezeichnung) {
+        this.amtsbezeichnung = amtsbezeichnung;
+    }
+
+    public void setFakultas(List<Fach> fakultas) {
+        this.fakultas = fakultas;
+    }
+
+    public Amtsbezeichnung getAmtsbezeichnung() {
+        return amtsbezeichnung;
     }
 
     public List<Fach> getFakultas() {

@@ -23,7 +23,7 @@ public class ImportService {
                 lehrer = new Lehrer(datensatz.getKuerzel());
                 abitur.addLehrer(lehrer);
             }
-            lehrer.aktualisiereStammdaten(datensatz.getAnrede(), datensatz.getNachname(), datensatz.getVorname(), datensatz.getAmtsbez());
+            lehrer.aktualisiereStammdaten(datensatz.getAnrede(), datensatz.getNachname(), datensatz.getVorname(), Amtsbezeichnung.ausKuerzel(datensatz.getAmtsbez()));
             lehrer.aktualisiereFakultas(erstelleFakultas(datensatz));
         }
     }

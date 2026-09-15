@@ -19,11 +19,6 @@ public class Abitur {
 
     private final List<Pruefungstag> pruefungstage = new ArrayList<>();
 
-
-    /*--------------------------------------------------
-     * Hinzufügen
-     *--------------------------------------------------*/
-
     public List<Pruefungstag> getPruefungstage() {
         return Collections.unmodifiableList(pruefungstage);
     }
@@ -74,23 +69,20 @@ public class Abitur {
         schuelerList.add(neuerSchueler);
     }
 
-    public void aendereSchueler(Schueler schueler, String nachname, String vorname, LocalDate
-            geburtsdatum, Geschlecht geschlecht) {
+    public void aendereSchueler(Schueler schueler, String nachname, String vorname, LocalDate geburtsdatum, Geschlecht geschlecht) {
         schueler.aktualisiereStammdaten(nachname, vorname, geburtsdatum, geschlecht);
-        schuelerList.sort(Comparator
-                .comparing(Schueler::getNachname, String.CASE_INSENSITIVE_ORDER)
-                .thenComparing(Schueler::getVorname, String.CASE_INSENSITIVE_ORDER)
-                .thenComparing(Schueler::getSchildId));
+        schuelerList.sort(Comparator.comparing(Schueler::getNachname, String.CASE_INSENSITIVE_ORDER).thenComparing(Schueler::getVorname, String.CASE_INSENSITIVE_ORDER).thenComparing(Schueler::getSchildId));
     }
 
-    public boolean aendereLehrer(Lehrer lehrer, String nachname, String vorname, String amtsbez, List<Fach> fakultas) {
+    public boolean aendereLehrer(Lehrer lehrer, String nachname, String vorname, Amtsbezeichnung amtsbezeichnung, List<Fach> fakultas) {
         Lehrer l = findeLehrer(lehrer.getKuerzel());
 
         if (l == null) {
             return false;
         }
-        l.aktualisiereStammdaten(l.getAnrede(), nachname, vorname, amtsbez);
+        l.aktualisiereStammdaten(l.getAnrede(), nachname, vorname, amtsbezeichnung);
         l.aktualisiereFakultas(fakultas);
+        sortiereLehrer();
         return true;
     }
 
@@ -239,12 +231,16 @@ public class Abitur {
     }
 
     public void sortiereSchueler() {
-        schuelerList.sort(Comparator
-                .comparing(Schueler::getNachname, String.CASE_INSENSITIVE_ORDER)
-                .thenComparing(Schueler::getVorname, String.CASE_INSENSITIVE_ORDER));
+        schuelerList.sort(Comparator.comparing(Schueler::getNachname, String.CASE_INSENSITIVE_ORDER).thenComparing(Schueler::getVorname, String.CASE_INSENSITIVE_ORDER));
     }
 
     public void sortiereFaecher() {
         faecher.sort(Comparator.comparing(Fach::getKuerzel));
+    }
+
+    public void sortiereLehrer() {
+        lehrer.sort(Comparator
+                .comparing(Lehrer::getNachname, String.CASE_INSENSITIVE_ORDER)
+                .thenComparing(Lehrer::getVorname, String.CASE_INSENSITIVE_ORDER));
     }
 }

@@ -13,7 +13,7 @@ import java.awt.event.ActionEvent;
 import java.time.LocalDate;
 import java.util.function.Consumer;
 
-public class StammdatenTabellePanel extends JPanel {
+public class SchuelerStammdatenTabellePanel extends JPanel {
     Abitur abitur;
     private JTable schuelerTabelle;
     private SchuelerTableModel tableModel;
@@ -22,7 +22,7 @@ public class StammdatenTabellePanel extends JPanel {
     private Consumer<Schueler> nachAuswahl;
 
 
-    public StammdatenTabellePanel(Abitur abitur) {
+    public SchuelerStammdatenTabellePanel(Abitur abitur) {
             this.abitur = abitur;
             setLayout(new BorderLayout());
             JPanel steuerleiste = new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -41,9 +41,7 @@ public class StammdatenTabellePanel extends JPanel {
                 if (e.getValueIsAdjusting()) {
                     return;
                 }
-
                 int zeile = schuelerTabelle.getSelectedRow();
-
                 if (zeile == -1) {
                     if (nachAuswahl != null) {
                         nachAuswahl.accept(null);
@@ -58,8 +56,6 @@ public class StammdatenTabellePanel extends JPanel {
                     nachAuswahl.accept(schueler);
                 }
             });
-
-
             add(new JScrollPane(schuelerTabelle), BorderLayout.CENTER);
             JComboBox<Geschlecht> geschlechtComboBox = new JComboBox<>(Geschlecht.values());
             schuelerTabelle.getColumnModel().getColumn(4).setCellEditor(new DefaultCellEditor(geschlechtComboBox));

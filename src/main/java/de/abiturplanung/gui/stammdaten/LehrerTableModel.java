@@ -1,6 +1,7 @@
 package de.abiturplanung.gui.stammdaten;
 
 import de.abiturplanung.model.Abitur;
+import de.abiturplanung.model.Amtsbezeichnung;
 import de.abiturplanung.model.Fach;
 import de.abiturplanung.model.Lehrer;
 
@@ -31,7 +32,8 @@ public class LehrerTableModel extends AbstractTableModel {
         aktualisieren();
     }
 
-    public record LehrerAenderung(Lehrer lehrer, int spalte, Object wert) {}
+    public record LehrerAenderung(Lehrer lehrer, int spalte, Object wert) {
+    }
 
     @Override
     public int getRowCount() {
@@ -56,7 +58,7 @@ public class LehrerTableModel extends AbstractTableModel {
             case 0 -> lehrer.getKuerzel();
             case 1 -> lehrer.getNachname();
             case 2 -> lehrer.getVorname();
-            case 3 -> lehrer.getAmtsbez();
+            case 3 -> lehrer.getAmtsbezeichnung();
             case 4 -> getFakultaet(lehrer, 0);
             case 5 -> getFakultaet(lehrer, 1);
             case 6 -> getFakultaet(lehrer, 2);
@@ -102,7 +104,8 @@ public class LehrerTableModel extends AbstractTableModel {
     @Override
     public Class<?> getColumnClass(int columnIndex) {
         return switch (columnIndex) {
-            case 0, 1, 2, 3 -> String.class;
+            case 0, 1, 2 -> String.class;
+            case 3 -> Amtsbezeichnung.class;
             case 4, 5, 6, 7 -> Fach.class;
             default -> Object.class;
         };

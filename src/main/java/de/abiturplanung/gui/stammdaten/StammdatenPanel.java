@@ -1,5 +1,6 @@
 package de.abiturplanung.gui.stammdaten;
 
+import de.abiturplanung.gui.dialogs.LehrerStammdatenDialog;
 import de.abiturplanung.gui.dialogs.SchuelerStammdatenDialog;
 import de.abiturplanung.model.*;
 import de.abiturplanung.persistence.Datenbank;
@@ -34,6 +35,8 @@ public class StammdatenPanel extends JPanel {
 
         lehrerStammdatenPanel = new LehrerStammdatenPanel(abitur);
         lehrerStammdatenPanel.setNachAenderung(this::lehrerAktualisieren);
+        lehrerStammdatenPanel.setLehrerLoeschenAction(this::lehrerLoeschen);
+        lehrerStammdatenPanel.setLehrerAnlegenAction(this::neuenLehrerAnlegen);
         tabbedPane.add("Lehrer", lehrerStammdatenPanel);
         add(tabbedPane, BorderLayout.CENTER);
     }
@@ -155,13 +158,13 @@ public class StammdatenPanel extends JPanel {
         Lehrer lehrer = aenderung.lehrer();
         String nachname = lehrer.getNachname();
         String vorname = lehrer.getVorname();
-        String amtsbez = lehrer.getAmtsbez();
+        Amtsbezeichnung amtsbezeichnung = lehrer.getAmtsbezeichnung();
         List<Fach> fakultas = new ArrayList<>(lehrer.getFakultas());
 
         switch (aenderung.spalte()) {
             case 1 -> nachname = (String) aenderung.wert();
             case 2 -> vorname = (String) aenderung.wert();
-            case 3 -> amtsbez = (String) aenderung.wert();
+            case 3 -> amtsbezeichnung = (Amtsbezeichnung) aenderung.wert();
             case 4, 5, 6, 7 -> {
                 int index = aenderung.spalte() - 4;
                 Fach fach = (Fach) aenderung.wert();
@@ -186,7 +189,7 @@ public class StammdatenPanel extends JPanel {
             }
         }
 
-        if (!abitur.aendereLehrer(lehrer, nachname, vorname, amtsbez, fakultas)) {
+        if (!abitur.aendereLehrer(lehrer, nachname, vorname, amtsbezeichnung, fakultas)) {
             JOptionPane.showMessageDialog(this, "Der Lehrer konnte nicht aktualisiert werden.", "Fehler", JOptionPane.ERROR_MESSAGE);
             nachStammdatenAenderung.run();
             return;
@@ -198,6 +201,34 @@ public class StammdatenPanel extends JPanel {
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(this,
                     "Die Änderung konnte nicht gespeichert werden.\nStarten Sie die Anwendung neu.", "Datenbankfehler", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    public void lehrerLoeschen(String kuerzel) {
+        System.out.println(kuerzel);
+    }
+
+    public void neuenLehrerAnlegen(LehrerStammdatenDialog.LehrerEingabe eingabe) {
+        if (abitur.findeLehrer(eingabe.kuerzel()) != null) {
+            JOptionPane.showMessageDialog(this, "Ein Lehrer mit diesem Kürzel ist bereits vorhanden.", "Lehrerkürzel bereits vergeben", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        Lehrer neu = new Lehrer(eingabe.kuerzel());
+        neu.aktualisiereStammdaten(eingabe.anrede(), eingabe.nachname(), eingabe.vorname(), eingabe.amtsbezeichnung());
+        List<Fach> fakultas = new ArrayList<>();
+        if (eingabe.fak1() != null) fakultas.add(eingabe.fak1());
+        if (eingabe.fak2() != null) fakultas.add(eingabe.fak2());
+        if (eingabe.fak3() != null) fakultas.add(eingabe.fak3());
+        if (eingabe.fak4() != null) fakultas.add(eingabe.fak4());
+        neu.setFakultas(fakultas);
+
+        try {
+            datenbank.fuegeLehrerHinzu(neu);
+            abitur.addLehrer(neu);
+            abitur.sortiereLehrer();
+            nachStammdatenAenderung.run();
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 

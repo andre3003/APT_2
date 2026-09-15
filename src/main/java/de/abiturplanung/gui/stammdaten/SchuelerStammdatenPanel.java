@@ -9,12 +9,12 @@ import java.util.function.Consumer;
 
 public class SchuelerStammdatenPanel extends JPanel {
     private final Abitur abitur;
-    private final StammdatenTabellePanel stammdatenTabellePanel;
+    private final SchuelerStammdatenTabellePanel stammdatenTabellePanel;
     private final AbiturfaecherPanel abiturfaecherPanel;
 
     public SchuelerStammdatenPanel(Abitur abitur) {
         this.abitur = abitur;
-        stammdatenTabellePanel = new StammdatenTabellePanel(abitur);
+        stammdatenTabellePanel = new SchuelerStammdatenTabellePanel(abitur);
         abiturfaecherPanel = new AbiturfaecherPanel(abitur.getKurse());
         stammdatenTabellePanel.setNachAuswahl(abiturfaecherPanel::setSchueler);
 

@@ -2,7 +2,6 @@ package de.abiturplanung.persistence;
 
 import de.abiturplanung.model.*;
 
-import javax.swing.*;
 import java.nio.file.Path;
 import java.sql.*;
 import java.time.LocalDate;
@@ -304,12 +303,14 @@ public class Datenbank {
         try (Statement statement = connection.createStatement(); ResultSet resultSet = statement.executeQuery(sql)) {
             while (resultSet.next()) {
                 String kuerzel = resultSet.getString("kuerzel");
+                Amtsbezeichnung amtsbezeichnung = Amtsbezeichnung.ausKuerzel(resultSet.getString("amtsbezeichnung"));
                 Lehrer lehrer = new Lehrer(kuerzel);
-                lehrer.aktualisiereStammdaten(resultSet.getString("anrede"), resultSet.getString("nachname"), resultSet.getString("vorname"), resultSet.getString("amtsbezeichnung"));
+                lehrer.aktualisiereStammdaten(resultSet.getString("anrede"), resultSet.getString("nachname"), resultSet.getString("vorname"), amtsbezeichnung);
                 abitur.addLehrer(lehrer);
                 lehrerMap.put(kuerzel, lehrer);
             }
         }
+        abitur.sortiereLehrer();
     }
 
     private void ladeFaecher(Connection connection, Abitur abitur) throws SQLException {
@@ -637,20 +638,20 @@ public class Datenbank {
 
     public void aktualisiereLehrer(Lehrer lehrer) throws SQLException {
         String sqlLehrer = """
-            UPDATE lehrer
-            SET nachname = ?, vorname = ?, amtsbezeichnung = ?
-            WHERE kuerzel = ?
-            """;
+                UPDATE lehrer
+                SET nachname = ?, vorname = ?, amtsbezeichnung = ?
+                WHERE kuerzel = ?
+                """;
 
         String sqlFakultaetLoeschen = """
-            DELETE FROM lehrer_fakultaet
-            WHERE lehrer_kuerzel = ?
-            """;
+                DELETE FROM lehrer_fakultaet
+                WHERE lehrer_kuerzel = ?
+                """;
 
         String sqlFakultaetEinfuegen = """
-            INSERT INTO lehrer_fakultaet (lehrer_kuerzel, fach)
-            VALUES (?, ?)
-            """;
+                INSERT INTO lehrer_fakultaet (lehrer_kuerzel, fach)
+                VALUES (?, ?)
+                """;
 
         try (Connection connection = getConnection()) {
             connection.setAutoCommit(false);
@@ -659,7 +660,7 @@ public class Datenbank {
                 try (PreparedStatement statement = connection.prepareStatement(sqlLehrer)) {
                     statement.setString(1, lehrer.getNachname());
                     statement.setString(2, lehrer.getVorname());
-                    statement.setString(3, lehrer.getAmtsbez());
+                    statement.setString(3, lehrer.getAmtsbezeichnung() == null ? null : lehrer.getAmtsbezeichnung().getKuerzel());
                     statement.setString(4, lehrer.getKuerzel());
                     statement.executeUpdate();
                 }
@@ -678,11 +679,10 @@ public class Datenbank {
 
                     statement.executeBatch();
                 }
-
                 connection.commit();
 
             } catch (SQLException e) {
-                System.out.println(e.getMessage());
+                e.printStackTrace();
                 connection.rollback();
                 throw e;
             }
@@ -718,14 +718,54 @@ public class Datenbank {
 
             try {
                 fuegeSchuelerDatensatzHinzu(connection, schueler);
-
                 for (Pruefung pruefung : pruefungen) {
                     fuegePruefungHinzu(connection, pruefung);
                 }
-
                 connection.commit();
             } catch (SQLException e) {
                 connection.rollback();
+                throw e;
+            }
+        }
+    }
+
+    public void fuegeLehrerHinzu(Lehrer lehrer) throws SQLException {
+        String lehrerSql = """
+            INSERT INTO lehrer (kuerzel, anrede, nachname, vorname, amtsbezeichnung)
+            VALUES (?, ?, ?, ?, ?)
+            """;
+
+        String fakultasSql = """
+            INSERT INTO lehrer_fakultaet (lehrer_kuerzel, fach)
+            VALUES (?, ?)
+            """;
+
+        try (Connection connection = getConnection()) {
+            connection.setAutoCommit(false);
+
+            try {
+                try (PreparedStatement statement = connection.prepareStatement(lehrerSql)) {
+                    statement.setString(1, lehrer.getKuerzel());
+                    statement.setString(2, lehrer.getAnrede());
+                    statement.setString(3, lehrer.getNachname());
+                    statement.setString(4, lehrer.getVorname());
+                    statement.setString(5, lehrer.getAmtsbezeichnung() == null ? null : lehrer.getAmtsbezeichnung().getKuerzel());
+                    statement.executeUpdate();
+                }
+
+                try (PreparedStatement statement = connection.prepareStatement(fakultasSql)) {
+                    for (Fach fach : lehrer.getFakultas()) {
+                        statement.setString(1, lehrer.getKuerzel());
+                        statement.setString(2, fach.getKuerzel());
+                        statement.addBatch();
+                    }
+
+                    statement.executeBatch();
+                }
+                connection.commit();
+            } catch (SQLException e) {
+                connection.rollback();
+                e.printStackTrace();
                 throw e;
             }
         }
@@ -798,7 +838,7 @@ public class Datenbank {
                     lehrerStatement.setString(2, lehrer.getAnrede());
                     lehrerStatement.setString(3, lehrer.getNachname());
                     lehrerStatement.setString(4, lehrer.getVorname());
-                    lehrerStatement.setString(5, lehrer.getAmtsbez());
+                    lehrerStatement.setString(5, lehrer.getAmtsbezeichnung() == null ? null : lehrer.getAmtsbezeichnung().getKuerzel());
                     lehrerStatement.executeUpdate();
 
                     fakultasLoeschenStatement.setString(1, lehrer.getKuerzel());
@@ -826,20 +866,20 @@ public class Datenbank {
 
     public void synchronisiereFaecher(Abitur abitur) throws SQLException {
         String fachSql = """
-            INSERT INTO fach
-            (kuerzel, bezeichnung, stammfach_kuerzel, faechergruppe)
-            VALUES (?, ?, NULL, ?)
-            ON CONFLICT(kuerzel) DO UPDATE SET
-                bezeichnung = excluded.bezeichnung,
-                stammfach_kuerzel = NULL,
-                faechergruppe = excluded.faechergruppe
-            """;
+                INSERT INTO fach
+                (kuerzel, bezeichnung, stammfach_kuerzel, faechergruppe)
+                VALUES (?, ?, NULL, ?)
+                ON CONFLICT(kuerzel) DO UPDATE SET
+                    bezeichnung = excluded.bezeichnung,
+                    stammfach_kuerzel = NULL,
+                    faechergruppe = excluded.faechergruppe
+                """;
 
         String stammfachSql = """
-            UPDATE fach
-            SET stammfach_kuerzel = ?
-            WHERE kuerzel = ?
-            """;
+                UPDATE fach
+                SET stammfach_kuerzel = ?
+                WHERE kuerzel = ?
+                """;
 
         try (Connection connection = getConnection()) {
             connection.setAutoCommit(false);
