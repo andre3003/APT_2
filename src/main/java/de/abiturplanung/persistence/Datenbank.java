@@ -313,7 +313,7 @@ public class Datenbank {
         abitur.sortiereLehrer();
     }
 
-    public void loescheLehrer(String kuerzel) throws SQLException{
+    public void loescheLehrer(String kuerzel) throws SQLException {
         String sql = "DELETE FROM Lehrer WHERE kuerzel = ?";
         try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, kuerzel);
@@ -403,6 +403,7 @@ public class Datenbank {
                 raumMap.put(bezeichnung, raum);
             }
         }
+        abitur.sortiereRaeume();
     }
 
     private void ladeKurse(Connection connection, Abitur abitur, Map<String, Lehrer> lehrerMap, Map<String, Kurs> kursMap) throws SQLException {
@@ -646,6 +647,34 @@ public class Datenbank {
         }
     }
 
+    public void aktualisiereKurs(Kurs kurs) {
+        String sql = """
+                UPDATE kurs SET fach = ?, fachlehrer_kuerzel = ? WHERE bezeichnung = ?
+                """;
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, kurs.getFach().getKuerzel());
+            statement.setString(2, kurs.getFachlehrer().getKuerzel());
+            statement.setString(3, kurs.getBezeichnung());
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void aktualisiereRaum(Raum raum) throws SQLException {
+        String sql = "UPDATE Raum SET kapazitaet = ? WHERE bezeichnung = ?";
+
+        try {
+            Connection connection = getConnection();
+            PreparedStatement statement = connection.prepareStatement(sql);
+            statement.setInt(1, raum.getKapazitaet());
+            statement.setString(2, raum.getBezeichnung());
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
     public void aktualisiereLehrer(Lehrer lehrer) throws SQLException {
         String sqlLehrer = """
                 UPDATE lehrer
@@ -741,14 +770,14 @@ public class Datenbank {
 
     public void fuegeLehrerHinzu(Lehrer lehrer) throws SQLException {
         String lehrerSql = """
-            INSERT INTO lehrer (kuerzel, anrede, nachname, vorname, amtsbezeichnung)
-            VALUES (?, ?, ?, ?, ?)
-            """;
+                INSERT INTO lehrer (kuerzel, anrede, nachname, vorname, amtsbezeichnung)
+                VALUES (?, ?, ?, ?, ?)
+                """;
 
         String fakultasSql = """
-            INSERT INTO lehrer_fakultaet (lehrer_kuerzel, fach)
-            VALUES (?, ?)
-            """;
+                INSERT INTO lehrer_fakultaet (lehrer_kuerzel, fach)
+                VALUES (?, ?)
+                """;
 
         try (Connection connection = getConnection()) {
             connection.setAutoCommit(false);
@@ -769,7 +798,6 @@ public class Datenbank {
                         statement.setString(2, fach.getKuerzel());
                         statement.addBatch();
                     }
-
                     statement.executeBatch();
                 }
                 connection.commit();
@@ -807,6 +835,33 @@ public class Datenbank {
 
                 speicherePruefungsplanung(connection, pruefungId, pruefung);
             }
+        }
+    }
+
+    public void fuegeRaumHinzu(Raum raum) {
+        String sql = """
+                INSERT INTO raum (bezeichnung, kapazitaet) Values (?, ?);
+                """;
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, raum.getBezeichnung());
+            statement.setInt(2, raum.getKapazitaet());
+            statement.execute();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void fuegeKursHinzu(Kurs kurs) {
+        String sql = """
+                INSERT INTO kurs (bezeichnung, fach, fachlehrer_kuerzel) Values (?, ?, ?);
+                """;
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, kurs.getBezeichnung());
+            statement.setString(2, kurs.getFach().getKuerzel());
+            statement.setString(3, kurs.getFachlehrer().getKuerzel());
+            statement.execute();
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 

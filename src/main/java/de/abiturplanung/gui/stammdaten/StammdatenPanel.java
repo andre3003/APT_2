@@ -1,6 +1,8 @@
 package de.abiturplanung.gui.stammdaten;
 
+import de.abiturplanung.gui.dialogs.KursStammdatenDialog;
 import de.abiturplanung.gui.dialogs.LehrerStammdatenDialog;
+import de.abiturplanung.gui.dialogs.RaumStammdatenDialog;
 import de.abiturplanung.gui.dialogs.SchuelerStammdatenDialog;
 import de.abiturplanung.model.*;
 import de.abiturplanung.persistence.Datenbank;
@@ -20,6 +22,8 @@ public class StammdatenPanel extends JPanel {
     private final Abitur abitur;
     private final SchuelerStammdatenPanel schuelerStammdatenPanel;
     private final LehrerStammdatenPanel lehrerStammdatenPanel;
+    private final RaumStammdatenPanel raumStammdatenPanel;
+    private final KursStammdatenPanel kursStammdatenPanel;
     private Runnable nachStammdatenAenderung;
 
     public StammdatenPanel(Abitur abitur, Datenbank datenbank) {
@@ -38,7 +42,30 @@ public class StammdatenPanel extends JPanel {
         lehrerStammdatenPanel.setLehrerLoeschenAction(this::lehrerLoeschen);
         lehrerStammdatenPanel.setLehrerAnlegenAction(this::neuenLehrerAnlegen);
         tabbedPane.add("Lehrer", lehrerStammdatenPanel);
+
+        raumStammdatenPanel = new RaumStammdatenPanel(abitur);
+        raumStammdatenPanel.setNachAenderung(this::raumAendern);
+        raumStammdatenPanel.setRaumAnlegenAction(this::neuenRaumAnlegen);
+        tabbedPane.add("Räume", raumStammdatenPanel);
+
+        kursStammdatenPanel = new KursStammdatenPanel(abitur);
+        kursStammdatenPanel.setNachAenderung(this::kursAendern);
+        kursStammdatenPanel.setKursAnlegen(this::neuenKursAnlegen);
+        tabbedPane.add("Kurse", kursStammdatenPanel);
+
         add(tabbedPane, BorderLayout.CENTER);
+    }
+
+    private void neuenRaumAnlegen(RaumStammdatenDialog.RaumEingabe raumEingabe) {
+        if (abitur.findeRaum(raumEingabe.bezeichnung()) != null) {
+            JOptionPane.showMessageDialog(this, "Einen Raum mit dieser Bezeichnung ist bereits vorhanden.", "Raum-Bezeichnung bereits vergeben", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        Raum raum = new Raum(raumEingabe.bezeichnung(), raumEingabe.kapazitaet());
+         abitur.addRaum(raum);
+         abitur.sortiereRaeume();
+         datenbank.fuegeRaumHinzu(raum);
+        nachStammdatenAenderung.run();
     }
 
     private void schuelerAktualisieren(SchuelerTableModel.SchuelerAenderung aenderung) {
@@ -106,6 +133,37 @@ public class StammdatenPanel extends JPanel {
             JOptionPane.showMessageDialog(this, "Der Schüler konnte nicht gelöscht werden.\nStarten Sie die Anwendung neu.", "Datenbankfehler",
                     JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    public void raumAendern(RaumTableModel.RaumAenderung aenderung) {
+        Raum raum = abitur.findeRaum(aenderung.bezeichnung());
+        raum.aktualisiereStammdaten((Integer) aenderung.wert());
+        try {
+            datenbank.aktualisiereRaum(raum);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        nachStammdatenAenderung.run();
+    }
+
+    public void kursAendern(KursTableModel.KursAenderung aenderung) {
+       Kurs kurs = abitur.findeKurs(aenderung.bezeichnung());
+       switch (aenderung.spalte()){
+           case 1 -> kurs.setFach((Fach) aenderung.wert());
+           case 2 -> kurs.setFachlehrer((Lehrer) aenderung.wert());
+       }
+       datenbank.aktualisiereKurs(kurs);
+    }
+
+    private void neuenKursAnlegen(KursStammdatenDialog.KursEingabe eingabe) {
+        if (abitur.findeKurs(eingabe.bezeichnung()) != null) {
+            JOptionPane.showMessageDialog(this, "Ein Kurs mit dieser Bezeichnung ist bereits vorhanden.", "Kursbezeichnung bereits vergeben", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        Kurs neuerKurs = new Kurs(eingabe.bezeichnung(), eingabe.fach(), eingabe.fachlehrer());
+        abitur.addKurs(neuerKurs);
+        datenbank.fuegeKursHinzu(neuerKurs);
+        nachStammdatenAenderung.run();
     }
 
     private void abiturfaecherAendern(AbiturfaecherPanel.AbiturfaecherEingabe eingabe) {
@@ -206,7 +264,6 @@ public class StammdatenPanel extends JPanel {
 
     public void lehrerLoeschen(String kuerzel) {
         Abitur.LehrerVerwendungen verwendungen = abitur.findeVerwendungen(kuerzel);
-        System.out.println(verwendungen.alsPruefer());
         if (verwendungen.istLeer()) {
             try {
                 datenbank.loescheLehrer(kuerzel);
@@ -217,35 +274,26 @@ public class StammdatenPanel extends JPanel {
                 e.printStackTrace();
                 JOptionPane.showMessageDialog(this, "Der Lehrer konnte nicht gelöscht werden.", "Datenbankfehler", JOptionPane.ERROR_MESSAGE);
             }
+        }
             StringBuilder meldung = new StringBuilder();
             meldung.append("<html>");
             meldung.append("<b>Der Lehrer ").append(kuerzel).append(" kann nicht gelöscht werden.</b><br><br>");
             meldung.append("Er wird noch verwendet als:<br>");
-
             if (!verwendungen.kurse().isEmpty()) {
                 for (Kurs kurs : verwendungen.kurse()) {meldung.append("&nbsp;&nbsp;• Fachlehrer im Kurs ").append(kurs.getBezeichnung()).append("<br>");
                 }
             }
-
             if (verwendungen.alsPruefer() > 0) {
                 meldung.append("&nbsp;&nbsp;• Prüfer in ").append(verwendungen.alsPruefer()).append(" Prüfung(en)<br>");
             }
-
             if (verwendungen.alsVorsitzender() > 0) {
                 meldung.append("&nbsp;&nbsp;• Vorsitzender in ").append(verwendungen.alsVorsitzender()).append(" Prüfung(en)<br>");
             }
-
             if (verwendungen.alsSchriftfuehrer() > 0) {
                 meldung.append("&nbsp;&nbsp;• Schriftführer in ").append(verwendungen.alsSchriftfuehrer()).append(" Prüfung(en)<br>");
             }
-
             meldung.append("</html>");
-
-            System.out.println(meldung.toString());
-
             JOptionPane.showMessageDialog(this, meldung.toString(), "Lehrer kann nicht gelöscht werden", JOptionPane.WARNING_MESSAGE);
-
-        }
     }
 
     public void neuenLehrerAnlegen(LehrerStammdatenDialog.LehrerEingabe eingabe) {
@@ -275,5 +323,7 @@ public class StammdatenPanel extends JPanel {
     public void ansichtAktualisieren() {
         schuelerStammdatenPanel.ansichtAktualisieren();
         lehrerStammdatenPanel.ansichtAktualisieren();
+        raumStammdatenPanel.ansichtAktualisieren();
+        kursStammdatenPanel.ansichtAktualisieren();
     }
 }

@@ -82,4 +82,9 @@ public class Lehrer {
     public int hashCode() {
         return Objects.hash(kuerzel);
     }
+
+    @Override
+    public String toString() {
+        return kuerzel;
+    }
 }

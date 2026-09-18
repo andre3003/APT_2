@@ -53,7 +53,6 @@ public class LehrerTableModel extends AbstractTableModel {
     @Override
     public Object getValueAt(int rowIndex, int columnIndex) {
         Lehrer lehrer = this.lehrer.get(rowIndex);
-
         return switch (columnIndex) {
             case 0 -> lehrer.getKuerzel();
             case 1 -> lehrer.getNachname();

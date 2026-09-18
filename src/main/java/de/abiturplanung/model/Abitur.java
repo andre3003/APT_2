@@ -76,7 +76,6 @@ public class Abitur {
 
     public boolean aendereLehrer(Lehrer lehrer, String nachname, String vorname, Amtsbezeichnung amtsbezeichnung, List<Fach> fakultas) {
         Lehrer l = findeLehrer(lehrer.getKuerzel());
-
         if (l == null) {
             return false;
         }
@@ -84,6 +83,15 @@ public class Abitur {
         l.aktualisiereFakultas(fakultas);
         sortiereLehrer();
         return true;
+    }
+
+    public void aendereKurs(Kurs kurs, Fach fach, Lehrer lehrer) {
+        Kurs k = findeKurs(kurs.getBezeichnung());
+        if (kurs == null) {
+            return;
+        }
+        k.setFach(k.getFach());
+        k.setFachlehrer(k.getFachlehrer());
     }
 
     public void lehrerLoeschen(String kuerzel) {
@@ -112,10 +120,6 @@ public class Abitur {
         pruefungen.add(pruefung);
         pruefung.getSchueler().addPruefung(pruefung);
     }
-
-    /*--------------------------------------------------
-     * Zugriff
-     *--------------------------------------------------*/
 
     public List<Schueler> getSchuelerList() {
         return Collections.unmodifiableList(schuelerList);
@@ -164,7 +168,6 @@ public class Abitur {
         return null;
     }
 
-
     public Lehrer findeLehrer(String kuerzel) {
         for (Lehrer lehrer : lehrer) {
             if (lehrer.getKuerzel().equalsIgnoreCase(kuerzel)) {
@@ -182,7 +185,6 @@ public class Abitur {
         }
         return null;
     }
-
 
     public Kurs findeKurs(String bezeichnung) {
         String gesucht = normalisiere(bezeichnung);
@@ -250,6 +252,10 @@ public class Abitur {
                 .thenComparing(Lehrer::getVorname, String.CASE_INSENSITIVE_ORDER));
     }
 
+    public void sortiereRaeume() {
+        raeume.sort(Comparator.comparing(Raum::getBezeichnung, String.CASE_INSENSITIVE_ORDER));
+    }
+
     public record LehrerVerwendungen(
             List<Kurs> kurse,
             int alsPruefer,
@@ -277,8 +283,10 @@ public class Abitur {
                 verwendeteKurse.add(kurs);
             }
         }
-
         for (Pruefung pruefung : getPruefungen()) {
+            if (pruefung.getPruefungsform() == Pruefungsform.SCHRIFTLICH) {
+                continue;
+            }
             if (lehrer.equals(pruefung.getPruefer())) {
                 alsPruefer++;
             }
