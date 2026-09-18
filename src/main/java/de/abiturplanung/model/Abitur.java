@@ -86,6 +86,12 @@ public class Abitur {
         return true;
     }
 
+    public void lehrerLoeschen(String kuerzel) {
+        Lehrer l = findeLehrer(kuerzel);
+        lehrer.remove(l);
+        sortiereLehrer();
+    }
+
     public void addLehrer(Lehrer lehrer) {
         this.lehrer.add(lehrer);
     }
@@ -242,5 +248,51 @@ public class Abitur {
         lehrer.sort(Comparator
                 .comparing(Lehrer::getNachname, String.CASE_INSENSITIVE_ORDER)
                 .thenComparing(Lehrer::getVorname, String.CASE_INSENSITIVE_ORDER));
+    }
+
+    public record LehrerVerwendungen(
+            List<Kurs> kurse,
+            int alsPruefer,
+            int alsVorsitzender,
+            int alsSchriftfuehrer) {
+
+        public boolean istLeer() {
+            return kurse.isEmpty()
+                    && alsPruefer == 0
+                    && alsVorsitzender == 0
+                    && alsSchriftfuehrer == 0;
+        }
+    }
+
+    public LehrerVerwendungen findeVerwendungen(String kuerzel) {
+        Lehrer lehrer = findeLehrer(kuerzel);
+
+        List<Kurs> verwendeteKurse = new ArrayList<>();
+        int alsPruefer = 0;
+        int alsVorsitzender = 0;
+        int alsSchriftfuehrer = 0;
+
+        for (Kurs kurs : kurse) {
+            if (lehrer.equals(kurs.getFachlehrer())) {
+                verwendeteKurse.add(kurs);
+            }
+        }
+
+        for (Pruefung pruefung : getPruefungen()) {
+            if (lehrer.equals(pruefung.getPruefer())) {
+                alsPruefer++;
+            }
+            if (lehrer.equals(pruefung.getVorsitz())) {
+                alsVorsitzender++;
+            }
+            if (lehrer.equals(pruefung.getSchriftfuehrer())) {
+                alsSchriftfuehrer++;
+            }
+        }
+        return new LehrerVerwendungen(
+                verwendeteKurse,
+                alsPruefer,
+                alsVorsitzender,
+                alsSchriftfuehrer);
     }
 }

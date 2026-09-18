@@ -205,7 +205,47 @@ public class StammdatenPanel extends JPanel {
     }
 
     public void lehrerLoeschen(String kuerzel) {
-        System.out.println(kuerzel);
+        Abitur.LehrerVerwendungen verwendungen = abitur.findeVerwendungen(kuerzel);
+        System.out.println(verwendungen.alsPruefer());
+        if (verwendungen.istLeer()) {
+            try {
+                datenbank.loescheLehrer(kuerzel);
+                abitur.lehrerLoeschen(kuerzel);
+                nachStammdatenAenderung.run();
+                return;
+            } catch (SQLException e) {
+                e.printStackTrace();
+                JOptionPane.showMessageDialog(this, "Der Lehrer konnte nicht gelöscht werden.", "Datenbankfehler", JOptionPane.ERROR_MESSAGE);
+            }
+            StringBuilder meldung = new StringBuilder();
+            meldung.append("<html>");
+            meldung.append("<b>Der Lehrer ").append(kuerzel).append(" kann nicht gelöscht werden.</b><br><br>");
+            meldung.append("Er wird noch verwendet als:<br>");
+
+            if (!verwendungen.kurse().isEmpty()) {
+                for (Kurs kurs : verwendungen.kurse()) {meldung.append("&nbsp;&nbsp;• Fachlehrer im Kurs ").append(kurs.getBezeichnung()).append("<br>");
+                }
+            }
+
+            if (verwendungen.alsPruefer() > 0) {
+                meldung.append("&nbsp;&nbsp;• Prüfer in ").append(verwendungen.alsPruefer()).append(" Prüfung(en)<br>");
+            }
+
+            if (verwendungen.alsVorsitzender() > 0) {
+                meldung.append("&nbsp;&nbsp;• Vorsitzender in ").append(verwendungen.alsVorsitzender()).append(" Prüfung(en)<br>");
+            }
+
+            if (verwendungen.alsSchriftfuehrer() > 0) {
+                meldung.append("&nbsp;&nbsp;• Schriftführer in ").append(verwendungen.alsSchriftfuehrer()).append(" Prüfung(en)<br>");
+            }
+
+            meldung.append("</html>");
+
+            System.out.println(meldung.toString());
+
+            JOptionPane.showMessageDialog(this, meldung.toString(), "Lehrer kann nicht gelöscht werden", JOptionPane.WARNING_MESSAGE);
+
+        }
     }
 
     public void neuenLehrerAnlegen(LehrerStammdatenDialog.LehrerEingabe eingabe) {

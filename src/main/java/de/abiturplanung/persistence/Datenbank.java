@@ -313,6 +313,16 @@ public class Datenbank {
         abitur.sortiereLehrer();
     }
 
+    public void loescheLehrer(String kuerzel) throws SQLException{
+        String sql = "DELETE FROM Lehrer WHERE kuerzel = ?";
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, kuerzel);
+            if (statement.executeUpdate() != 1) {
+                throw new SQLException("Schüler mit Schild-ID " + kuerzel + " konnte nicht gelöscht werden.");
+            }
+        }
+    }
+
     private void ladeFaecher(Connection connection, Abitur abitur) throws SQLException {
         String sql = "SELECT kuerzel, bezeichnung, stammfach_kuerzel, faechergruppe FROM fach";
 

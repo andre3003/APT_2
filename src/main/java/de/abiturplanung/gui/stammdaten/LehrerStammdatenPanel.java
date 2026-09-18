@@ -63,7 +63,7 @@ public class LehrerStammdatenPanel extends JPanel {
         }
         zeile = tabelle.convertRowIndexToModel(zeile);
         String kuerzel = (String)  tableModel.getValueAt(zeile,0);
-        int bestaetigung = JOptionPane.showConfirmDialog(this, "Den Lehrer wirklich löschen?\n Alle zugehörigen Prüfungen werden ebenfalls gelöscht", "Lehrer löschen", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+        int bestaetigung = JOptionPane.showConfirmDialog(this, "Den Lehrer wirklich löschen?\n", "Lehrer löschen", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
         if (bestaetigung == JOptionPane.YES_OPTION) {
             lehererLoeschen.accept(kuerzel);
         }
