@@ -1,7 +1,6 @@
 package de.abiturplanung.gui.stammdaten;
 
 import de.abiturplanung.gui.dialogs.KursStammdatenDialog;
-import de.abiturplanung.gui.dialogs.LehrerStammdatenDialog;
 import de.abiturplanung.model.Abitur;
 import de.abiturplanung.model.Fach;
 import de.abiturplanung.model.Lehrer;
@@ -16,7 +15,7 @@ public class KursStammdatenPanel extends JPanel {
     private final KursTableModel tableModel;
     private final JTable tabelle;
     private JButton btKursAnlegen = new JButton("Neuen Kurs anlegen");
-    private Consumer<KursStammdatenDialog.KursEingabe> kusAnlegen;
+    private Consumer<KursStammdatenDialog.KursEingabe> kursAnlegen;
 
     public KursStammdatenPanel(Abitur abitur) {
         this.abitur = abitur;
@@ -36,11 +35,14 @@ public class KursStammdatenPanel extends JPanel {
     private void btKursAnlegenAction(ActionEvent event) {
         KursStammdatenDialog dialog = new KursStammdatenDialog(null, abitur);
         KursStammdatenDialog.KursEingabe eingabe = dialog.anzeigen();
-        kusAnlegen.accept(eingabe);
+        if (eingabe == null) {
+            return;
+        }
+        kursAnlegen.accept(eingabe);
     }
 
     public void setKursAnlegen(Consumer<KursStammdatenDialog.KursEingabe> kursAnlegen) {
-        this.kusAnlegen = kursAnlegen;
+        this.kursAnlegen = kursAnlegen;
     }
 
     private void konfiguriereSpalten() {

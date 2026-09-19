@@ -25,6 +25,14 @@ public class Fach implements Comparable<Fach> {
         return stammfach;
     }
 
+    public void setBezeichnung(String bezeichnung) {
+        this.bezeichnung = bezeichnung;
+    }
+
+    public void setFaechergruppe(String faechergruppe) {
+        this.faechergruppe = faechergruppe;
+    }
+
     public String getFaechergruppe() {
         return faechergruppe;
     }

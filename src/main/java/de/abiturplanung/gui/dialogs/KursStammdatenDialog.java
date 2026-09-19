@@ -66,17 +66,13 @@ public class KursStammdatenDialog extends JDialog {
 
         speichernButton.addActionListener(e -> speichern());
         abbrechenButton.addActionListener(e -> dispose());
-
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         buttonPanel.add(speichernButton);
         buttonPanel.add(abbrechenButton);
-
         setLayout(new BorderLayout());
         add(eingabePanel, BorderLayout.CENTER);
         add(buttonPanel, BorderLayout.SOUTH);
-
         getRootPane().setDefaultButton(speichernButton);
-
         pack();
         setLocationRelativeTo(owner);
     }
@@ -87,30 +83,24 @@ public class KursStammdatenDialog extends JDialog {
         Lehrer fachlehrer = (Lehrer) fachlehrerComboBox.getSelectedItem();
 
         if (bezeichnung.isEmpty()) {
-            JOptionPane.showMessageDialog(this,
-                    "Bitte geben Sie eine Kursbezeichnung ein.",
-                    "Unvollständige Eingabe",
+            JOptionPane.showMessageDialog(this, "Bitte geben Sie eine Kursbezeichnung ein.", "Unvollständige Eingabe",
                     JOptionPane.WARNING_MESSAGE);
             return;
         }
 
         if (fach == null) {
             JOptionPane.showMessageDialog(this,
-                    "Bitte wählen Sie ein Fach aus.",
-                    "Unvollständige Eingabe",
-                    JOptionPane.WARNING_MESSAGE);
+                    "Bitte wählen Sie ein Fach aus.", "Unvollständige Eingabe", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
         if (fachlehrer == null) {
             JOptionPane.showMessageDialog(this,
-                    "Bitte wählen Sie einen Fachlehrer aus.",
-                    "Unvollständige Eingabe",
-                    JOptionPane.WARNING_MESSAGE);
+                    "Bitte wählen Sie einen Fachlehrer aus.", "Unvollständige Eingabe", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        ergebnis = new KursEingabe(bezeichnung, fach, fachlehrer);
+        ergebnis = new KursEingabe(bezeichnung.toUpperCase(), fach, fachlehrer);
         dispose();
     }
 

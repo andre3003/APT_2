@@ -85,15 +85,6 @@ public class Abitur {
         return true;
     }
 
-    public void aendereKurs(Kurs kurs, Fach fach, Lehrer lehrer) {
-        Kurs k = findeKurs(kurs.getBezeichnung());
-        if (kurs == null) {
-            return;
-        }
-        k.setFach(k.getFach());
-        k.setFachlehrer(k.getFachlehrer());
-    }
-
     public void lehrerLoeschen(String kuerzel) {
         Lehrer l = findeLehrer(kuerzel);
         lehrer.remove(l);

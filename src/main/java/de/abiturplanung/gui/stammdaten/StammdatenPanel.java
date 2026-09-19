@@ -1,9 +1,6 @@
 package de.abiturplanung.gui.stammdaten;
 
-import de.abiturplanung.gui.dialogs.KursStammdatenDialog;
-import de.abiturplanung.gui.dialogs.LehrerStammdatenDialog;
-import de.abiturplanung.gui.dialogs.RaumStammdatenDialog;
-import de.abiturplanung.gui.dialogs.SchuelerStammdatenDialog;
+import de.abiturplanung.gui.dialogs.*;
 import de.abiturplanung.model.*;
 import de.abiturplanung.persistence.Datenbank;
 
@@ -24,6 +21,7 @@ public class StammdatenPanel extends JPanel {
     private final LehrerStammdatenPanel lehrerStammdatenPanel;
     private final RaumStammdatenPanel raumStammdatenPanel;
     private final KursStammdatenPanel kursStammdatenPanel;
+    private final FachStammdatenPanel fachStammdatenPanel;
     private Runnable nachStammdatenAenderung;
 
     public StammdatenPanel(Abitur abitur, Datenbank datenbank) {
@@ -53,6 +51,11 @@ public class StammdatenPanel extends JPanel {
         kursStammdatenPanel.setKursAnlegen(this::neuenKursAnlegen);
         tabbedPane.add("Kurse", kursStammdatenPanel);
 
+        fachStammdatenPanel = new FachStammdatenPanel(abitur);
+        fachStammdatenPanel.setNachAenderung(this::fachAendern);
+        fachStammdatenPanel.setNeuesFachAnlegen(this::neuesFachAnlegen);
+        tabbedPane.add("Fächer", fachStammdatenPanel);
+
         add(tabbedPane, BorderLayout.CENTER);
     }
 
@@ -64,8 +67,13 @@ public class StammdatenPanel extends JPanel {
         Raum raum = new Raum(raumEingabe.bezeichnung(), raumEingabe.kapazitaet());
          abitur.addRaum(raum);
          abitur.sortiereRaeume();
-         datenbank.fuegeRaumHinzu(raum);
-        nachStammdatenAenderung.run();
+         try {
+             datenbank.fuegeRaumHinzu(raum);
+             nachStammdatenAenderung.run();
+         } catch (SQLException e) {
+             e.printStackTrace();
+             JOptionPane.showMessageDialog(this, "Der Raum konnte nicht gespeichert werden.", "Fehler beim Speichern", JOptionPane.ERROR_MESSAGE);
+         }
     }
 
     private void schuelerAktualisieren(SchuelerTableModel.SchuelerAenderung aenderung) {
@@ -140,19 +148,27 @@ public class StammdatenPanel extends JPanel {
         raum.aktualisiereStammdaten((Integer) aenderung.wert());
         try {
             datenbank.aktualisiereRaum(raum);
+            nachStammdatenAenderung.run();
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        nachStammdatenAenderung.run();
     }
 
     public void kursAendern(KursTableModel.KursAenderung aenderung) {
        Kurs kurs = abitur.findeKurs(aenderung.bezeichnung());
+       if (kurs == null) {
+           return;
+       }
        switch (aenderung.spalte()){
            case 1 -> kurs.setFach((Fach) aenderung.wert());
            case 2 -> kurs.setFachlehrer((Lehrer) aenderung.wert());
        }
-       datenbank.aktualisiereKurs(kurs);
+       try {
+           datenbank.aktualisiereKurs(kurs);
+           nachStammdatenAenderung.run();
+       } catch (SQLException e) {
+           e.printStackTrace();
+       }
     }
 
     private void neuenKursAnlegen(KursStammdatenDialog.KursEingabe eingabe) {
@@ -161,9 +177,52 @@ public class StammdatenPanel extends JPanel {
             return;
         }
         Kurs neuerKurs = new Kurs(eingabe.bezeichnung(), eingabe.fach(), eingabe.fachlehrer());
-        abitur.addKurs(neuerKurs);
-        datenbank.fuegeKursHinzu(neuerKurs);
-        nachStammdatenAenderung.run();
+        try {
+            datenbank.fuegeKursHinzu(neuerKurs);
+            abitur.addKurs(neuerKurs);
+            nachStammdatenAenderung.run();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Der Kurs konnte nicht gespeichert werden.", "Fehler beim Speichern", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void fachAendern(FachTableModel.FachAenderung aenderung) {
+        Fach fach = abitur.findeFach(aenderung.kuerzel());
+        if (fach == null) {
+            return;
+        }
+        switch (aenderung.spalte()) {
+            case 1 -> fach.setBezeichnung((String) aenderung.wert());
+            case 2 -> fach.setStammfach((Fach) aenderung.wert());
+            case 3 -> fach.setFaechergruppe((String) aenderung.wert());
+        }
+        try {
+            datenbank.aktualisiereFach(fach);
+            nachStammdatenAenderung.run();
+        } catch(SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void neuesFachAnlegen(FachStammdatenDialog.FachEingabe eingabe) {
+        if (abitur.findeFach(eingabe.kuerzel()) != null) {
+            JOptionPane.showMessageDialog(this, "Ein Fach mit diesem Kürzel ist bereits vorhanden.", "Fachkürzel bereits vergeben", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        Fach  neuesFach = new Fach(eingabe.kuerzel());
+        neuesFach.setBezeichnung(eingabe.bezeichnung());
+        neuesFach.setStammfach(eingabe.stammfach());
+        neuesFach.setFaechergruppe(eingabe.faechergruppe());
+        abitur.addFach(neuesFach);
+        try {
+            datenbank.fuegeFachHinzu(neuesFach);
+            abitur.sortiereFaecher();
+            nachStammdatenAenderung.run();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Das Fach konnte nicht gespeichert werden.", "Fehler beim Speichern", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private void abiturfaecherAendern(AbiturfaecherPanel.AbiturfaecherEingabe eingabe) {
@@ -325,5 +384,6 @@ public class StammdatenPanel extends JPanel {
         lehrerStammdatenPanel.ansichtAktualisieren();
         raumStammdatenPanel.ansichtAktualisieren();
         kursStammdatenPanel.ansichtAktualisieren();
+        fachStammdatenPanel.ansichtAktualisieren();
     }
 }

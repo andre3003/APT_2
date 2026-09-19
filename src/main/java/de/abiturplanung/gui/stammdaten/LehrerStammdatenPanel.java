@@ -91,5 +91,6 @@ public class LehrerStammdatenPanel extends JPanel {
 
     public void ansichtAktualisieren() {
         tableModel.aktualisieren();
+        konfiguriereSpalten();
     }
 }

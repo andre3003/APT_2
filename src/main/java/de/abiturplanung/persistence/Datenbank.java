@@ -647,7 +647,7 @@ public class Datenbank {
         }
     }
 
-    public void aktualisiereKurs(Kurs kurs) {
+    public void aktualisiereKurs(Kurs kurs) throws SQLException {
         String sql = """
                 UPDATE kurs SET fach = ?, fachlehrer_kuerzel = ? WHERE bezeichnung = ?
                 """;
@@ -656,22 +656,15 @@ public class Datenbank {
             statement.setString(2, kurs.getFachlehrer().getKuerzel());
             statement.setString(3, kurs.getBezeichnung());
             statement.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
         }
     }
 
     public void aktualisiereRaum(Raum raum) throws SQLException {
         String sql = "UPDATE Raum SET kapazitaet = ? WHERE bezeichnung = ?";
-
-        try {
-            Connection connection = getConnection();
-            PreparedStatement statement = connection.prepareStatement(sql);
+        try (Connection connection = getConnection();PreparedStatement statement = connection.prepareStatement(sql);){
             statement.setInt(1, raum.getKapazitaet());
             statement.setString(2, raum.getBezeichnung());
             statement.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
         }
     }
 
@@ -838,7 +831,7 @@ public class Datenbank {
         }
     }
 
-    public void fuegeRaumHinzu(Raum raum) {
+    public void fuegeRaumHinzu(Raum raum) throws SQLException{
         String sql = """
                 INSERT INTO raum (bezeichnung, kapazitaet) Values (?, ?);
                 """;
@@ -846,12 +839,10 @@ public class Datenbank {
             statement.setString(1, raum.getBezeichnung());
             statement.setInt(2, raum.getKapazitaet());
             statement.execute();
-        } catch (SQLException e) {
-            e.printStackTrace();
         }
     }
 
-    public void fuegeKursHinzu(Kurs kurs) {
+    public void fuegeKursHinzu(Kurs kurs) throws SQLException {
         String sql = """
                 INSERT INTO kurs (bezeichnung, fach, fachlehrer_kuerzel) Values (?, ?, ?);
                 """;
@@ -860,8 +851,34 @@ public class Datenbank {
             statement.setString(2, kurs.getFach().getKuerzel());
             statement.setString(3, kurs.getFachlehrer().getKuerzel());
             statement.execute();
-        } catch (SQLException e) {
-            e.printStackTrace();
+        }
+    }
+
+    public void aktualisiereFach(Fach fach) throws SQLException{
+        String sql = """
+                UPDATE fach SET bezeichnung = ?, stammfach_kuerzel = ?, faechergruppe = ? WHERE kuerzel = ?;
+                """;
+
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)){
+            statement.setString(1, fach.getBezeichnung() == null ? null : fach.getBezeichnung());
+            statement.setString(2, fach.getStammfach() == null ? null : fach.getStammfach().getKuerzel());
+            statement.setString(3, fach.getFaechergruppe() == null ? null : fach.getFaechergruppe());
+            statement.setString(4, fach.getKuerzel());
+            statement.executeUpdate();
+        }
+    }
+
+    public void fuegeFachHinzu(Fach fach) throws SQLException {
+        String sql = """
+                INSERT INTO fach (kuerzel, bezeichnung, stammfach_kuerzel, faechergruppe) VALUES (?, ?, ?, ?); 
+                """;
+
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, fach.getKuerzel());
+            statement.setString(2, fach.getBezeichnung() == null ? null : fach.getBezeichnung());
+            statement.setString(3, fach.getStammfach() == null ? null : fach.getStammfach().getKuerzel());
+            statement.setString(4, fach.getFaechergruppe() == null ? null : fach.getFaechergruppe());
+            statement.executeUpdate();
         }
     }
 
