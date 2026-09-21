@@ -14,12 +14,14 @@ public class MuendlichePruefungenPanel extends JPanel {
         this.setLayout(new BorderLayout());
         planungsvorratPanel = new PlanungsvorratPanel(abitur);
         pruefungstagePanel = new PruefungstagePanel(abitur, datenbank, planungsvorratPanel::ansichtAktualisieren);
+        planungsvorratPanel.setNachPruefungDoppelklick(pruefungstagePanel::fokussierePruefungInMatrix);
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, planungsvorratPanel, pruefungstagePanel);
         splitPane.setOneTouchExpandable(true);
         splitPane.setResizeWeight(0.32);
         splitPane.setDividerLocation(480);
         this.add(splitPane);
     }
+
 
     public void ansichtAktualisieren() {
         planungsvorratPanel.ansichtAktualisieren();

@@ -10,10 +10,8 @@ import java.awt.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 
 public class PlanungsMatrixPanel extends JPanel {
 
@@ -27,16 +25,20 @@ public class PlanungsMatrixPanel extends JPanel {
     private final Pruefungstag pruefungstag;
 
     private final JPanel matrixPanel = new JPanel();
+    private JScrollPane scrollPane;
     private PruefungsKartenAktionen aktionen;
 
     private Map<Pruefung, List<Pruefung>> alleKollisionen = Map.of();
+    private final Map<Pruefung, PruefungsKarte> pruefungskarten = new HashMap<>();
+    private PruefungsKarte selektierteKarte;
 
 
     public PlanungsMatrixPanel(Abitur abitur, Pruefungstag pruefungstag) {
         this.abitur = abitur;
         this.pruefungstag = pruefungstag;
         setLayout(new BorderLayout());
-        add(new JScrollPane(matrixPanel), BorderLayout.CENTER);
+        scrollPane = new JScrollPane(matrixPanel);
+        add(scrollPane, BorderLayout.CENTER);
     }
 
     public void setzePruefungskartenAktionen(PruefungsKartenAktionen aktionen) {
@@ -48,6 +50,8 @@ public class PlanungsMatrixPanel extends JPanel {
     }
 
     public void ansichtAktualisieren() {
+        selektierteKarte = null;
+        pruefungskarten.clear();
         matrixPanel.removeAll();
         matrixPanel.setLayout(new GridBagLayout());
         erzeugeKopfzeile();
@@ -162,7 +166,9 @@ public class PlanungsMatrixPanel extends JPanel {
             if (spalte > 0) {
                 JPanel slot = slots[zeile - 1][spalte - 1];
                 List<Pruefung> kollisionen = alleKollisionen.getOrDefault(pruefung, List.of()); //Liefert die Liste der Kollisionen der Prüfung dieser Karte; getOrDefault sorgt dafür, dass wir im Falle von null (Prüfung nicht in der Map) eine leere Liste bekommen und nicht null
-                slot.add(new PruefungsKarte(abitur, pruefung, aktionen, kollisionen), BorderLayout.CENTER);
+                PruefungsKarte karte = new PruefungsKarte(abitur, pruefung, aktionen, kollisionen);
+                pruefungskarten.put(pruefung, karte);
+                slot.add(karte, BorderLayout.CENTER);
             }
         }
     }
@@ -210,5 +216,26 @@ public class PlanungsMatrixPanel extends JPanel {
 
     public void setKollisionen(Map<Pruefung, List<Pruefung>> alleKollisionen) {
         this.alleKollisionen = alleKollisionen;
+    }
+
+    public void fokussierePruefung(Pruefung pruefung) {
+        PruefungsKarte karte = pruefungskarten.get(pruefung); //prüfungskarten ist die Map, die für jede Prüfung speichert, welche Karte sie darstellt.
+        if (karte == null) {
+            return;
+        }
+        if (selektierteKarte != null) {
+            selektierteKarte.setSelektiert(false);
+        }
+        Rectangle bereich = SwingUtilities.convertRectangle(karte.getParent(), karte.getBounds(), matrixPanel);
+        matrixPanel.scrollRectToVisible(bereich);
+        selektierteKarte = karte;
+        selektierteKarte.setSelektiert(true);
+    }
+
+    public void selektionAufheben() {
+        if (selektierteKarte != null) {
+            selektierteKarte.setSelektiert(false);
+            selektierteKarte = null;
+        }
     }
 }

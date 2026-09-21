@@ -186,6 +186,11 @@ public class PruefungsKarte extends JPanel {
         return new Color(255, 248, 220);
     }
 
+    public void setSelektiert(boolean selektiert) {
+        Color farbe = selektiert ? Color.BLUE : ermittleRahmenfarbe();
+        setBorder(new CompoundBorder(BorderFactory.createLineBorder(farbe, 2), new EmptyBorder(3, 5, 3, 5)));
+    }
+
     private Color ermittleRahmenfarbe() {
         if (pruefung.istVollstaendigGeplant()) {
             return new Color(70, 150, 70);

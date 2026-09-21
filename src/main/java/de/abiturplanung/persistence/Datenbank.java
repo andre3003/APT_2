@@ -870,7 +870,7 @@ public class Datenbank {
 
     public void fuegeFachHinzu(Fach fach) throws SQLException {
         String sql = """
-                INSERT INTO fach (kuerzel, bezeichnung, stammfach_kuerzel, faechergruppe) VALUES (?, ?, ?, ?); 
+                INSERT INTO fach (kuerzel, bezeichnung, stammfach_kuerzel, faechergruppe) VALUES (?, ?, ?, ?);
                 """;
 
         try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {

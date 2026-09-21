@@ -10,9 +10,12 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.awt.datatransfer.Transferable;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeSet;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 public class PlanungsvorratPanel extends JPanel {
@@ -23,7 +26,9 @@ public class PlanungsvorratPanel extends JPanel {
     private JComboBox<String> cmbFach;
     private JComboBox<String> cmbKurs;
     private JComboBox<String> cmbStatus;
+    private JComboBox<String> cmbPruefer;
     private JCheckBox chkVollstaendigeAusblenden;
+    private Consumer<Pruefung> nachPruefungDoppelklick;
 
     public PlanungsvorratPanel(Abitur abitur) {
         this.abitur = abitur;
@@ -34,6 +39,21 @@ public class PlanungsvorratPanel extends JPanel {
         this.setLayout(new BorderLayout(0, 0));
         tableModel = new PruefungsTableModel(abitur.getPruefungen());
         JTable pruefungstabelle = erstellePruefungenTabelle();
+        pruefungstabelle.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2 && SwingUtilities.isLeftMouseButton(e)) {
+                    int viewRow = pruefungstabelle.rowAtPoint(e.getPoint());
+                    if (viewRow >= 0) {
+                        int modelRow = pruefungstabelle.convertRowIndexToModel(viewRow);
+                        Pruefung pruefung = tableModel.getPruefung(modelRow);
+                        if (nachPruefungDoppelklick != null) {
+                            nachPruefungDoppelklick.accept(pruefung);
+                        }
+                    }
+                }
+            }
+        });
         JPanel kopfPanel = erstelleKopfPanel();
         this.add(kopfPanel, BorderLayout.NORTH);
         this.add(new JScrollPane(pruefungstabelle), BorderLayout.CENTER);
@@ -63,6 +83,8 @@ public class PlanungsvorratPanel extends JPanel {
         cmbFach.addItem("Alle");
         cmbKurs = new JComboBox<>();
         cmbKurs.addItem("Alle");
+        cmbPruefer = new JComboBox<>();
+        cmbPruefer.addItem("Alle");
         cmbStatus = new JComboBox<>(new String[]{"Alle", "unvollständig", "vollständig"});
         chkVollstaendigeAusblenden = new JCheckBox("Vollständige ausblenden");
 
@@ -72,9 +94,12 @@ public class PlanungsvorratPanel extends JPanel {
         obereZeile.add(cmbFach);
         obereZeile.add(new JLabel("Kurs:"));
         obereZeile.add(cmbKurs);
-        obereZeile.add(new JLabel("Status:"));
-        obereZeile.add(cmbStatus);
-        obereZeile.add(chkVollstaendigeAusblenden);
+
+        obereZeile.add(new JLabel("Prüfer:"));
+        obereZeile.add(cmbPruefer);
+        untereZeile.add(new JLabel("Status:"));
+        untereZeile.add(cmbStatus);
+        untereZeile.add(chkVollstaendigeAusblenden);
 
         untereZeile.add(new JLabel("Suche:"));
         untereZeile.add(txtSuche);
@@ -82,12 +107,20 @@ public class PlanungsvorratPanel extends JPanel {
         filterPanel.add(obereZeile, BorderLayout.NORTH);
         filterPanel.add(untereZeile, BorderLayout.SOUTH);
 
-        TreeSet<String> faecher = new TreeSet<>();
+        TreeSet<String> faecher = new TreeSet<>(); //Eine Datenstruktur, die ein Element nur genau einmal enthält.
         TreeSet<String> kurse = new TreeSet<>();
+        TreeSet<String> pruefer = new TreeSet<>();
         for (int i = 0; i < tableModel.getRowCount(); i++) {
             Pruefung pruefung = tableModel.getPruefung(i);
             faecher.add(pruefung.getKurs().getFach().getKuerzel());
             kurse.add(pruefung.getKurs().getBezeichnung());
+            if (pruefung.getPruefer() != null) {
+                pruefer.add(pruefung.getPruefer().getKuerzel());
+            }
+        }
+
+        for (String kuerzel : pruefer) {
+            cmbPruefer.addItem(kuerzel);
         }
 
         for (String fach : faecher) {
@@ -116,6 +149,7 @@ public class PlanungsvorratPanel extends JPanel {
         cmbFach.addActionListener(e -> filterAktualisieren());
         cmbKurs.addActionListener(e -> filterAktualisieren());
         cmbStatus.addActionListener(e -> filterAktualisieren());
+        cmbPruefer.addActionListener(e -> filterAktualisieren());
         chkVollstaendigeAusblenden.addActionListener(e -> filterAktualisieren());
         return filterPanel;
     }
@@ -139,6 +173,12 @@ public class PlanungsvorratPanel extends JPanel {
 
         if (kurs != null && !kurs.equals("Alle")) {
             filter.add(RowFilter.regexFilter("^" + Pattern.quote(kurs) + "$", PruefungsTableModel.SPALTE_KURS));
+        }
+
+        String pruefer = (String) cmbPruefer.getSelectedItem();
+
+        if (pruefer != null && !pruefer.equals("Alle")) {
+            filter.add(RowFilter.regexFilter("^" + Pattern.quote(pruefer) + "$", PruefungsTableModel.SPALTE_PRUEFER));
         }
 
         String status = (String) cmbStatus.getSelectedItem();
@@ -205,6 +245,10 @@ public class PlanungsvorratPanel extends JPanel {
 
         tabelle.setDefaultRenderer(Object.class, statusRenderer);
         return tabelle;
+    }
+
+    public void setNachPruefungDoppelklick(Consumer<Pruefung> nachPruefungDoppelklick) {
+        this.nachPruefungDoppelklick = nachPruefungDoppelklick;
     }
 
     public void ansichtAktualisieren() {

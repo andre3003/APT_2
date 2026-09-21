@@ -8,6 +8,7 @@ import de.abiturplanung.persistence.Datenbank;
 import de.abiturplanung.service.Kollisionspruefer;
 
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
 import java.awt.*;
 import java.sql.SQLException;
 import java.time.LocalDate;
@@ -16,7 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class PruefungstagePanel extends JPanel implements PruefungsKartenAktionen{
+public class PruefungstagePanel extends JPanel implements PruefungsKartenAktionen {
     private JTabbedPane tabbedPane = new JTabbedPane();
     private List<PlanungsMatrixPanel> matrixPanels = new ArrayList<>();
     private Abitur abitur;
@@ -32,6 +33,7 @@ public class PruefungstagePanel extends JPanel implements PruefungsKartenAktione
         this.kollisionspruefer = new Kollisionspruefer(abitur);
         setLayout(new BorderLayout());
         add(tabbedPane, BorderLayout.CENTER);
+        tabbedPane.addChangeListener(this::selektionenAufheben);
         ansichtAktualisieren();
     }
 
@@ -50,6 +52,27 @@ public class PruefungstagePanel extends JPanel implements PruefungsKartenAktione
         }
         revalidate();
         repaint();
+    }
+
+    private void selektionenAufheben(ChangeEvent e) {
+        for (PlanungsMatrixPanel matrixPanel : matrixPanels) {
+            matrixPanel.selektionAufheben();
+        }
+    }
+
+    public void fokussierePruefungInMatrix(Pruefung pruefung) {
+        if (pruefung.getPruefungstag() == null) {
+            return;
+        }
+        for (int i = 0; i < abitur.getPruefungstage().size(); i++) {
+            Pruefungstag pruefungstag = abitur.getPruefungstage().get(i);
+            if (pruefungstag.getDatum().equals(pruefung.getPruefungstag())) {
+                tabbedPane.setSelectedIndex(i);
+                PlanungsMatrixPanel matrixPanel = matrixPanels.get(i);
+                matrixPanel.fokussierePruefung(pruefung);
+                return;
+            }
+        }
     }
 
     //Interface-Methoden:
@@ -85,7 +108,8 @@ public class PruefungstagePanel extends JPanel implements PruefungsKartenAktione
         try {
             datenbank.fuegePruefungstagHinzu(pruefungstag);
             abitur.addPruefungstag(pruefungstag);
-            ansichtAktualisieren();;
+            ansichtAktualisieren();
+            ;
 
         } catch (SQLException exception) {
             JOptionPane.showMessageDialog(this, "Der Prüfungstag konnte nicht gespeichert werden:\n" + exception.getMessage(), "Datenbankfehler", JOptionPane.ERROR_MESSAGE);
@@ -147,7 +171,7 @@ public class PruefungstagePanel extends JPanel implements PruefungsKartenAktione
         Pruefungstag pruefungstag = abitur.getPruefungstage().get(index);
         LocalDate altesDatum = pruefungstag.getDatum();
         LocalDate neuesDatum = PruefungstagDatumDialog.anzeigen(this, "Datum des Prüfungstags ändern", altesDatum);
-        if (neuesDatum == null || neuesDatum.equals(altesDatum)){
+        if (neuesDatum == null || neuesDatum.equals(altesDatum)) {
             return;
         }
         for (Pruefungstag andererTag : abitur.getPruefungstage()) {
