@@ -7,35 +7,34 @@ import de.abiturplanung.model.Pruefungstag;
 import javax.swing.*;
 import javax.swing.border.MatteBorder;
 import java.awt.*;
+import java.awt.event.ActionEvent;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.List;
+import java.util.function.Consumer;
 
 public class PlanungsMatrixPanel extends JPanel {
-
     private static final LocalTime STARTZEIT = LocalTime.of(8, 0);
     private static final LocalTime ENDZEIT = LocalTime.of(18, 0);
-    private static final int SPALTEN = 6;
-
     private static final DateTimeFormatter ZEIT_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
-    private final JPanel[][] slots = new JPanel[21][SPALTEN];
+    private final JPanel[][] slots;
     private final Abitur abitur;
     private final Pruefungstag pruefungstag;
-
     private final JPanel matrixPanel = new JPanel();
     private JScrollPane scrollPane;
     private PruefungsKartenAktionen aktionen;
-
     private Map<Pruefung, List<Pruefung>> alleKollisionen = Map.of();
     private final Map<Pruefung, PruefungsKarte> pruefungskarten = new HashMap<>();
     private PruefungsKarte selektierteKarte;
+    private Consumer<Pruefungstag> nachSpalteHinzufuegen;
 
 
     public PlanungsMatrixPanel(Abitur abitur, Pruefungstag pruefungstag) {
         this.abitur = abitur;
         this.pruefungstag = pruefungstag;
+        slots = new JPanel[21][pruefungstag.getAnzahlPlanungsspalten()];
         setLayout(new BorderLayout());
         scrollPane = new JScrollPane(matrixPanel);
         add(scrollPane, BorderLayout.CENTER);
@@ -43,6 +42,10 @@ public class PlanungsMatrixPanel extends JPanel {
 
     public void setzePruefungskartenAktionen(PruefungsKartenAktionen aktionen) {
         this.aktionen = aktionen;
+    }
+
+    public void setzNachSpalteHinzufuegen(Consumer<Pruefungstag> nachSpalteHinzufuegen) {
+        this.nachSpalteHinzufuegen = nachSpalteHinzufuegen;
     }
 
     public LocalDate getDatum() {
@@ -63,8 +66,8 @@ public class PlanungsMatrixPanel extends JPanel {
 
     private void erzeugeKopfzeile() {
         addZelle(new JLabel("Zeit", SwingConstants.CENTER), 0, 0, 70, 30);
-
-        for (int spalte = 1; spalte <= SPALTEN; spalte++) {
+        int spalten = pruefungstag.getAnzahlPlanungsspalten();
+        for (int spalte = 1; spalte <= spalten; spalte++) {
             addZelle(new JLabel("Spalte " + spalte, SwingConstants.CENTER), spalte, 0, 180, 30);
         }
     }
@@ -99,7 +102,9 @@ public class PlanungsMatrixPanel extends JPanel {
 
             addZelle(zeitContainer, 0, zeile, 150, 65);
 
-            for (int spalte = 1; spalte <= SPALTEN; spalte++) {
+            int spalten = pruefungstag.getAnzahlPlanungsspalten();
+
+            for (int spalte = 1; spalte <= spalten; spalte++) {
                 JPanel slot = new JPanel(new BorderLayout());
                 slot.setBackground(Color.WHITE);
 
@@ -134,9 +139,28 @@ public class PlanungsMatrixPanel extends JPanel {
                 slots[zeile - 1][spalte - 1] = slot;
                 addZelle(slot, spalte, zeile, 180, 65);
             }
+            JPanel steuerPanel = new JPanel();
+            steuerPanel.setBackground(getBackground());
+            if (zeile == 4) {
+                JButton btSpalteHinzufuegen = new JButton("+");
+                btSpalteHinzufuegen.addActionListener(this::btSpalteAction);
+                btSpalteHinzufuegen.setFont(btSpalteHinzufuegen.getFont().deriveFont(Font.BOLD, 22f));
+                btSpalteHinzufuegen.setBorderPainted(false);
+                btSpalteHinzufuegen.setContentAreaFilled(false);
+                btSpalteHinzufuegen.setFocusPainted(false);
+                btSpalteHinzufuegen.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+                btSpalteHinzufuegen.setToolTipText("Planungsspalte hinzufügen");
+
+                steuerPanel.add(btSpalteHinzufuegen);
+            }
+            addZelle(steuerPanel, spalten + 1, zeile, 50, 65);
             zeit = zeit.plusMinutes(30);
             zeile++;
         }
+    }
+
+    private void btSpalteAction(ActionEvent event) {
+        nachSpalteHinzufuegen.accept(pruefungstag);
     }
 
     private void zeigeGeplantePruefungen() {
@@ -159,7 +183,9 @@ public class PlanungsMatrixPanel extends JPanel {
 
             int spalte = pruefung.getPlanungsspalte() == null ? findeFreieSpalte(zeile) : pruefung.getPlanungsspalte();
 
-            if (spalte < 1 || spalte > SPALTEN || slots[zeile - 1][spalte - 1].getComponentCount() > 0) {
+            int spalten = pruefungstag.getAnzahlPlanungsspalten();
+
+            if (spalte < 1 || spalte > spalten || slots[zeile - 1][spalte - 1].getComponentCount() > 0) {
                 spalte = findeFreieSpalte(zeile);
             }
 
@@ -174,7 +200,8 @@ public class PlanungsMatrixPanel extends JPanel {
     }
 
     private int findeFreieSpalte(int zeile) {
-        for (int spalte = 1; spalte <= SPALTEN; spalte++) {
+        int spalten = pruefungstag.getAnzahlPlanungsspalten();
+        for (int spalte = 1; spalte <= spalten; spalte++) {
             if (slots[zeile - 1][spalte - 1].getComponentCount() == 0) {
                 return spalte;
             }
@@ -230,6 +257,13 @@ public class PlanungsMatrixPanel extends JPanel {
         matrixPanel.scrollRectToVisible(bereich);
         selektierteKarte = karte;
         selektierteKarte.setSelektiert(true);
+    }
+
+    public void scrollNachRechts() {
+        SwingUtilities.invokeLater(() -> {
+            JScrollBar horizontalScrollBar = scrollPane.getHorizontalScrollBar();
+            horizontalScrollBar.setValue(horizontalScrollBar.getMaximum());
+        });
     }
 
     public void selektionAufheben() {

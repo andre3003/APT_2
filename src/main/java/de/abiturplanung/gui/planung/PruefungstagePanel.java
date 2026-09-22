@@ -44,6 +44,7 @@ public class PruefungstagePanel extends JPanel implements PruefungsKartenAktione
         Map<Pruefung, List<Pruefung>> alleKollisionen = kollisionspruefer.findeAlleKollisionen();
         for (Pruefungstag pruefungstag : abitur.getPruefungstage()) {
             PlanungsMatrixPanel matrixPanel = new PlanungsMatrixPanel(abitur, pruefungstag);
+            matrixPanel.setzNachSpalteHinzufuegen(this::planungsspalteHinzufuegen);
             matrixPanels.add(matrixPanel);
             matrixPanel.setKollisionen(alleKollisionen);
             matrixPanel.setzePruefungskartenAktionen(this);
@@ -72,6 +73,15 @@ public class PruefungstagePanel extends JPanel implements PruefungsKartenAktione
                 matrixPanel.fokussierePruefung(pruefung);
                 return;
             }
+        }
+    }
+
+    private void fokussierePruefungstagRechts(Pruefungstag pruefungstag) {
+        int index = abitur.getPruefungstage().indexOf(pruefungstag);
+
+        if (index >= 0 && index < matrixPanels.size()) {
+            tabbedPane.setSelectedIndex(index);
+            matrixPanels.get(index).scrollNachRechts();
         }
     }
 
@@ -104,7 +114,7 @@ public class PruefungstagePanel extends JPanel implements PruefungsKartenAktione
                 return;
             }
         }
-        Pruefungstag pruefungstag = new Pruefungstag(datum);
+        Pruefungstag pruefungstag = new Pruefungstag(datum, 8);
         try {
             datenbank.fuegePruefungstagHinzu(pruefungstag);
             abitur.addPruefungstag(pruefungstag);
@@ -160,6 +170,18 @@ public class PruefungstagePanel extends JPanel implements PruefungsKartenAktione
             ansichtAktualisieren();
         } catch (SQLException e) {
             e.printStackTrace();
+        }
+    }
+
+    public void planungsspalteHinzufuegen(Pruefungstag pruefungstag) {
+        pruefungstag.setAnzahlPlanungsspalten(pruefungstag.getAnzahlPlanungsspalten() + 1);
+
+        try {
+            datenbank.aktualisierePruefungstagAnzahlPlanungsspalten(pruefungstag);
+            ansichtAktualisieren();
+            fokussierePruefungstagRechts(pruefungstag);
+        } catch (SQLException exception) {
+            JOptionPane.showMessageDialog(this, "Die Planungsspalte konnte nicht gespeichert werden.\nBitte starten Sie die Anwendung neu.", "Fehler", JOptionPane.ERROR_MESSAGE);
         }
     }
 

@@ -129,7 +129,8 @@ public class Datenbank {
             statement.execute("""
                     CREATE TABLE IF NOT EXISTS pruefungstag (
                         pruefungstag_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        datum TEXT NOT NULL UNIQUE
+                        datum TEXT NOT NULL UNIQUE,
+                        anzahl_planungsspalten INTEGER NOT NULL DEFAULT 6
                     )
                     """);
 
@@ -432,14 +433,15 @@ public class Datenbank {
     }
 
     private void ladePruefungstage(Connection connection, Abitur abitur, Map<Long, Pruefungstag> pruefungstagMap) throws SQLException {
-        String sql = "SELECT pruefungstag_id, datum FROM pruefungstag ORDER BY datum";
+        String sql = "SELECT pruefungstag_id, datum, anzahl_planungsspalten FROM pruefungstag ORDER BY datum";
 
         try (Statement statement = connection.createStatement(); ResultSet resultSet = statement.executeQuery(sql)) {
             while (resultSet.next()) {
                 long id = resultSet.getLong("pruefungstag_id");
                 LocalDate datum = LocalDate.parse(resultSet.getString("datum"));
+                int spalten = resultSet.getInt("anzahl_planungsspalten");
 
-                Pruefungstag pruefungstag = new Pruefungstag(datum);
+                Pruefungstag pruefungstag = new Pruefungstag(datum, spalten);
 
                 abitur.addPruefungstag(pruefungstag);
                 pruefungstagMap.put(id, pruefungstag);
@@ -1076,12 +1078,13 @@ public class Datenbank {
 
     public void fuegePruefungstagHinzu(Pruefungstag pruefungstag) throws SQLException {
         String sql = """
-                INSERT INTO pruefungstag (datum) VALUES (?) ON CONFLICT(datum) DO NOTHING
+                INSERT INTO pruefungstag (datum, anzahl_planungsspalten) VALUES (?, ?) ON CONFLICT(datum) DO NOTHING
                 """;
 
         try (Connection connection = getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, pruefungstag.getDatum().toString());
+            statement.setInt(2, pruefungstag.getAnzahlPlanungsspalten());
             statement.executeUpdate();
         }
     }
@@ -1100,6 +1103,16 @@ public class Datenbank {
         try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, neuesDatum.toString());
             statement.setString(2, altesDatum.toString());
+            statement.executeUpdate();
+        }
+    }
+
+    public void aktualisierePruefungstagAnzahlPlanungsspalten(Pruefungstag pruefungstag) throws SQLException {
+        String sql = "UPDATE pruefungstag SET anzahl_planungsspalten = ? WHERE datum = ?";
+
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, pruefungstag.getAnzahlPlanungsspalten());
+            statement.setString(2, pruefungstag.getDatum().toString());
             statement.executeUpdate();
         }
     }

@@ -322,6 +322,7 @@ public class MainFrame extends JFrame implements HauptmenueAktionen {
     public void neuePlanungAction() {
         JFileChooser fileChooser = new JFileChooser(AppPfade.getDatenVerzeichnis().toFile());
         fileChooser.setDialogTitle("Neue Planung anlegen");
+        fileChooser.setFileFilter(new FileNameExtensionFilter("APT-Datenbanken (*.db)", "db"));
 
         if (fileChooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) {
             return;
