@@ -29,6 +29,7 @@ public class PlanungsMatrixPanel extends JPanel {
     private final Map<Pruefung, PruefungsKarte> pruefungskarten = new HashMap<>();
     private PruefungsKarte selektierteKarte;
     private Consumer<Pruefungstag> nachSpalteHinzufuegen;
+    private Consumer<Pruefungstag> nachSpalteEntfernen;
 
 
     public PlanungsMatrixPanel(Abitur abitur, Pruefungstag pruefungstag) {
@@ -48,21 +49,15 @@ public class PlanungsMatrixPanel extends JPanel {
         this.nachSpalteHinzufuegen = nachSpalteHinzufuegen;
     }
 
+    public void setzNachSpalteEntfernen(Consumer<Pruefungstag> nachSpalteEntfernen) {
+        this.nachSpalteEntfernen = nachSpalteEntfernen;
+    }
+
     public LocalDate getDatum() {
         return pruefungstag.getDatum();
     }
 
-    public void ansichtAktualisieren() {
-        selektierteKarte = null;
-        pruefungskarten.clear();
-        matrixPanel.removeAll();
-        matrixPanel.setLayout(new GridBagLayout());
-        erzeugeKopfzeile();
-        erzeugeLeereMatrix();
-        zeigeGeplantePruefungen();
-        matrixPanel.revalidate();
-        matrixPanel.repaint();
-    }
+
 
     private void erzeugeKopfzeile() {
         addZelle(new JLabel("Zeit", SwingConstants.CENTER), 0, 0, 70, 30);
@@ -75,6 +70,7 @@ public class PlanungsMatrixPanel extends JPanel {
     private void erzeugeLeereMatrix() {
         LocalTime zeit = STARTZEIT;
         int zeile = 1;
+        int spalten = pruefungstag.getAnzahlPlanungsspalten();
 
         while (!zeit.isAfter(ENDZEIT)) {
             LocalTime vorbereitungsbeginn = zeit.minusMinutes(30);
@@ -101,8 +97,6 @@ public class PlanungsMatrixPanel extends JPanel {
             zeitContainer.add(zeitPanel, BorderLayout.CENTER);
 
             addZelle(zeitContainer, 0, zeile, 150, 65);
-
-            int spalten = pruefungstag.getAnzahlPlanungsspalten();
 
             for (int spalte = 1; spalte <= spalten; spalte++) {
                 JPanel slot = new JPanel(new BorderLayout());
@@ -139,28 +133,60 @@ public class PlanungsMatrixPanel extends JPanel {
                 slots[zeile - 1][spalte - 1] = slot;
                 addZelle(slot, spalte, zeile, 180, 65);
             }
-            JPanel steuerPanel = new JPanel();
-            steuerPanel.setBackground(getBackground());
-            if (zeile == 4) {
-                JButton btSpalteHinzufuegen = new JButton("+");
-                btSpalteHinzufuegen.addActionListener(this::btSpalteAction);
-                btSpalteHinzufuegen.setFont(btSpalteHinzufuegen.getFont().deriveFont(Font.BOLD, 22f));
-                btSpalteHinzufuegen.setBorderPainted(false);
-                btSpalteHinzufuegen.setContentAreaFilled(false);
-                btSpalteHinzufuegen.setFocusPainted(false);
-                btSpalteHinzufuegen.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-                btSpalteHinzufuegen.setToolTipText("Planungsspalte hinzufügen");
-
-                steuerPanel.add(btSpalteHinzufuegen);
-            }
-            addZelle(steuerPanel, spalten + 1, zeile, 50, 65);
             zeit = zeit.plusMinutes(30);
             zeile++;
         }
+        addSteuerPanel();
     }
 
-    private void btSpalteAction(ActionEvent event) {
+    private void addZelle(Component component, int spalte, int zeile, int breite, int hoehe) {
+        JPanel zelle = new JPanel(new BorderLayout());
+        zelle.setPreferredSize(new Dimension(breite, hoehe));
+        zelle.setMinimumSize(new Dimension(breite, hoehe));
+        zelle.setBorder(new MatteBorder(0, 0, 1, 1, Color.LIGHT_GRAY));
+        zelle.add(component, BorderLayout.CENTER);
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = spalte;
+        gbc.gridy = zeile;
+        gbc.fill = GridBagConstraints.BOTH;
+        gbc.weightx = spalte == 0 ? 0 : 1;
+        gbc.weighty = 0;
+        matrixPanel.add(zelle, gbc);
+    }
+
+    public void addSteuerPanel() {
+        JPanel steuerpanel = new JPanel();
+        steuerpanel.setLayout(new BoxLayout(steuerpanel, BoxLayout.Y_AXIS));
+        JButton btSpalteHinzufuegen = erzeugeSteuerButton("+","Planungsspalte hinzufügen");
+        btSpalteHinzufuegen.addActionListener(this::btSpalteHinzufuegenAction);
+        JButton btSpalteEntfernen = erzeugeSteuerButton("-", "Planungsspalte entfernen");
+        btSpalteEntfernen.addActionListener(this::btSpalteEntfernenAction);
+        steuerpanel.add(Box.createVerticalGlue());
+        steuerpanel.add(btSpalteHinzufuegen);
+        steuerpanel.add(btSpalteEntfernen);
+        steuerpanel.add(Box.createVerticalGlue());
+        this.add(steuerpanel, BorderLayout.EAST);
+    }
+
+    private JButton erzeugeSteuerButton(String text, String tooltip) {
+        JButton button = new JButton(text);
+        button.setFont(button.getFont().deriveFont(Font.BOLD, 22f));
+        button.setAlignmentX(Component.CENTER_ALIGNMENT);
+        button.setBorderPainted(false);
+        button.setContentAreaFilled(false);
+        button.setFocusPainted(false);
+        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        button.setToolTipText(tooltip);
+        return button;
+    }
+
+    private void btSpalteHinzufuegenAction(ActionEvent event) {
         nachSpalteHinzufuegen.accept(pruefungstag);
+    }
+
+    private void btSpalteEntfernenAction(ActionEvent event) {
+        nachSpalteEntfernen.accept(pruefungstag);
     }
 
     private void zeigeGeplantePruefungen() {
@@ -199,6 +225,7 @@ public class PlanungsMatrixPanel extends JPanel {
         }
     }
 
+
     private int findeFreieSpalte(int zeile) {
         int spalten = pruefungstag.getAnzahlPlanungsspalten();
         for (int spalte = 1; spalte <= spalten; spalte++) {
@@ -206,7 +233,6 @@ public class PlanungsMatrixPanel extends JPanel {
                 return spalte;
             }
         }
-
         return -1;
     }
 
@@ -224,22 +250,6 @@ public class PlanungsMatrixPanel extends JPanel {
         return minuten / 30 + 1;
     }
 
-    private void addZelle(Component component, int spalte, int zeile, int breite, int hoehe) {
-        JPanel zelle = new JPanel(new BorderLayout());
-        zelle.setPreferredSize(new Dimension(breite, hoehe));
-        zelle.setMinimumSize(new Dimension(breite, hoehe));
-        zelle.setBorder(new MatteBorder(0, 0, 1, 1, Color.LIGHT_GRAY));
-        zelle.add(component, BorderLayout.CENTER);
-
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.gridx = spalte;
-        gbc.gridy = zeile;
-        gbc.fill = GridBagConstraints.BOTH;
-        gbc.weightx = spalte == 0 ? 0 : 1;
-        gbc.weighty = 0;
-
-        matrixPanel.add(zelle, gbc);
-    }
 
     public void setKollisionen(Map<Pruefung, List<Pruefung>> alleKollisionen) {
         this.alleKollisionen = alleKollisionen;
@@ -271,5 +281,17 @@ public class PlanungsMatrixPanel extends JPanel {
             selektierteKarte.setSelektiert(false);
             selektierteKarte = null;
         }
+    }
+
+    public void ansichtAktualisieren() {
+        selektierteKarte = null;
+        pruefungskarten.clear();
+        matrixPanel.removeAll();
+        matrixPanel.setLayout(new GridBagLayout());
+        erzeugeKopfzeile();
+        erzeugeLeereMatrix();
+        zeigeGeplantePruefungen();
+        matrixPanel.revalidate();
+        matrixPanel.repaint();
     }
 }

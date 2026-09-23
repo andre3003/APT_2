@@ -37,23 +37,7 @@ public class PruefungstagePanel extends JPanel implements PruefungsKartenAktione
         ansichtAktualisieren();
     }
 
-    public void ansichtAktualisieren() {
-        tabbedPane.removeAll();
-        matrixPanels.clear();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
-        Map<Pruefung, List<Pruefung>> alleKollisionen = kollisionspruefer.findeAlleKollisionen();
-        for (Pruefungstag pruefungstag : abitur.getPruefungstage()) {
-            PlanungsMatrixPanel matrixPanel = new PlanungsMatrixPanel(abitur, pruefungstag);
-            matrixPanel.setzNachSpalteHinzufuegen(this::planungsspalteHinzufuegen);
-            matrixPanels.add(matrixPanel);
-            matrixPanel.setKollisionen(alleKollisionen);
-            matrixPanel.setzePruefungskartenAktionen(this);
-            matrixPanel.ansichtAktualisieren();
-            tabbedPane.addTab(pruefungstag.getDatum().format(formatter), matrixPanel);
-        }
-        revalidate();
-        repaint();
-    }
+
 
     private void selektionenAufheben(ChangeEvent e) {
         for (PlanungsMatrixPanel matrixPanel : matrixPanels) {
@@ -175,13 +159,33 @@ public class PruefungstagePanel extends JPanel implements PruefungsKartenAktione
 
     public void planungsspalteHinzufuegen(Pruefungstag pruefungstag) {
         pruefungstag.setAnzahlPlanungsspalten(pruefungstag.getAnzahlPlanungsspalten() + 1);
-
         try {
             datenbank.aktualisierePruefungstagAnzahlPlanungsspalten(pruefungstag);
             ansichtAktualisieren();
             fokussierePruefungstagRechts(pruefungstag);
         } catch (SQLException exception) {
             JOptionPane.showMessageDialog(this, "Die Planungsspalte konnte nicht gespeichert werden.\nBitte starten Sie die Anwendung neu.", "Fehler", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    public void planungsspalteEntfernen(Pruefungstag pruefungstag) {
+        if (pruefungstag.getAnzahlPlanungsspalten() == 1) {
+            return;
+        }
+        int letzteSpalte = pruefungstag.getAnzahlPlanungsspalten();
+        for (Pruefung pruefung : abitur.getPruefungen()) {
+            if (pruefungstag.getDatum().equals(pruefung.getPruefungstag()) && pruefung.getPlanungsspalte() == letzteSpalte) {
+                JOptionPane.showMessageDialog(this, "Die Planungsspalte konnte nicht entfernt werden.\nSie enthält noch Prüfungen.", "Fehler", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+        }
+        pruefungstag.setAnzahlPlanungsspalten(pruefungstag.getAnzahlPlanungsspalten() - 1);
+        try {
+            datenbank.aktualisierePruefungstagAnzahlPlanungsspalten(pruefungstag);
+            ansichtAktualisieren();
+            fokussierePruefungstagRechts(pruefungstag);
+        } catch (SQLException exception) {
+            JOptionPane.showMessageDialog(this, "Die Änderung konnte nicht gespeichert werden.\nBitte starten Sie die Anwendung neu.", "Fehler", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -236,5 +240,25 @@ public class PruefungstagePanel extends JPanel implements PruefungsKartenAktione
         pruefung.setSchriftfuehrer(kopiertePruefung.getSchriftfuehrer());
         pruefung.setRaum(kopiertePruefung.getRaum());
         nachBearbeitung(pruefung);
+    }
+
+
+    public void ansichtAktualisieren() {
+        tabbedPane.removeAll();
+        matrixPanels.clear();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+        Map<Pruefung, List<Pruefung>> alleKollisionen = kollisionspruefer.findeAlleKollisionen();
+        for (Pruefungstag pruefungstag : abitur.getPruefungstage()) {
+            PlanungsMatrixPanel matrixPanel = new PlanungsMatrixPanel(abitur, pruefungstag);
+            matrixPanel.setzNachSpalteHinzufuegen(this::planungsspalteHinzufuegen);
+            matrixPanel.setzNachSpalteEntfernen(this::planungsspalteEntfernen);
+            matrixPanels.add(matrixPanel);
+            matrixPanel.setKollisionen(alleKollisionen);
+            matrixPanel.setzePruefungskartenAktionen(this);
+            matrixPanel.ansichtAktualisieren();
+            tabbedPane.addTab(pruefungstag.getDatum().format(formatter), matrixPanel);
+        }
+        revalidate();
+        repaint();
     }
 }
