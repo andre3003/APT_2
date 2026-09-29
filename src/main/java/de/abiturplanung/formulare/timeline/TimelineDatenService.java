@@ -1,7 +1,6 @@
-package de.abiturplanung.gui.timeline;
+package de.abiturplanung.formulare.timeline;
 
 import de.abiturplanung.model.Abitur;
-import de.abiturplanung.model.Kurs;
 import de.abiturplanung.model.Pruefung;
 import de.abiturplanung.model.Pruefungstag;
 

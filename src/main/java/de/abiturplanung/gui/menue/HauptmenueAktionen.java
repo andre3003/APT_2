@@ -36,6 +36,8 @@ public interface HauptmenueAktionen {
 
     void zeigeStammdaten();
 
+    void zeigeFormularmodul();
+
 
 
 }

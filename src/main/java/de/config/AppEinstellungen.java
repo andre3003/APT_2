@@ -1,11 +1,15 @@
 package de.config;
 
 import java.nio.file.Path;
+import java.time.LocalTime;
 import java.util.prefs.Preferences;
 
 public class AppEinstellungen {
 
     private static final String KEY_LETZTE_DATENBANK = "letzteDatenbank";
+    public static final LocalTime DEFAULT_STARTZEIT = LocalTime.of(8, 0);
+    public static final LocalTime DEFAULT_ENDZEIT = LocalTime.of(17, 0);
+    public static final int DEFAULT_ANZAHL_PLANUNGSSPALTEN = 6;
 
     private final Preferences preferences =
             Preferences.userNodeForPackage(AppEinstellungen.class);

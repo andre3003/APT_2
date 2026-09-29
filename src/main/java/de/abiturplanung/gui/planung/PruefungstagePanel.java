@@ -6,6 +6,7 @@ import de.abiturplanung.model.Pruefung;
 import de.abiturplanung.model.Pruefungstag;
 import de.abiturplanung.persistence.Datenbank;
 import de.abiturplanung.service.Kollisionspruefer;
+import de.config.AppEinstellungen;
 
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
@@ -16,6 +17,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.time.LocalTime;
 
 public class PruefungstagePanel extends JPanel implements PruefungsKartenAktionen {
     private JTabbedPane tabbedPane = new JTabbedPane();
@@ -36,8 +38,6 @@ public class PruefungstagePanel extends JPanel implements PruefungsKartenAktione
         tabbedPane.addChangeListener(this::selektionenAufheben);
         ansichtAktualisieren();
     }
-
-
 
     private void selektionenAufheben(ChangeEvent e) {
         for (PlanungsMatrixPanel matrixPanel : matrixPanels) {
@@ -98,7 +98,7 @@ public class PruefungstagePanel extends JPanel implements PruefungsKartenAktione
                 return;
             }
         }
-        Pruefungstag pruefungstag = new Pruefungstag(datum, 8);
+        Pruefungstag pruefungstag = new Pruefungstag(datum, AppEinstellungen.DEFAULT_STARTZEIT, AppEinstellungen.DEFAULT_ENDZEIT, AppEinstellungen.DEFAULT_ANZAHL_PLANUNGSSPALTEN);
         try {
             datenbank.fuegePruefungstagHinzu(pruefungstag);
             abitur.addPruefungstag(pruefungstag);
@@ -160,7 +160,7 @@ public class PruefungstagePanel extends JPanel implements PruefungsKartenAktione
     public void planungsspalteHinzufuegen(Pruefungstag pruefungstag) {
         pruefungstag.setAnzahlPlanungsspalten(pruefungstag.getAnzahlPlanungsspalten() + 1);
         try {
-            datenbank.aktualisierePruefungstagAnzahlPlanungsspalten(pruefungstag);
+            datenbank.aktualisierePruefungstag(pruefungstag);
             ansichtAktualisieren();
             fokussierePruefungstagRechts(pruefungstag);
         } catch (SQLException exception) {
@@ -181,10 +181,49 @@ public class PruefungstagePanel extends JPanel implements PruefungsKartenAktione
         }
         pruefungstag.setAnzahlPlanungsspalten(pruefungstag.getAnzahlPlanungsspalten() - 1);
         try {
-            datenbank.aktualisierePruefungstagAnzahlPlanungsspalten(pruefungstag);
+            datenbank.aktualisierePruefungstag(pruefungstag);
             ansichtAktualisieren();
             fokussierePruefungstagRechts(pruefungstag);
         } catch (SQLException exception) {
+            JOptionPane.showMessageDialog(this, "Die Änderung konnte nicht gespeichert werden.\nBitte starten Sie die Anwendung neu.", "Fehler", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void aendereStartzeit(Pruefungstag pruefungstag, LocalTime neueStartzeit) {
+        if (!neueStartzeit.isBefore(pruefungstag.getEndzeit())) {
+            return;
+        }
+        for (Pruefung pruefung : abitur.getPruefungen()) {
+            if (pruefungstag.getDatum().equals(pruefung.getPruefungstag()) && pruefung.getBeginn().isBefore(neueStartzeit)) {
+                JOptionPane.showMessageDialog(this, "Die Planungszeile konnte nicht entfernt werden.\nSie enthält noch Prüfungen.", "Fehler", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+        }
+        try {
+            pruefungstag.setStartzeit(neueStartzeit);
+            datenbank.aktualisierePruefungstag(pruefungstag);
+            ansichtAktualisieren();
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Die Änderung konnte nicht gespeichert werden.\nBitte starten Sie die Anwendung neu.", "Fehler", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void aendereEndzeit(Pruefungstag pruefungstag, LocalTime neueEndzeit) {
+        if (!neueEndzeit.isAfter(pruefungstag.getStartzeit())) {
+            return;
+        }
+        for (Pruefung pruefung : abitur.getPruefungen()) {
+            if (pruefungstag.getDatum().equals(pruefung.getPruefungstag()) && pruefung.getBeginn().isAfter(neueEndzeit)) {
+                JOptionPane.showMessageDialog(this, "Die Planungszeile konnte nicht entfernt werden.\nSie enthält noch Prüfungen.", "Fehler", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+        }
+        try {
+            pruefungstag.setEndzeit(neueEndzeit);
+            datenbank.aktualisierePruefungstag(pruefungstag);
+            ansichtAktualisieren();
+        } catch (SQLException e) {
+            e.printStackTrace();
             JOptionPane.showMessageDialog(this, "Die Änderung konnte nicht gespeichert werden.\nBitte starten Sie die Anwendung neu.", "Fehler", JOptionPane.ERROR_MESSAGE);
         }
     }
@@ -251,7 +290,9 @@ public class PruefungstagePanel extends JPanel implements PruefungsKartenAktione
         for (Pruefungstag pruefungstag : abitur.getPruefungstage()) {
             PlanungsMatrixPanel matrixPanel = new PlanungsMatrixPanel(abitur, pruefungstag);
             matrixPanel.setzNachSpalteHinzufuegen(this::planungsspalteHinzufuegen);
-            matrixPanel.setzNachSpalteEntfernen(this::planungsspalteEntfernen);
+            matrixPanel.setzeNachSpalteEntfernen(this::planungsspalteEntfernen);
+            matrixPanel.setzeNachStartzeitAenderung(this::aendereStartzeit);
+            matrixPanel.setzeNachEndzeitAenderung(this::aendereEndzeit);
             matrixPanels.add(matrixPanel);
             matrixPanel.setKollisionen(alleKollisionen);
             matrixPanel.setzePruefungskartenAktionen(this);

@@ -1,5 +1,6 @@
 package de.abiturplanung.gui;
 
+import de.abiturplanung.formulare.FormularPanel;
 import de.abiturplanung.gui.menue.Hauptmenue;
 import de.abiturplanung.gui.menue.HauptmenueAktionen;
 import de.abiturplanung.gui.planung.MuendlichePruefungenPanel;
@@ -37,6 +38,7 @@ public class MainFrame extends JFrame implements HauptmenueAktionen {
 
     private MuendlichePruefungenPanel muendlichePruefungenPanel;
     private StammdatenPanel stammdatenPanel;
+    private FormularPanel formularPanel;
 
     public MainFrame(Abitur abitur, Datenbank datenbank) {
         this();
@@ -64,9 +66,12 @@ public class MainFrame extends JFrame implements HauptmenueAktionen {
 
         stammdatenPanel = new StammdatenPanel(abitur, datenbank);
         stammdatenPanel.setNachStammdatenAenderung(this::ansichtenAktualisieren);
+
+        formularPanel = new FormularPanel(abitur);
         modulPanel.add(muendlichePruefungenPanel, "MUENDLICH");
         modulPanel.add(stammdatenPanel, "STAMMDATEN");
-        modulLayout.show(modulPanel, "MUENDLICH");
+        modulPanel.add(formularPanel, "FORMULARE");
+        modulLayout.show(modulPanel, "FORMULARE");
         statusleiste.setText("Datenbank: " + datenbank.getPfad().getFileName() + " | " + abitur.getPruefungen().size() + " Prüfungen geladen");
         add(modulPanel, BorderLayout.CENTER);
         add(statusleiste, BorderLayout.SOUTH);
@@ -428,8 +433,8 @@ public class MainFrame extends JFrame implements HauptmenueAktionen {
 
     @Override
     public void timeLineErzeugen() {
-        TimelineFrame timelineFrame = new TimelineFrame(abitur);
-        timelineFrame.setVisible(true);
+//        TimelineFrame timelineFrame = new TimelineFrame(abitur);
+//        timelineFrame.setVisible(true);
     }
 
     @Override
@@ -440,6 +445,10 @@ public class MainFrame extends JFrame implements HauptmenueAktionen {
     @Override
     public void zeigeStammdaten() {
         modulLayout.show(modulPanel, "STAMMDATEN");
+    }
+
+    @Override
+    public void zeigeFormularmodul() {modulLayout.show(modulPanel, "FORMULARE");
     }
 
     private void ansichtenAktualisieren() {

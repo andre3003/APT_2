@@ -2,10 +2,12 @@ package de.abiturplanung;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 
 public final class Utilities {
 
     private static final DateTimeFormatter FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+    private static final DateTimeFormatter DATUM_KURZ_FORMAT = DateTimeFormatter.ofPattern("EE, dd.MM.", Locale.GERMAN);
 
     private Utilities() {
         // Verhindert die Instanziierung
@@ -64,5 +66,11 @@ public final class Utilities {
     public static String formatiereDatum(LocalDate datum) {
         return datum == null ? "" : datum.format(FORMAT);
     }
+
+    public static String formatiereDatumKurz(LocalDate datum) {
+        return datum == null ? "" : datum.format(DATUM_KURZ_FORMAT);
+    }
+
+
 
 }

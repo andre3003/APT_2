@@ -8,16 +8,16 @@ import javax.swing.*;
 import javax.swing.border.MatteBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 public class PlanungsMatrixPanel extends JPanel {
-    private static final LocalTime STARTZEIT = LocalTime.of(8, 0);
-    private static final LocalTime ENDZEIT = LocalTime.of(18, 0);
     private static final DateTimeFormatter ZEIT_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
     private final JPanel[][] slots;
     private final Abitur abitur;
@@ -30,34 +30,20 @@ public class PlanungsMatrixPanel extends JPanel {
     private PruefungsKarte selektierteKarte;
     private Consumer<Pruefungstag> nachSpalteHinzufuegen;
     private Consumer<Pruefungstag> nachSpalteEntfernen;
+    private BiConsumer<Pruefungstag, LocalTime> nachStartzeitAenderung;
+    private BiConsumer<Pruefungstag, LocalTime> nachEndzeitAenderung;
 
 
     public PlanungsMatrixPanel(Abitur abitur, Pruefungstag pruefungstag) {
         this.abitur = abitur;
         this.pruefungstag = pruefungstag;
-        slots = new JPanel[21][pruefungstag.getAnzahlPlanungsspalten()];
+        int zeilen = (int) (Duration.between(pruefungstag.getStartzeit(), pruefungstag.getEndzeit()).toMinutes() / 30) + 1;
+        slots = new JPanel[zeilen][pruefungstag.getAnzahlPlanungsspalten()];
+//        slots = new JPanel[21][pruefungstag.getAnzahlPlanungsspalten()];
         setLayout(new BorderLayout());
         scrollPane = new JScrollPane(matrixPanel);
         add(scrollPane, BorderLayout.CENTER);
     }
-
-    public void setzePruefungskartenAktionen(PruefungsKartenAktionen aktionen) {
-        this.aktionen = aktionen;
-    }
-
-    public void setzNachSpalteHinzufuegen(Consumer<Pruefungstag> nachSpalteHinzufuegen) {
-        this.nachSpalteHinzufuegen = nachSpalteHinzufuegen;
-    }
-
-    public void setzNachSpalteEntfernen(Consumer<Pruefungstag> nachSpalteEntfernen) {
-        this.nachSpalteEntfernen = nachSpalteEntfernen;
-    }
-
-    public LocalDate getDatum() {
-        return pruefungstag.getDatum();
-    }
-
-
 
     private void erzeugeKopfzeile() {
         addZelle(new JLabel("Zeit", SwingConstants.CENTER), 0, 0, 70, 30);
@@ -68,19 +54,20 @@ public class PlanungsMatrixPanel extends JPanel {
     }
 
     private void erzeugeLeereMatrix() {
-        LocalTime zeit = STARTZEIT;
+        LocalTime startzeit = pruefungstag.getStartzeit();
+        LocalTime endzeit = pruefungstag.getEndzeit();
         int zeile = 1;
         int spalten = pruefungstag.getAnzahlPlanungsspalten();
 
-        while (!zeit.isAfter(ENDZEIT)) {
-            LocalTime vorbereitungsbeginn = zeit.minusMinutes(30);
-            LocalTime pruefungsende = zeit.plusMinutes(30);
+        while (!startzeit.isAfter(endzeit)) {
+            LocalTime vorbereitungsbeginn = startzeit.minusMinutes(30);
+            LocalTime pruefungsende = startzeit.plusMinutes(30);
 
             String zeitText = String.format(
                     "<html><div style='text-align:center;'>Vorber: %s - %s<br>----------------<br>Prüfg: %s - %s</div></html>",
                     vorbereitungsbeginn.format(ZEIT_FORMAT),
-                    zeit.format(ZEIT_FORMAT),
-                    zeit.format(ZEIT_FORMAT),
+                    startzeit.format(ZEIT_FORMAT),
+                    startzeit.format(ZEIT_FORMAT),
                     pruefungsende.format(ZEIT_FORMAT)
             );
 
@@ -102,7 +89,7 @@ public class PlanungsMatrixPanel extends JPanel {
                 JPanel slot = new JPanel(new BorderLayout());
                 slot.setBackground(Color.WHITE);
 
-                LocalTime slotZeit = zeit;
+                LocalTime slotZeit = startzeit;
                 int slotSpalte = spalte;
 
                 slot.setTransferHandler(new TransferHandler() {
@@ -133,10 +120,11 @@ public class PlanungsMatrixPanel extends JPanel {
                 slots[zeile - 1][spalte - 1] = slot;
                 addZelle(slot, spalte, zeile, 180, 65);
             }
-            zeit = zeit.plusMinutes(30);
+            startzeit = startzeit.plusMinutes(30);
             zeile++;
         }
-        addSteuerPanel();
+        addSteuerPanelSpalte();
+        addSteuerPanelZeile();
     }
 
     private void addZelle(Component component, int spalte, int zeile, int breite, int hoehe) {
@@ -155,25 +143,71 @@ public class PlanungsMatrixPanel extends JPanel {
         matrixPanel.add(zelle, gbc);
     }
 
-    public void addSteuerPanel() {
+    public void addSteuerPanelSpalte() {
         JPanel steuerpanel = new JPanel();
         steuerpanel.setLayout(new BoxLayout(steuerpanel, BoxLayout.Y_AXIS));
+        steuerpanel.setPreferredSize(new Dimension(45,45));
         JButton btSpalteHinzufuegen = erzeugeSteuerButton("+","Planungsspalte hinzufügen");
         btSpalteHinzufuegen.addActionListener(this::btSpalteHinzufuegenAction);
         JButton btSpalteEntfernen = erzeugeSteuerButton("-", "Planungsspalte entfernen");
         btSpalteEntfernen.addActionListener(this::btSpalteEntfernenAction);
         steuerpanel.add(Box.createVerticalGlue());
         steuerpanel.add(btSpalteHinzufuegen);
+        steuerpanel.add(Box.createVerticalStrut(10));
         steuerpanel.add(btSpalteEntfernen);
         steuerpanel.add(Box.createVerticalGlue());
         this.add(steuerpanel, BorderLayout.EAST);
     }
 
+    public void addSteuerPanelZeile() {
+        JPanel steuerpanel = new JPanel();
+        steuerpanel.setLayout(new BoxLayout(steuerpanel, BoxLayout.X_AXIS));
+        steuerpanel.setPreferredSize(new Dimension(25,25));
+        JButton btStartzeitMinus = erzeugeSteuerButton("-", "Startzeit reduzieren");
+        JButton btStartzeitPlus = erzeugeSteuerButton("+", "Startzeit erhöhen");
+        btStartzeitMinus.addActionListener(e -> nachStartzeitAenderung.accept(pruefungstag, pruefungstag.getStartzeit().minusMinutes(30)));
+        btStartzeitPlus.addActionListener(e -> nachStartzeitAenderung.accept(pruefungstag, pruefungstag.getStartzeit().plusMinutes(30)));
+        JLabel text = new JLabel("Startzeit:");
+        JLabel text2 = new JLabel("30 Minuten");
+        text.setFont(text.getFont().deriveFont(Font.PLAIN, 15f));
+        steuerpanel.add(Box.createHorizontalGlue());
+        steuerpanel.add(text);
+        steuerpanel.add(Box.createHorizontalStrut(5));
+        steuerpanel.add(btStartzeitMinus);
+        steuerpanel.add(Box.createHorizontalStrut(5));
+        steuerpanel.add(text2);
+        steuerpanel.add(Box.createHorizontalStrut(5));
+        steuerpanel.add(btStartzeitPlus);
+        steuerpanel.add(Box.createHorizontalGlue());
+
+        JButton btEndzeitPlus  = erzeugeSteuerButton("+","Endzeit erhöhen");
+        JButton btEndzeitMinus  = erzeugeSteuerButton("-","Endezeit  reduzieren");
+        btEndzeitPlus.addActionListener(e -> nachEndzeitAenderung.accept(pruefungstag, pruefungstag.getEndzeit().plusMinutes(30)));
+        btEndzeitMinus.addActionListener(e -> nachEndzeitAenderung.accept(pruefungstag, pruefungstag.getEndzeit().minusMinutes(30)));
+        text = new JLabel("Endzeit:");
+        text2 = new JLabel("30 Minuten");
+        text.setFont(text.getFont().deriveFont(Font.PLAIN, 15f));
+        steuerpanel.add(Box.createHorizontalGlue());
+        steuerpanel.add(text);
+        steuerpanel.add(Box.createHorizontalStrut(5));
+        steuerpanel.add(btEndzeitMinus);
+        steuerpanel.add(Box.createHorizontalStrut(5));
+        steuerpanel.add(text2);
+        steuerpanel.add(Box.createHorizontalStrut(5));
+        steuerpanel.add(btEndzeitPlus);
+        steuerpanel.add(Box.createHorizontalGlue());
+
+
+
+
+        this.add(steuerpanel, BorderLayout.SOUTH);
+    }
+
     private JButton erzeugeSteuerButton(String text, String tooltip) {
         JButton button = new JButton(text);
-        button.setFont(button.getFont().deriveFont(Font.BOLD, 22f));
+        button.setFont(button.getFont().deriveFont(Font.PLAIN, 15f));
         button.setAlignmentX(Component.CENTER_ALIGNMENT);
-        button.setBorderPainted(false);
+        button.setBorderPainted(true);
         button.setContentAreaFilled(false);
         button.setFocusPainted(false);
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -189,32 +223,48 @@ public class PlanungsMatrixPanel extends JPanel {
         nachSpalteEntfernen.accept(pruefungstag);
     }
 
+    public void setzePruefungskartenAktionen(PruefungsKartenAktionen aktionen) {
+        this.aktionen = aktionen;
+    }
+
+    public void setzNachSpalteHinzufuegen(Consumer<Pruefungstag> nachSpalteHinzufuegen) {
+        this.nachSpalteHinzufuegen = nachSpalteHinzufuegen;
+    }
+
+    public void setzeNachSpalteEntfernen(Consumer<Pruefungstag> nachSpalteEntfernen) {
+        this.nachSpalteEntfernen = nachSpalteEntfernen;
+    }
+
+    public void setzeNachStartzeitAenderung(BiConsumer<Pruefungstag, LocalTime> nachStartzeitAenderung) {
+        this.nachStartzeitAenderung = nachStartzeitAenderung;
+    }
+
+    public void setzeNachEndzeitAenderung(BiConsumer<Pruefungstag, LocalTime> nachEndzeitAenderung) {
+        this.nachEndzeitAenderung = nachEndzeitAenderung;
+    }
+
+    public LocalDate getDatum() {
+        return pruefungstag.getDatum();
+    }
+
     private void zeigeGeplantePruefungen() {
         List<Pruefung> pruefungen = new ArrayList<>();
-
         for (Pruefung pruefung : abitur.getPruefungen()) {
             if (pruefungstag.getDatum().equals(pruefung.getPruefungstag()) && pruefung.getBeginn() != null) {
                 pruefungen.add(pruefung);
             }
         }
-
         pruefungen.sort(Comparator.comparing(Pruefung::getBeginn));
-
         for (Pruefung pruefung : pruefungen) {
             int zeile = zeileFuerZeit(pruefung.getBeginn());
-
             if (zeile <= 0) {
                 continue;
             }
-
             int spalte = pruefung.getPlanungsspalte() == null ? findeFreieSpalte(zeile) : pruefung.getPlanungsspalte();
-
             int spalten = pruefungstag.getAnzahlPlanungsspalten();
-
             if (spalte < 1 || spalte > spalten || slots[zeile - 1][spalte - 1].getComponentCount() > 0) {
                 spalte = findeFreieSpalte(zeile);
             }
-
             if (spalte > 0) {
                 JPanel slot = slots[zeile - 1][spalte - 1];
                 List<Pruefung> kollisionen = alleKollisionen.getOrDefault(pruefung, List.of()); //Liefert die Liste der Kollisionen der Prüfung dieser Karte; getOrDefault sorgt dafür, dass wir im Falle von null (Prüfung nicht in der Map) eine leere Liste bekommen und nicht null
@@ -237,11 +287,13 @@ public class PlanungsMatrixPanel extends JPanel {
     }
 
     private int zeileFuerZeit(LocalTime zeit) {
-        if (zeit.isBefore(STARTZEIT) || zeit.isAfter(ENDZEIT)) {
+        LocalTime startzeit = pruefungstag.getStartzeit();
+        LocalTime endzeit = pruefungstag.getEndzeit();
+        if (zeit.isBefore(startzeit) || zeit.isAfter(endzeit)) {
             return -1;
         }
 
-        int minuten = (zeit.getHour() * 60 + zeit.getMinute()) - (STARTZEIT.getHour() * 60 + STARTZEIT.getMinute());
+        int minuten = (zeit.getHour() * 60 + zeit.getMinute()) - (startzeit.getHour() * 60 + startzeit.getMinute());
 
         if (minuten % 30 != 0) {
             return -1;

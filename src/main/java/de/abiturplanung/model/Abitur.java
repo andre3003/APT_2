@@ -128,6 +128,11 @@ public class Abitur {
         return Collections.unmodifiableList(pruefungen);
     }
 
+    public List<Pruefung> gibPruefungenAB4Sortiert() {
+        return pruefungen.stream().filter(p -> p.getAbiturfach() == Abiturfach.AB4).sorted(Comparator.comparing((Pruefung p) -> p.getSchueler().getNachname()).thenComparing(p -> p.getSchueler().getVorname())).toList();
+    }
+
+
     public List<Raum> getRaeume() {
         return Collections.unmodifiableList(raeume);
     }

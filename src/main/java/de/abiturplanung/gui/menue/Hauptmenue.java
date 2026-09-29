@@ -77,12 +77,12 @@ public class Hauptmenue {
         pruefungsfolge.add(folgenimportieren);
         planungMenue.add(pruefungsfolge);
         menueleiste.add(planungMenue);
-        JMenu ansichtMenue = new JMenu("Ansicht");
-        JMenuItem timeLineAnsicht = new JMenuItem("Timeline");
-        timeLineAnsicht.addActionListener(e -> aktionen.timeLineErzeugen());
-        ansichtMenue.add(timeLineAnsicht);
-
-        menueleiste.add(ansichtMenue);
+//        JMenu ansichtMenue = new JMenu("Ansicht");
+//        JMenuItem timeLineAnsicht = new JMenuItem("Timeline");
+//        timeLineAnsicht.addActionListener(e -> aktionen.timeLineErzeugen());
+//        ansichtMenue.add(timeLineAnsicht);
+//
+//        menueleiste.add(ansichtMenue);
 
         JMenu module = new JMenu("Module");
 
@@ -95,6 +95,16 @@ public class Hauptmenue {
         stammdaten.addActionListener(e -> aktionen.zeigeStammdaten());
         module.add(stammdaten);
         menueleiste.add(module);
+
+        JMenu formularMenue = new JMenu("Formulare");
+        JMenuItem formularItem = new JMenuItem("Formulare");
+        formularItem.addActionListener(e -> aktionen.zeigeFormularmodul());
+        formularMenue.add(formularItem);
+        menueleiste.add(formularMenue);
+
+
+
+
         JMenu importMenue = new JMenu("Import");
 
         JMenuItem schuelerImportEintrag = new JMenuItem("Schüler laden");

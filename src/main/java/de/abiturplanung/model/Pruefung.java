@@ -62,7 +62,6 @@ public class Pruefung {
         this.kurs = kurs;
     }
 
-
     public Abiturfach getAbiturfach() {
         return abiturfach;
     }
@@ -113,6 +112,13 @@ public class Pruefung {
 
     public LocalTime getBeginn() {
         return beginn;
+    }
+
+    public LocalTime getEnde() {
+        if (beginn == null) {
+            return null;
+        }
+        return beginn.plusMinutes(30);
     }
 
     public void setBeginn(LocalTime beginn) {
