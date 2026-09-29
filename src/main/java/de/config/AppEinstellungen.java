@@ -11,8 +11,7 @@ public class AppEinstellungen {
     public static final LocalTime DEFAULT_ENDZEIT = LocalTime.of(17, 0);
     public static final int DEFAULT_ANZAHL_PLANUNGSSPALTEN = 6;
 
-    private final Preferences preferences =
-            Preferences.userNodeForPackage(AppEinstellungen.class);
+    private final Preferences preferences = Preferences.userNodeForPackage(AppEinstellungen.class);
 
     public void setLetzteDatenbank(Path datenbankPfad) {
         Path appVerzeichnis = AppPfade.getAppVerzeichnis();

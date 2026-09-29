@@ -28,5 +28,20 @@ public class AppPfade {
         Files.createDirectories(getDatenVerzeichnis());
         Files.createDirectories(getImportVerzeichnis());
         Files.createDirectories(getExportVerzeichnis());
+        Files.createDirectories(getRessourcenVerzeichnis());
+        Files.createDirectories(getPdfVerzeichnis());
+
+    }
+
+    public static Path getRessourcenVerzeichnis() {
+        return APP_VERZEICHNIS.resolve("Ressourcen");
+    }
+
+    public static Path getPdfVerzeichnis() {
+        return APP_VERZEICHNIS.resolve("PDF");
+    }
+
+    public static Path getLogoPfad() {
+        return getRessourcenVerzeichnis().resolve("schullogo.png");
     }
 }

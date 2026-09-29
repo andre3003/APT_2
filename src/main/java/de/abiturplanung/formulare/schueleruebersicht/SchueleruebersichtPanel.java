@@ -1,19 +1,21 @@
-package de.abiturplanung.formulare;
+package de.abiturplanung.formulare.schueleruebersicht;
 
 import de.abiturplanung.Utilities;
+import de.abiturplanung.formulare.pdf.PdfErsteller;
 import de.abiturplanung.model.Abitur;
 import de.abiturplanung.model.Pruefung;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.time.format.DateTimeFormatter;
-import java.util.Locale;
+import java.awt.event.ActionEvent;
+import java.io.File;
 
 public class SchueleruebersichtPanel extends JPanel {
     private final Abitur abitur;
     private JTable tabelle;
-    private static final String VORBEREITUNGSRAUM = "MLB2"; //Dummy-Wert
+    public static final String VORBEREITUNGSRAUM = "MLB2";
+    private JCheckBox pdfOeffnenCheckbox;//Dummy-Wert
 
     public SchueleruebersichtPanel(Abitur abitur) {
         this.abitur = abitur;
@@ -25,6 +27,19 @@ public class SchueleruebersichtPanel extends JPanel {
         tabelle = erstelleTabelle();
         JScrollPane scrollPane = new JScrollPane(tabelle);
         add(scrollPane, BorderLayout.CENTER);
+        JPanel steuerung = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JButton btPdfErstellen = new JButton("PDF erstellen");
+        btPdfErstellen.addActionListener(this::pdfErstellenAction);
+        steuerung.add(btPdfErstellen);
+        pdfOeffnenCheckbox = new JCheckBox("PDF nach Erstellung öffnen");
+        pdfOeffnenCheckbox.setSelected(true);
+        steuerung.add(pdfOeffnenCheckbox);
+        add(steuerung, BorderLayout.NORTH);
+    }
+
+    private void pdfErstellenAction(ActionEvent event) {
+        PdfErsteller.erstelle(this, "Pruefungsuebersicht.pdf", pdfOeffnenCheckbox.isSelected(), datei -> PdfSchueleruebersicht.erstelle(abitur, datei)
+        );
     }
 
     private JTable erstelleTabelle() {

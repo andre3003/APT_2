@@ -1,5 +1,6 @@
 package de.abiturplanung.formulare;
 
+import de.abiturplanung.formulare.schueleruebersicht.SchueleruebersichtPanel;
 import de.abiturplanung.formulare.timeline.TimelinePanel;
 import de.abiturplanung.model.Abitur;
 import javax.swing.*;

@@ -5,6 +5,8 @@ import java.util.*;
 
 public class Abitur {
 
+    private int abiturjahrgang = 2027;
+
     private final List<Schueler> schuelerList = new ArrayList<>();
 
     private final List<Lehrer> lehrer = new ArrayList<>();
@@ -83,6 +85,9 @@ public class Abitur {
         l.aktualisiereFakultas(fakultas);
         sortiereLehrer();
         return true;
+    }
+    public int getAbiturjahrgang() {
+        return abiturjahrgang;
     }
 
     public void lehrerLoeschen(String kuerzel) {
