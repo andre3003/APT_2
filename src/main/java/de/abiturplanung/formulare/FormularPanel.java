@@ -1,7 +1,7 @@
 package de.abiturplanung.formulare;
 
 import de.abiturplanung.formulare.schueleruebersicht.SchueleruebersichtPanel;
-import de.abiturplanung.formulare.timeline.TimelinePanel;
+import de.abiturplanung.formulare.pruefungsplan.PruefungsplanPanel;
 import de.abiturplanung.model.Abitur;
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -73,7 +73,7 @@ public class FormularPanel extends JPanel {
 
     private void zeigeTimeline() {
         vorschauPanel.removeAll();
-        TimelinePanel timelinePanel = new TimelinePanel(abitur);
+        PruefungsplanPanel timelinePanel = new PruefungsplanPanel(abitur);
         vorschauPanel.add(timelinePanel, BorderLayout.CENTER);
         vorschauPanel.revalidate();
         vorschauPanel.repaint();

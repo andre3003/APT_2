@@ -1,4 +1,4 @@
-package de.abiturplanung.formulare.timeline;
+package de.abiturplanung.formulare.pruefungsplan;
 
 import de.abiturplanung.model.Abitur;
 import de.abiturplanung.model.Pruefung;
@@ -6,26 +6,28 @@ import de.abiturplanung.model.Pruefungstag;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.io.File;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-public class TimelinePanel extends JPanel {
+public class PruefungsplanPanel extends JPanel {
     private final Abitur abitur;
-    private final TimelineDatenService timelineDatenService = new TimelineDatenService();
+    private final PruefungsplanDatenService pruefungsplanDatenService = new PruefungsplanDatenService();
     private JComboBox<Pruefungstag> pruefungstagComboBox;
-    private final JPanel timelineRasterPanel = new JPanel(new GridBagLayout());
+    private final JPanel pruefungsplanRasterPanel = new JPanel(new GridBagLayout());
     private static final int SPALTENBREITE = 100;
     private static final int SPALTENHOEHE = 20;
 
-    public TimelinePanel(Abitur abitur) {
+    public PruefungsplanPanel(Abitur abitur) {
         this.abitur = abitur;
         initGui();
     }
 
     public void initGui() {
         setLayout(new BorderLayout());
-        JScrollPane scrollPane = new JScrollPane(timelineRasterPanel);
+        JScrollPane scrollPane = new JScrollPane(pruefungsplanRasterPanel);
         scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
         add(scrollPane, BorderLayout.CENTER);
 
@@ -50,37 +52,42 @@ public class TimelinePanel extends JPanel {
             pruefungstagComboBox.addItem(pruefungstag);
         }
 
-        pruefungstagComboBox.addActionListener(e -> aktualisiereTimeline());
+        pruefungstagComboBox.addActionListener(e -> aktualisierePruefungsplan());
 
         steuerPanel.add(pruefungstagComboBox);
         steuerPanel.add(Box.createHorizontalStrut(20));
 
-        JButton aktuelleTimelineDrucken = new JButton("Aktuelle Timeline drucken");
-        JButton alleTimelinesDrucken = new JButton("Alle Timelines drucken");
-        aktuelleTimelineDrucken.setEnabled(false);
-        alleTimelinesDrucken.setEnabled(false);
-        steuerPanel.add(aktuelleTimelineDrucken);
-        steuerPanel.add(alleTimelinesDrucken);
+        JButton aktuellenPruefungsplanDrucken = new JButton("Aktuellen Prüfungsplan drucken");
+        aktuellenPruefungsplanDrucken.addActionListener(this::btAktuellenPruefungsplanDruckenAction);
+        JButton allePlaeneDrucken = new JButton("Alle Pläne drucken");
+        aktuellenPruefungsplanDrucken.setEnabled(true);
+        allePlaeneDrucken.setEnabled(false);
+        steuerPanel.add(aktuellenPruefungsplanDrucken);
+        steuerPanel.add(allePlaeneDrucken);
         add(steuerPanel, BorderLayout.NORTH);
-        aktualisiereTimeline();
+        aktualisierePruefungsplan();
     }
 
-    public void aktualisiereTimeline() {
+    public void aktualisierePruefungsplan() {
         Pruefungstag pruefungstag = (Pruefungstag) pruefungstagComboBox.getSelectedItem();
 
         if (pruefungstag == null) {
             return;
         }
-        List<KommissionsGruppe> gruppen = timelineDatenService.gibSortierteKommissionsGruppen(abitur, pruefungstag);
-        baueTimeline(gruppen);
+        List<KommissionsGruppe> gruppen = pruefungsplanDatenService.gibSortierteKommissionsGruppen(abitur, pruefungstag);
+        bauePruefungsplan(gruppen);
     }
 
-    private void baueTimeline(List<KommissionsGruppe> gruppen) {
-        timelineRasterPanel.removeAll();
+    public void btAktuellenPruefungsplanDruckenAction(ActionEvent e) {
+        PdfPruefungsplan.erstelle(abitur, (Pruefungstag) pruefungstagComboBox.getSelectedItem(), new File("Test.pdf"));
+    }
+
+    private void bauePruefungsplan(List<KommissionsGruppe> gruppen) {
+        pruefungsplanRasterPanel.removeAll();
         if (gruppen.isEmpty()) {
-            timelineRasterPanel.add(new JLabel("Für diesen Prüfungstag sind keine Prüfungen geplant."));
-            timelineRasterPanel.revalidate();
-            timelineRasterPanel.repaint();
+            pruefungsplanRasterPanel.add(new JLabel("Für diesen Prüfungstag sind keine Prüfungen geplant."));
+            pruefungsplanRasterPanel.revalidate();
+            pruefungsplanRasterPanel.repaint();
             return;
         }
         LocalTime ersteZeit = ermittleErsteZeit(gruppen);
@@ -92,7 +99,7 @@ public class TimelinePanel extends JPanel {
         gbc.gridy = 0;
         gbc.gridwidth = 1;
         gbc.weightx = 0;
-        timelineRasterPanel.add(erstelleZelle("Zeit", true), gbc);
+        pruefungsplanRasterPanel.add(erstelleZelle("Zeit", true), gbc);
         int kommissionsIndex = 0;
         for (KommissionsGruppe gruppe : gruppen) {
             int ersteSpalte = 1 + kommissionsIndex * 2;
@@ -101,10 +108,10 @@ public class TimelinePanel extends JPanel {
             gbc.gridy = 0;
             gbc.gridwidth = 2;
             gbc.weightx = 0;
-            timelineRasterPanel.add(erstelleKommissionsInfoPanel(gruppe), gbc);
+            pruefungsplanRasterPanel.add(erstelleKommissionsInfoPanel(gruppe), gbc);
             // Spaltentitel
             gbc.gridy = 1;
-            timelineRasterPanel.add(erstelleSpatenTitelPanel(), gbc);
+            pruefungsplanRasterPanel.add(erstelleSpatenTitelPanel(), gbc);
             kommissionsIndex++;
         }
         gbc.gridwidth = 1;
@@ -113,7 +120,7 @@ public class TimelinePanel extends JPanel {
             gbc.gridx = 0;
             gbc.gridy = zeile;
             gbc.weightx = 0;
-            timelineRasterPanel.add(erstelleZelle(zeit.format(DateTimeFormatter.ofPattern("HH:mm")), true), gbc);
+            pruefungsplanRasterPanel.add(erstelleZelle(zeit.format(DateTimeFormatter.ofPattern("HH:mm")), true), gbc);
             kommissionsIndex = 0;
             for (KommissionsGruppe gruppe : gruppen) {
                 int vorbereitungsSpalte = 1 + kommissionsIndex * 2;
@@ -134,9 +141,9 @@ public class TimelinePanel extends JPanel {
                 gbc.gridy = zeile;
                 gbc.weightx = 0;
                 gbc.gridx = vorbereitungsSpalte;
-                timelineRasterPanel.add(erstelleZelle(vorbereitung, false), gbc);
+                pruefungsplanRasterPanel.add(erstelleZelle(vorbereitung, false), gbc);
                 gbc.gridx = pruefungsSpalte;
-                timelineRasterPanel.add(erstelleZelle(pruefung, false), gbc);
+                pruefungsplanRasterPanel.add(erstelleZelle(pruefung, false), gbc);
                 kommissionsIndex++;
             }
             zeile++;
@@ -149,9 +156,9 @@ public class TimelinePanel extends JPanel {
         gbc.weightx = 1.0;
         gbc.weighty = 0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        timelineRasterPanel.add(Box.createHorizontalGlue(), gbc);
-        timelineRasterPanel.revalidate();
-        timelineRasterPanel.repaint();
+        pruefungsplanRasterPanel.add(Box.createHorizontalGlue(), gbc);
+        pruefungsplanRasterPanel.revalidate();
+        pruefungsplanRasterPanel.repaint();
     }
 
     private LocalTime ermittleErsteZeit(List<KommissionsGruppe> gruppen) {

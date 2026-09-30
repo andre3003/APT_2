@@ -1,4 +1,4 @@
-package de.abiturplanung.formulare.timeline;
+package de.abiturplanung.formulare.pruefungsplan;
 
 import de.abiturplanung.model.Abitur;
 import de.abiturplanung.model.Pruefung;
@@ -6,7 +6,7 @@ import de.abiturplanung.model.Pruefungstag;
 
 import java.util.*;
 
-public class TimelineDatenService {
+public class PruefungsplanDatenService {
     private record KommissionsSchluessel(String pruefer, String vorsitz, String schriftfuehrer) {
     }
 
