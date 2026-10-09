@@ -86,6 +86,7 @@ public class Abitur {
         sortiereLehrer();
         return true;
     }
+
     public int getAbiturjahrgang() {
         return abiturjahrgang;
     }

@@ -91,4 +91,12 @@ public class Schueler {
     public void setGeschlecht(Geschlecht geschlecht) {
         this.geschlecht = geschlecht;
     }
+
+    public String getKurzname(int max) {
+        String kurzname = nachname + ", " + vorname.charAt(0) + ".";
+        if (kurzname.length() > max) {
+            return nachname.substring(0, Math.min(nachname.length(), max - 3)) + "...";
+        }
+        return kurzname;
+    }
 }

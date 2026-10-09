@@ -1,5 +1,7 @@
 package de.abiturplanung.formulare.pruefungsplan;
 
+import de.abiturplanung.Utilities;
+import de.abiturplanung.formulare.pdf.PdfErsteller;
 import de.abiturplanung.model.Abitur;
 import de.abiturplanung.model.Pruefung;
 import de.abiturplanung.model.Pruefungstag;
@@ -16,6 +18,7 @@ public class PruefungsplanPanel extends JPanel {
     private final Abitur abitur;
     private final PruefungsplanDatenService pruefungsplanDatenService = new PruefungsplanDatenService();
     private JComboBox<Pruefungstag> pruefungstagComboBox;
+    private JCheckBox cbPdfDrucken;
     private final JPanel pruefungsplanRasterPanel = new JPanel(new GridBagLayout());
     private static final int SPALTENBREITE = 100;
     private static final int SPALTENHOEHE = 20;
@@ -57,20 +60,21 @@ public class PruefungsplanPanel extends JPanel {
         steuerPanel.add(pruefungstagComboBox);
         steuerPanel.add(Box.createHorizontalStrut(20));
 
-        JButton aktuellenPruefungsplanDrucken = new JButton("Aktuellen Prüfungsplan drucken");
-        aktuellenPruefungsplanDrucken.addActionListener(this::btAktuellenPruefungsplanDruckenAction);
-        JButton allePlaeneDrucken = new JButton("Alle Pläne drucken");
-        aktuellenPruefungsplanDrucken.setEnabled(true);
-        allePlaeneDrucken.setEnabled(false);
-        steuerPanel.add(aktuellenPruefungsplanDrucken);
-        steuerPanel.add(allePlaeneDrucken);
+        JButton btAktuellenPruefungsplanDrucken = new JButton("Aktuellen Prüfungsplan drucken");
+        btAktuellenPruefungsplanDrucken.addActionListener(this::btAktuellenPruefungsplanDruckenAction);
+        JButton btAllePlaeneDrucken = new JButton("Alle Pläne drucken");
+        btAllePlaeneDrucken.addActionListener(this::btAllePlaeneDruckenAction);
+        steuerPanel.add(btAktuellenPruefungsplanDrucken);
+        steuerPanel.add(btAllePlaeneDrucken);
+        cbPdfDrucken = new JCheckBox("PDF nach der Erstellung anzeigen");
+        cbPdfDrucken.setSelected(true);
+        steuerPanel.add(cbPdfDrucken);
         add(steuerPanel, BorderLayout.NORTH);
         aktualisierePruefungsplan();
     }
 
     public void aktualisierePruefungsplan() {
         Pruefungstag pruefungstag = (Pruefungstag) pruefungstagComboBox.getSelectedItem();
-
         if (pruefungstag == null) {
             return;
         }
@@ -79,7 +83,21 @@ public class PruefungsplanPanel extends JPanel {
     }
 
     public void btAktuellenPruefungsplanDruckenAction(ActionEvent e) {
-        PdfPruefungsplan.erstelle(abitur, (Pruefungstag) pruefungstagComboBox.getSelectedItem(), new File("Test.pdf"));
+        Pruefungstag pruefungstag = (Pruefungstag) pruefungstagComboBox.getSelectedItem();
+        String datum = Utilities.formatiereDatumKurz(pruefungstag.getDatum());
+        String dateiname = "Prüfungsplan " + datum + "pdf";
+        PdfErsteller.erstelle(this, dateiname, cbPdfDrucken.isSelected(), zieldatei -> PdfPruefungsplan.erstelle(abitur, (Pruefungstag) pruefungstagComboBox.getSelectedItem(), zieldatei));
+    }
+
+    // Der Lambda, der im Aufruf von PDFersteller.erstelle verwendet wird, IST der Consumer, den die Methode Pdfersteller erwartet; PdfErsteller wird ihm später die vom Benutzer gewählte zieldatei geben und ihn dann ausführen.“
+//    Der Lambda ist eine Abkürzung. Man könnte den Consumer auch erst gesondert erstellen und dann als solchen übergeben:
+//    Consumer<File> pdfErzeugung = new Consumer<File>() {
+//        public void accept(File datei) {
+//            PdfPruefungsplan.erstelle(abitur, pruefungstag, datei);}};
+//    PdfPruefungsplan.erstelle(abitur, (Pruefungstag) pruefungstagComboBox.getSelectedItem(), pdfErzeugnung)
+
+    public void btAllePlaeneDruckenAction(ActionEvent e) {
+        PdfErsteller.erstelle(this, "Prüfungsplan, gesamt.pdf", cbPdfDrucken.isSelected(), datei -> PdfPruefungsplan.erstelleGesamtplan(abitur, datei));
     }
 
     private void bauePruefungsplan(List<KommissionsGruppe> gruppen) {

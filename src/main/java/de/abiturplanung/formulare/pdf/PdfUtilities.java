@@ -12,13 +12,15 @@ import com.itextpdf.layout.properties.VerticalAlignment;
 import com.itextpdf.layout.borders.Border;
 import de.config.AppPfade;
 
+import java.awt.*;
+
 public class PdfUtilities {
 
-    public static Table erstelleDokumentKopf(String titel, String stand) {
+    public static Table erstelleDokumentKopf(String titel, int logoBreite, int logoHoehe, String stand) {
         try {
             ImageData logoDaten = ImageDataFactory.create(AppPfade.getLogoPfad().toString());
             Image logo = new Image(logoDaten);
-            logo.scaleToFit(120, 120);
+            logo.scaleToFit(logoBreite, logoHoehe);
             logo.setHorizontalAlignment(HorizontalAlignment.LEFT);
 
             Paragraph titelAbsatz = new Paragraph(titel)

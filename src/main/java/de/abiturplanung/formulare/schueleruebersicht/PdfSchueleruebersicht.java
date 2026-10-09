@@ -29,6 +29,7 @@ public class PdfSchueleruebersicht {
 
     private static DeviceRgb kopfFarbe = new DeviceRgb(204, 204, 255);
 
+
     public static void erstelle(Abitur abitur, File datei) {
         String pfad = datei.getAbsolutePath();
         try {
@@ -43,7 +44,7 @@ public class PdfSchueleruebersicht {
 
             String stand = Utilities.formatiereDatum(LocalDate.now());
 
-            dokument.add(PdfUtilities.erstelleDokumentKopf(titel, stand));
+            dokument.add(PdfUtilities.erstelleDokumentKopf(titel, 100, 100, stand));
             dokument.add(erstelleTabelle(abitur));
             dokument.close();
         } catch (Exception e) {

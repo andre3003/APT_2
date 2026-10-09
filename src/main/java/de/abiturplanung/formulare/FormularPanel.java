@@ -42,8 +42,11 @@ public class FormularPanel extends JPanel {
         DefaultMutableTreeNode muendlich = new DefaultMutableTreeNode("Mündliche Prüfungen");
         DefaultMutableTreeNode schriftlich = new DefaultMutableTreeNode("Schriftliche Prüfungen");
         DefaultMutableTreeNode zaa = new DefaultMutableTreeNode("Zentraler Abiturausschuss");
+        DefaultMutableTreeNode protokoll4Fach = new DefaultMutableTreeNode("Niederschrift mündl. Prüfung 4.Fach");
 
         offizielleFormulare.add(muendlich);
+        muendlich.add(new DefaultMutableTreeNode(new FormularTreeEintrag(FormularTyp.NIEDERSCHRIFTMUENDLICHEPRUEFUNG4FACH, "Niederschrift mündl. Prüfung 4. Fach")));
+
         offizielleFormulare.add(schriftlich);
         offizielleFormulare.add(zaa);
 

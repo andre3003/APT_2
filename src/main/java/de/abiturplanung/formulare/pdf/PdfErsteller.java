@@ -1,5 +1,8 @@
 package de.abiturplanung.formulare.pdf;
 
+import de.abiturplanung.formulare.pruefungsplan.PdfPruefungsplan;
+import de.abiturplanung.model.Abitur;
+import de.abiturplanung.model.Pruefungstag;
 import de.config.AppPfade;
 
 import javax.swing.*;

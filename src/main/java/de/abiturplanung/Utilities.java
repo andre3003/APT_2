@@ -16,25 +16,20 @@ public final class Utilities {
     /**
      * Bringt Datumsangaben in das Format dd.MM.yyyy.
      * Erwartet entweder:
-     *   dd.MM.yyyy
+     * dd.MM.yyyy
      * oder
-     *   dMuuuu, ddMuuuu, dMMuuuu oder ddMMuuuu
+     * dMuuuu, ddMuuuu, dMMuuuu oder ddMMuuuu
      */
     public static String normalisiereDatum(String datum) {
-
         datum = datum.trim();
-
         if (datum.isEmpty()) {
             return datum;
         }
-
         // Bereits korrekt formatiert
         if (datum.contains(".")) {
             return datum;
         }
-
         switch (datum.length()) {
-
             case 7 -> {
                 return "0"
                         + datum.substring(0, 1)
@@ -43,7 +38,6 @@ public final class Utilities {
                         + "."
                         + datum.substring(3);
             }
-
             case 8 -> {
                 return datum.substring(0, 2)
                         + "."
@@ -51,10 +45,8 @@ public final class Utilities {
                         + "."
                         + datum.substring(4);
             }
-
-            default ->
-                    throw new IllegalArgumentException(
-                            "Ungültiges Datumsformat: " + datum);
+            default -> throw new IllegalArgumentException(
+                    "Ungültiges Datumsformat: " + datum);
         }
     }
 
@@ -70,7 +62,4 @@ public final class Utilities {
     public static String formatiereDatumKurz(LocalDate datum) {
         return datum == null ? "" : datum.format(DATUM_KURZ_FORMAT);
     }
-
-
-
 }
