@@ -46,7 +46,7 @@ public class PruefungsplanDatenService {
             result.add(gruppe);
         }
         result.sort(Comparator.comparing(KommissionsGruppe::pruefer).thenComparing(gruppe -> gruppe.pruefungen().get(0).getKurs().getFach()).thenComparing(gruppe -> gruppe.pruefungen().get(0).getBeginn()));
-        //Wichtig: gruppe ist hier ein fre gewählter Name für den Parameter, den wir dem Lambda geben. Der Typ (Kommissionsgruppe) wird aus dem Kontext erschlossen.
+        //Wichtig: gruppe ist hier ein frei gewählter Name für den Parameter, den wir dem Lambda geben. Der Typ (Kommissionsgruppe) wird aus dem Kontext erschlossen.
         // An dem Parameter können wir in dem Lambda dann die Methoden aufrufen, die wir brauchen, um die Information zu erhalten, die wir für das Sortieren brauchen (Fach und Beginn).
         // Beim Prüfer brauchen wir kein Lambda. Wir übergeben einfach die Methodenreferenz auf eine Methode, die der Parametertyp (Kommissionsgruppe) unmittelbar kennt.
         return result;

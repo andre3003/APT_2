@@ -1,6 +1,6 @@
 package de.abiturplanung.gui;
 
-import de.abiturplanung.formulare.FormularPanel;
+import de.abiturplanung.formulare.FormularModulPanel;
 import de.abiturplanung.gui.menue.Hauptmenue;
 import de.abiturplanung.gui.menue.HauptmenueAktionen;
 import de.abiturplanung.gui.planung.MuendlichePruefungenPanel;
@@ -38,7 +38,7 @@ public class MainFrame extends JFrame implements HauptmenueAktionen {
 
     private MuendlichePruefungenPanel muendlichePruefungenPanel;
     private StammdatenPanel stammdatenPanel;
-    private FormularPanel formularPanel;
+    private FormularModulPanel formularPanel;
 
     public MainFrame(Abitur abitur, Datenbank datenbank) {
         this();
@@ -67,7 +67,7 @@ public class MainFrame extends JFrame implements HauptmenueAktionen {
         stammdatenPanel = new StammdatenPanel(abitur, datenbank);
         stammdatenPanel.setNachStammdatenAenderung(this::ansichtenAktualisieren);
 
-        formularPanel = new FormularPanel(abitur);
+        formularPanel = new FormularModulPanel(abitur);
         modulPanel.add(muendlichePruefungenPanel, "MUENDLICH");
         modulPanel.add(stammdatenPanel, "STAMMDATEN");
         modulPanel.add(formularPanel, "FORMULARE");

@@ -1,19 +1,21 @@
 package de.abiturplanung.formulare;
 
+import de.abiturplanung.formulare.abiturfomulare.AbiturformularPanel;
 import de.abiturplanung.formulare.schueleruebersicht.SchueleruebersichtPanel;
 import de.abiturplanung.formulare.pruefungsplan.PruefungsplanPanel;
 import de.abiturplanung.model.Abitur;
+
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
 import java.awt.*;
 
-public class FormularPanel extends JPanel {
+public class FormularModulPanel extends JPanel {
     private Abitur abitur;
     private JPanel vorschauPanel;
     JSplitPane splitPane;
 
 
-    public FormularPanel(Abitur abitur) {
+    public FormularModulPanel(Abitur abitur) {
         this.abitur = abitur;
         initialisierGui();
     }
@@ -34,24 +36,24 @@ public class FormularPanel extends JPanel {
         DefaultMutableTreeNode wurzel = new DefaultMutableTreeNode("Formulare");
 
         DefaultMutableTreeNode interneUebersichten = new DefaultMutableTreeNode("Interne Übersichten");
-        interneUebersichten.add(new DefaultMutableTreeNode(new FormularTreeEintrag(FormularTyp.TIMELINE, "Prüfungsplan (Timeline)")));
+        interneUebersichten.add(new DefaultMutableTreeNode(new FormularTreeEintrag(FormularTyp.PRUEFUNGSPLAN, "Prüfungsplan")));
         interneUebersichten.add(new DefaultMutableTreeNode(new FormularTreeEintrag(FormularTyp.SCHUELERUEBERSICHT, "Prüfungsübersicht für Schüler")));
 
-        DefaultMutableTreeNode offizielleFormulare = new DefaultMutableTreeNode("Offizielle Formulare");
+        DefaultMutableTreeNode abiturFormulare = new DefaultMutableTreeNode("Abitur-Formulare");
 
-        DefaultMutableTreeNode muendlich = new DefaultMutableTreeNode("Mündliche Prüfungen");
+        DefaultMutableTreeNode muendlich = new DefaultMutableTreeNode("4. Fach (mündlich)");
         DefaultMutableTreeNode schriftlich = new DefaultMutableTreeNode("Schriftliche Prüfungen");
         DefaultMutableTreeNode zaa = new DefaultMutableTreeNode("Zentraler Abiturausschuss");
-        DefaultMutableTreeNode protokoll4Fach = new DefaultMutableTreeNode("Niederschrift mündl. Prüfung 4.Fach");
 
-        offizielleFormulare.add(muendlich);
-        muendlich.add(new DefaultMutableTreeNode(new FormularTreeEintrag(FormularTyp.NIEDERSCHRIFTMUENDLICHEPRUEFUNG4FACH, "Niederschrift mündl. Prüfung 4. Fach")));
+        abiturFormulare.add(muendlich);
+        muendlich.add(new DefaultMutableTreeNode(new FormularTreeEintrag(FormularTyp.NIEDERSCHRIFTMUENDLICHEPRUEFUNG_AB4, "Niederschrift mündl. Prüfung 4. Fach")));
+        muendlich.add(new DefaultMutableTreeNode(new FormularTreeEintrag(FormularTyp.NIEDERSCHRIFT_FPA_AB4, "Niederschrift der Konferenz des FPA")));
 
-        offizielleFormulare.add(schriftlich);
-        offizielleFormulare.add(zaa);
+        abiturFormulare.add(schriftlich);
+        abiturFormulare.add(zaa);
 
         wurzel.add(interneUebersichten);
-        wurzel.add(offizielleFormulare);
+        wurzel.add(abiturFormulare);
 
         return new JTree(wurzel);
     }
@@ -63,18 +65,26 @@ public class FormularPanel extends JPanel {
         }
         Object objekt = knoten.getUserObject();
         if (objekt instanceof FormularTreeEintrag formular) {
-            if (formular.getTyp() == FormularTyp.TIMELINE) {
-                zeigeTimeline();
+            if (formular.getTyp() == FormularTyp.PRUEFUNGSPLAN) {
+                zeigePruefungsplan();
                 return;
             }
             if (formular.getTyp() == FormularTyp.SCHUELERUEBERSICHT) {
                 zeigeSchueleruebersicht();
                 return;
             }
+            if (formular.getTyp() == FormularTyp.NIEDERSCHRIFTMUENDLICHEPRUEFUNG_AB4) {
+                zeigeFormularVorschau(FormularTyp.NIEDERSCHRIFTMUENDLICHEPRUEFUNG_AB4);
+                return;
+            }
+            if (formular.getTyp() == FormularTyp.NIEDERSCHRIFT_FPA_AB4) {
+                zeigeFormularVorschau(FormularTyp.NIEDERSCHRIFT_FPA_AB4);
+                return;
+            }
         }
     }
 
-    private void zeigeTimeline() {
+    private void zeigePruefungsplan() {
         vorschauPanel.removeAll();
         PruefungsplanPanel timelinePanel = new PruefungsplanPanel(abitur);
         vorschauPanel.add(timelinePanel, BorderLayout.CENTER);
@@ -86,6 +96,14 @@ public class FormularPanel extends JPanel {
         vorschauPanel.removeAll();
         SchueleruebersichtPanel schueleruebersichtPanel = new SchueleruebersichtPanel(abitur);
         vorschauPanel.add(schueleruebersichtPanel, BorderLayout.CENTER);
+        vorschauPanel.revalidate();
+        vorschauPanel.repaint();
+    }
+
+    private void zeigeFormularVorschau(FormularTyp formularTyp) {
+        vorschauPanel.removeAll();
+        AbiturformularPanel abiturformularPanel = new AbiturformularPanel(formularTyp, abitur);
+        vorschauPanel.add(abiturformularPanel, BorderLayout.CENTER);
         vorschauPanel.revalidate();
         vorschauPanel.repaint();
     }

@@ -6,7 +6,7 @@ import java.util.Objects;
 
 public class Lehrer {
     private final String kuerzel;
-    private String anrede;
+    private String anrede = "";
     private String nachname;
     private String vorname;
     private Amtsbezeichnung amtsbezeichnung;
@@ -70,6 +70,10 @@ public class Lehrer {
 
     public List<Fach> getFakultas() {
         return fakultas;
+    }
+
+    public String gibVollstaendigenNamen() {
+        return anrede + " " + nachname + (amtsbezeichnung != null ? ", " + amtsbezeichnung : "");
     }
 
     @Override

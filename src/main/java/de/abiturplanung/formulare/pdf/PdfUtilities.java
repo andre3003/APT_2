@@ -1,6 +1,7 @@
 package de.abiturplanung.formulare.pdf;
 import com.itextpdf.io.image.ImageData;
 import com.itextpdf.io.image.ImageDataFactory;
+import com.itextpdf.layout.borders.SolidBorder;
 import com.itextpdf.layout.element.Cell;
 import com.itextpdf.layout.element.Image;
 import com.itextpdf.layout.element.Paragraph;
@@ -48,5 +49,29 @@ public class PdfUtilities {
         } catch (Exception e) {
             throw new RuntimeException("Dokumentkopf konnte nicht erstellt werden.", e);
         }
+    }
+
+    public static Table erstelleStempelkopf(int abiturjahrgang) {
+        float[] spaltenBreiten = {400, 150};
+        Table tabelle = new Table(spaltenBreiten);
+        tabelle.setWidth(UnitValue.createPercentValue(100));
+
+        Cell titelZelle = new Cell()
+                .add(new Paragraph("Abiturprüfung " + abiturjahrgang).setBold().setFontSize(14))
+                .setBorder(Border.NO_BORDER)
+                .setTextAlignment(TextAlignment.LEFT)
+                .setVerticalAlignment(VerticalAlignment.TOP);
+
+        Cell stempelZelle = new Cell()
+                .add(new Paragraph("Schulstempel").setFontSize(8).setItalic())
+                .setMinHeight(70)
+                .setBorder(new SolidBorder(1))
+                .setTextAlignment(TextAlignment.CENTER)
+                .setVerticalAlignment(VerticalAlignment.TOP);
+
+        tabelle.addCell(titelZelle);
+        tabelle.addCell(stempelZelle);
+
+        return tabelle;
     }
 }

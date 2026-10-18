@@ -1,15 +1,20 @@
 package de.abiturplanung.formulare.pdf;
 
-import de.abiturplanung.formulare.pruefungsplan.PdfPruefungsplan;
-import de.abiturplanung.model.Abitur;
-import de.abiturplanung.model.Pruefungstag;
+import com.itextpdf.kernel.geom.PageSize;
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.layout.Document;
+import com.itextpdf.layout.element.AreaBreak;
+import com.itextpdf.layout.properties.AreaBreakType;
 import de.config.AppPfade;
-
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.List;
 
 public class PdfErsteller {
 
@@ -47,6 +52,17 @@ public class PdfErsteller {
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
+        }
+    }
+
+    public static <T> void erstelleMehrseitigesFormularDokument(File datei, List<T> elemente, BiConsumer<Document, T> formularErsteller) {
+        try (Document dokument = new Document(new PdfDocument(new PdfWriter(datei)), PageSize.A4)) {
+            for (int i = 0; i < elemente.size(); i++) {
+                if (i > 0) dokument.add(new AreaBreak(AreaBreakType.NEXT_PAGE));
+                formularErsteller.accept(dokument, elemente.get(i));
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException("PDF konnte nicht erstellt werden: " + datei, e);
         }
     }
 }

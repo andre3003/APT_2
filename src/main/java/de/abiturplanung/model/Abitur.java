@@ -138,6 +138,17 @@ public class Abitur {
         return pruefungen.stream().filter(p -> p.getAbiturfach() == Abiturfach.AB4).sorted(Comparator.comparing((Pruefung p) -> p.getSchueler().getNachname()).thenComparing(p -> p.getSchueler().getVorname())).toList();
     }
 
+    public List<Pruefung> gibPruefungenAB4FuerFormulardruck() {
+        return pruefungen.stream()
+                .filter(p -> p.getAbiturfach() == Abiturfach.AB4)
+                .filter(p -> p.getPruefungstag() != null)
+                .sorted(Comparator.comparing(Pruefung::getPruefungstag)
+                        .thenComparing(p -> p.getPruefer().getNachname())
+                        .thenComparing(p -> p.getSchueler().getNachname())
+                        .thenComparing(p -> p.getSchueler().getVorname()))
+                .toList();
+    }
+
 
     public List<Raum> getRaeume() {
         return Collections.unmodifiableList(raeume);
@@ -146,11 +157,6 @@ public class Abitur {
     public List<Fach> getFaecher() {
         return Collections.unmodifiableList(faecher);
     }
-
-
-    /*--------------------------------------------------
-     * Suchen
-     *--------------------------------------------------*/
 
     public Schueler findeSchueler(String nachname, String vorname, LocalDate geburtsdatum) {
         for (Schueler schueler : schuelerList) {
