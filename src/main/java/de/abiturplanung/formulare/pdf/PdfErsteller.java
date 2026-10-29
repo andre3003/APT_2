@@ -65,4 +65,12 @@ public class PdfErsteller {
             throw new UncheckedIOException("PDF konnte nicht erstellt werden: " + datei, e);
         }
     }
+
+    public static void erstelleFormularDokument(File datei, Consumer<Document> formularErsteller) {
+        try (Document dokument = new Document(new PdfDocument(new PdfWriter(datei)), PageSize.A4)) {
+            formularErsteller.accept(dokument);
+        } catch (IOException e) {
+            throw new UncheckedIOException("PDF konnte nicht erstellt werden: " + datei, e);
+        }
+    }
 }

@@ -1,6 +1,7 @@
 package de.abiturplanung.formulare;
 
 import de.abiturplanung.formulare.abiturfomulare.AbiturformularPanel;
+import de.abiturplanung.formulare.pruefungsplan.KommissionenUebersichtPanel;
 import de.abiturplanung.formulare.schueleruebersicht.SchueleruebersichtPanel;
 import de.abiturplanung.formulare.pruefungsplan.PruefungsplanPanel;
 import de.abiturplanung.model.Abitur;
@@ -38,6 +39,7 @@ public class FormularModulPanel extends JPanel {
         DefaultMutableTreeNode interneUebersichten = new DefaultMutableTreeNode("Interne Übersichten");
         interneUebersichten.add(new DefaultMutableTreeNode(new FormularTreeEintrag(FormularTyp.PRUEFUNGSPLAN, "Prüfungsplan")));
         interneUebersichten.add(new DefaultMutableTreeNode(new FormularTreeEintrag(FormularTyp.SCHUELERUEBERSICHT, "Prüfungsübersicht für Schüler")));
+        interneUebersichten.add(new DefaultMutableTreeNode(new FormularTreeEintrag(FormularTyp.KOMMISSIONNENUEBERSICHT, "Übersicht über die Kommissionen")));
 
         DefaultMutableTreeNode abiturFormulare = new DefaultMutableTreeNode("Abitur-Formulare");
 
@@ -48,6 +50,7 @@ public class FormularModulPanel extends JPanel {
         abiturFormulare.add(muendlich);
         muendlich.add(new DefaultMutableTreeNode(new FormularTreeEintrag(FormularTyp.NIEDERSCHRIFTMUENDLICHEPRUEFUNG_AB4, "Niederschrift mündl. Prüfung 4. Fach")));
         muendlich.add(new DefaultMutableTreeNode(new FormularTreeEintrag(FormularTyp.NIEDERSCHRIFT_FPA_AB4, "Niederschrift der Konferenz des FPA")));
+        muendlich.add(new DefaultMutableTreeNode(new FormularTreeEintrag(FormularTyp.LISTE_FPA, "Liste der FPAs")));
 
         abiturFormulare.add(schriftlich);
         abiturFormulare.add(zaa);
@@ -81,6 +84,14 @@ public class FormularModulPanel extends JPanel {
                 zeigeFormularVorschau(FormularTyp.NIEDERSCHRIFT_FPA_AB4);
                 return;
             }
+            if (formular.getTyp() == FormularTyp.LISTE_FPA) {
+                zeigeFormularVorschau(FormularTyp.LISTE_FPA);
+                return;
+            }
+            if (formular.getTyp() == FormularTyp.KOMMISSIONNENUEBERSICHT){
+                zeigeKommissionenUebersicht();
+                return;
+            }
         }
     }
 
@@ -96,6 +107,14 @@ public class FormularModulPanel extends JPanel {
         vorschauPanel.removeAll();
         SchueleruebersichtPanel schueleruebersichtPanel = new SchueleruebersichtPanel(abitur);
         vorschauPanel.add(schueleruebersichtPanel, BorderLayout.CENTER);
+        vorschauPanel.revalidate();
+        vorschauPanel.repaint();
+    }
+
+    private void zeigeKommissionenUebersicht() {
+        vorschauPanel.removeAll();
+        KommissionenUebersichtPanel  kommissionenUebersichtPanel = new KommissionenUebersichtPanel(abitur);
+        vorschauPanel.add(kommissionenUebersichtPanel, BorderLayout.CENTER);
         vorschauPanel.revalidate();
         vorschauPanel.repaint();
     }

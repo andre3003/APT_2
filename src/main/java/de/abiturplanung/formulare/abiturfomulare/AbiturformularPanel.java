@@ -5,6 +5,7 @@ import de.abiturplanung.formulare.pdf.PdfErsteller;
 import de.abiturplanung.formulare.pruefungsplan.KommissionsGruppe;
 import de.abiturplanung.formulare.pruefungsplan.PruefungsplanDatenService;
 import de.abiturplanung.model.Abitur;
+import de.abiturplanung.model.Fachpruefungsausschuss;
 import de.abiturplanung.model.Pruefung;
 import de.abiturplanung.model.Pruefungstag;
 import de.config.AppPfade;
@@ -41,7 +42,7 @@ public class AbiturformularPanel extends JPanel {
 
     private void btDruckAction(ActionEvent e) {
         if (formularTyp == FormularTyp.NIEDERSCHRIFTMUENDLICHEPRUEFUNG_AB4) {
-            List<Pruefung> pruefungen = abitur.gibPruefungenAB4FuerFormulardruck();
+            List<Pruefung> pruefungen = AbiturfomulareDatenService.gibPruefungenAB4FuerFormulardruck(abitur);
             PdfErsteller.erstelle(this, "Niederschriften_AB4.pdf", cbPdfOeffnen.isSelected(),
                     datei -> PdfErsteller.erstelleMehrseitigesFormularDokument(datei, pruefungen, (dokument, pruefung) -> PdfNiederschriftMuendlPruefung_AB4.erstelle(dokument, abitur, pruefung)));
         }
@@ -53,6 +54,12 @@ public class AbiturformularPanel extends JPanel {
             }
             PdfErsteller.erstelle(this, "Niedrschriften Konferenz FPA_AB4.pdf", cbPdfOeffnen.isSelected(),
                     datei -> PdfErsteller.erstelleMehrseitigesFormularDokument(datei, gruppen, (dokument, gruppe) -> PdfNiederschriftFPA_AB4.erstelle(dokument, abitur, gruppe)));
+        }
+        if (formularTyp == FormularTyp.LISTE_FPA) {
+            List<Fachpruefungsausschuss> fpas = AbiturfomulareDatenService.gibFachpruefungsausschuesseAB4(abitur);
+            PdfErsteller.erstelle(this, "Liste der FPAs.pdf", cbPdfOeffnen.isSelected(),
+                    datei -> PdfErsteller.erstelleFormularDokument(datei,
+                            dokument -> PdfListeFPAs.erstelle(dokument, abitur, fpas)));
         }
     }
 }

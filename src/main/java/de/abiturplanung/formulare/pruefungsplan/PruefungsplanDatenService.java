@@ -7,8 +7,8 @@ import de.abiturplanung.model.Pruefungstag;
 import java.util.*;
 
 public class PruefungsplanDatenService {
-    private record KommissionsSchluessel(String pruefer, String vorsitz, String schriftfuehrer) {
-    }
+
+    private record KommissionsSchluessel(String fach, String pruefer, String vorsitz, String schriftfuehrer) {}
 
     private Map<KommissionsSchluessel, List<Pruefung>> gibKommissionsGruppen(Abitur abitur, Pruefungstag pt) {
         Map<KommissionsSchluessel, List<Pruefung>> map = new HashMap<>();
@@ -18,11 +18,12 @@ public class PruefungsplanDatenService {
                 continue;
             }
 
+            String fach = p.getKurs() == null ? "---" : p.getKurs().getFach().getKuerzel();
             String pruefer = p.getPruefer() == null ? "---" : p.getPruefer().getKuerzel();
             String vorsitz = p.getVorsitz() == null ? "---" : p.getVorsitz().getKuerzel();
             String schriftfuehrer = p.getSchriftfuehrer() == null ? "---" : p.getSchriftfuehrer().getKuerzel();
 
-            KommissionsSchluessel schluessel = new KommissionsSchluessel(pruefer, vorsitz, schriftfuehrer);
+            KommissionsSchluessel schluessel = new KommissionsSchluessel(fach, pruefer, vorsitz, schriftfuehrer);
 
             if (map.containsKey(schluessel)) {
                 map.get(schluessel).add(p);

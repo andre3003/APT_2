@@ -138,18 +138,6 @@ public class Abitur {
         return pruefungen.stream().filter(p -> p.getAbiturfach() == Abiturfach.AB4).sorted(Comparator.comparing((Pruefung p) -> p.getSchueler().getNachname()).thenComparing(p -> p.getSchueler().getVorname())).toList();
     }
 
-    public List<Pruefung> gibPruefungenAB4FuerFormulardruck() {
-        return pruefungen.stream()
-                .filter(p -> p.getAbiturfach() == Abiturfach.AB4)
-                .filter(p -> p.getPruefungstag() != null)
-                .sorted(Comparator.comparing(Pruefung::getPruefungstag)
-                        .thenComparing(p -> p.getPruefer().getNachname())
-                        .thenComparing(p -> p.getSchueler().getNachname())
-                        .thenComparing(p -> p.getSchueler().getVorname()))
-                .toList();
-    }
-
-
     public List<Raum> getRaeume() {
         return Collections.unmodifiableList(raeume);
     }
