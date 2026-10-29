@@ -51,6 +51,7 @@ public class FormularModulPanel extends JPanel {
         muendlich.add(new DefaultMutableTreeNode(new FormularTreeEintrag(FormularTyp.NIEDERSCHRIFTMUENDLICHEPRUEFUNG_AB4, "Niederschrift mündl. Prüfung 4. Fach")));
         muendlich.add(new DefaultMutableTreeNode(new FormularTreeEintrag(FormularTyp.NIEDERSCHRIFT_FPA_AB4, "Niederschrift der Konferenz des FPA")));
         muendlich.add(new DefaultMutableTreeNode(new FormularTreeEintrag(FormularTyp.LISTE_FPA, "Liste der FPAs")));
+        muendlich.add(new DefaultMutableTreeNode(new FormularTreeEintrag(FormularTyp.INFORMATIONEN_VORSITZ_FPA_AB4, "Informationen Vorsitz FPA_Ab4")));
 
         abiturFormulare.add(schriftlich);
         abiturFormulare.add(zaa);
@@ -90,6 +91,10 @@ public class FormularModulPanel extends JPanel {
             }
             if (formular.getTyp() == FormularTyp.KOMMISSIONNENUEBERSICHT){
                 zeigeKommissionenUebersicht();
+                return;
+            }
+            if (formular.getTyp() == FormularTyp.INFORMATIONEN_VORSITZ_FPA_AB4){
+                zeigeFormularVorschau(FormularTyp.INFORMATIONEN_VORSITZ_FPA_AB4);
                 return;
             }
         }

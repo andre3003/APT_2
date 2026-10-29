@@ -61,5 +61,15 @@ public class AbiturformularPanel extends JPanel {
                     datei -> PdfErsteller.erstelleFormularDokument(datei,
                             dokument -> PdfListeFPAs.erstelle(dokument, abitur, fpas)));
         }
+        if (formularTyp == FormularTyp.INFORMATIONEN_VORSITZ_FPA_AB4) {
+            PruefungsplanDatenService datenService = new PruefungsplanDatenService();
+            List<KommissionsGruppe> gruppen = new ArrayList<>();
+            for (Pruefungstag tag : abitur.getPruefungstage()) {
+                gruppen.addAll(datenService.gibSortierteKommissionsGruppen(abitur, tag));
+            }
+            PdfErsteller.erstelle(this, "Informationen Vorsitz FPA_AB$.pdf", cbPdfOeffnen.isSelected(),
+                    datei -> PdfErsteller.erstelleMehrseitigesFormularDokument(datei, gruppen, (dokument, gruppe) -> PdfHinweiseVorsitzFPA_AB4.erstelle(dokument, abitur, gruppe)));
+        }
     }
 }
+

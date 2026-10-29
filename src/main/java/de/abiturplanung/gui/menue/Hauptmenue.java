@@ -77,18 +77,17 @@ public class Hauptmenue {
         pruefungsfolge.add(folgenimportieren);
         planungMenue.add(pruefungsfolge);
         menueleiste.add(planungMenue);
-//        JMenu ansichtMenue = new JMenu("Ansicht");
-//        JMenuItem timeLineAnsicht = new JMenuItem("Timeline");
-//        timeLineAnsicht.addActionListener(e -> aktionen.timeLineErzeugen());
-//        ansichtMenue.add(timeLineAnsicht);
-//
-//        menueleiste.add(ansichtMenue);
 
         JMenu module = new JMenu("Module");
 
-        JMenuItem muendlichePruefungen = new JMenuItem("Mündliche Prüfungen");
+        JMenuItem muendlichePruefungen = new JMenuItem("Mündl. Prüfungen AB4");
         muendlichePruefungen.addActionListener(e -> aktionen.zeigeMuendlichePruefungen());
         module.add(muendlichePruefungen);
+        module.addSeparator();
+
+        JMenuItem schriftlichePruefungen = new JMenuItem("Schriftliche Prüfungen");
+        schriftlichePruefungen.addActionListener(e -> aktionen.zeigeSchriftlichePruefungen());
+        module.add(schriftlichePruefungen);
         module.addSeparator();
 
         JMenuItem stammdaten = new JMenuItem("Stammdaten");

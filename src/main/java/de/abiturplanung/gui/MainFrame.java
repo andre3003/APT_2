@@ -4,6 +4,7 @@ import de.abiturplanung.formulare.FormularModulPanel;
 import de.abiturplanung.gui.menue.Hauptmenue;
 import de.abiturplanung.gui.menue.HauptmenueAktionen;
 import de.abiturplanung.gui.planung.MuendlichePruefungenPanel;
+import de.abiturplanung.gui.planung.SchriftlichePruefungenPanel;
 import de.abiturplanung.gui.stammdaten.StammdatenPanel;
 import de.abiturplanung.model.Abitur;
 import de.abiturplanung.model.Pruefung;
@@ -39,6 +40,8 @@ public class MainFrame extends JFrame implements HauptmenueAktionen {
     private MuendlichePruefungenPanel muendlichePruefungenPanel;
     private StammdatenPanel stammdatenPanel;
     private FormularModulPanel formularPanel;
+    private SchriftlichePruefungenPanel schriftlichePruefungenPanel;
+    private Modul aktivesModul;
 
     public MainFrame(Abitur abitur, Datenbank datenbank) {
         this();
@@ -68,10 +71,12 @@ public class MainFrame extends JFrame implements HauptmenueAktionen {
         stammdatenPanel.setNachStammdatenAenderung(this::ansichtenAktualisieren);
 
         formularPanel = new FormularModulPanel(abitur);
-        modulPanel.add(muendlichePruefungenPanel, "MUENDLICH");
-        modulPanel.add(stammdatenPanel, "STAMMDATEN");
-        modulPanel.add(formularPanel, "FORMULARE");
-        modulLayout.show(modulPanel, "FORMULARE");
+        schriftlichePruefungenPanel = new SchriftlichePruefungenPanel();
+        modulPanel.add(muendlichePruefungenPanel, Modul.MUENDLICH_AB4.name());
+        modulPanel.add(stammdatenPanel, Modul.STAMMDATEN.name());
+        modulPanel.add(formularPanel, Modul.FORMULARE.name());
+        modulPanel.add(schriftlichePruefungenPanel, Modul.SCHRIFTLICH.name());
+        zeigeModul(Modul.FORMULARE);
         statusleiste.setText("Datenbank: " + datenbank.getPfad().getFileName() + " | " + abitur.getPruefungen().size() + " Prüfungen geladen");
         add(modulPanel, BorderLayout.CENTER);
         add(statusleiste, BorderLayout.SOUTH);
@@ -81,6 +86,7 @@ public class MainFrame extends JFrame implements HauptmenueAktionen {
     private void zeigeKeinePlanung() {
         abitur = null;
         datenbank = null;
+        aktivesModul = null;
         modulPanel.removeAll();
         importMenue.setEnabled(false);
         JLabel hinweis = new JLabel("Keine Planung geöffnet", SwingConstants.CENTER);
@@ -90,6 +96,14 @@ public class MainFrame extends JFrame implements HauptmenueAktionen {
         modulPanel.revalidate();
         modulPanel.repaint();
     }
+
+
+    private void zeigeModul(Modul modul){
+        if (abitur == null || datenbank == null) return;
+        modulLayout.show(modulPanel, modul.name());
+        aktivesModul = modul;
+    }
+
 
     //Interface-Methoden des Hauptmenüs:
 
@@ -439,17 +453,20 @@ public class MainFrame extends JFrame implements HauptmenueAktionen {
 
     @Override
     public void zeigeMuendlichePruefungen() {
-        modulLayout.show(modulPanel, "MUENDLICH");
+        zeigeModul(Modul.MUENDLICH_AB4);
     }
 
     @Override
     public void zeigeStammdaten() {
-        modulLayout.show(modulPanel, "STAMMDATEN");
+        zeigeModul(Modul.STAMMDATEN);
     }
 
     @Override
-    public void zeigeFormularmodul() {modulLayout.show(modulPanel, "FORMULARE");
+    public void zeigeFormularmodul() {zeigeModul(Modul.FORMULARE);
     }
+
+    @Override
+    public void zeigeSchriftlichePruefungen(){zeigeModul(Modul.SCHRIFTLICH);}
 
     private void ansichtenAktualisieren() {
         stammdatenPanel.ansichtAktualisieren();

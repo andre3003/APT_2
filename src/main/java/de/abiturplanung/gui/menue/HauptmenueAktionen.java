@@ -38,6 +38,8 @@ public interface HauptmenueAktionen {
 
     void zeigeFormularmodul();
 
+    void zeigeSchriftlichePruefungen();
+
 
 
 }
