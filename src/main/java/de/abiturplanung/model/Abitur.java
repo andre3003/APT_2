@@ -1,5 +1,7 @@
 package de.abiturplanung.model;
 
+import de.abiturplanung.gui.planung.SchriftlicherPruefungstag;
+
 import java.time.LocalDate;
 import java.util.*;
 
@@ -21,9 +23,31 @@ public class Abitur {
 
     private final List<Pruefungstag> pruefungstage = new ArrayList<>();
 
+    private final List<SchriftlicherPruefungstag> schriftlichePruefungstage = new ArrayList<>();
+
     public List<Pruefungstag> getPruefungstage() {
         return Collections.unmodifiableList(pruefungstage);
     }
+
+    public void addSchriftlicherPruefungstag(SchriftlicherPruefungstag pruefungstag) {
+        Objects.requireNonNull(pruefungstag);
+        schriftlichePruefungstage.add(pruefungstag);
+        schriftlichePruefungstage.sort(Comparator.comparing(SchriftlicherPruefungstag::getDatum));
+    }
+
+    public List<SchriftlicherPruefungstag> getSchriftlichePruefungstage() {
+        return Collections.unmodifiableList(schriftlichePruefungstage);
+    }
+
+    public void aendereSchriftlicherPruefungstag(SchriftlicherPruefungstag pruefungstag, LocalDate datum) {
+        pruefungstag.setDatum(datum);
+        schriftlichePruefungstage.sort(Comparator.comparing(SchriftlicherPruefungstag::getDatum));
+    }
+
+    public void loescheSchriftlicherPruefungstag(SchriftlicherPruefungstag pruefungstag) {
+        schriftlichePruefungstage.remove(pruefungstag);
+    }
+
 
     public void addPruefungstag(Pruefungstag pruefungstag) {
         pruefungstage.add(pruefungstag);

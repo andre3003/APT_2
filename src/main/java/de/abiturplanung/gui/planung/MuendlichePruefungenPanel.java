@@ -5,6 +5,7 @@ import de.abiturplanung.persistence.Datenbank;
 
 import javax.swing.*;
 import java.awt.*;
+import java.time.LocalDate;
 
 public class MuendlichePruefungenPanel extends JPanel {
     private final PruefungstagePanel pruefungstagePanel;
@@ -32,8 +33,8 @@ public class MuendlichePruefungenPanel extends JPanel {
         planungsvorratPanel.ansichtAktualisieren();
     }
 
-    public void pruefungstagHinzufuegen() {
-        pruefungstagePanel.pruefungstagHinzufuegen();
+    public void pruefungstagHinzufuegen(LocalDate datum) {
+        pruefungstagePanel.pruefungstagHinzufuegen(datum);
     }
 
     public void pruefungstagEntfernen() {

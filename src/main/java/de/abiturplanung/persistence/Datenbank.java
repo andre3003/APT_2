@@ -1,15 +1,14 @@
 package de.abiturplanung.persistence;
 
+import de.abiturplanung.gui.planung.Abiturklausur;
+import de.abiturplanung.gui.planung.SchriftlicherPruefungstag;
 import de.abiturplanung.model.*;
 
 import java.nio.file.Path;
 import java.sql.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class Datenbank {
 
@@ -167,6 +166,29 @@ public class Datenbank {
                             REFERENCES lehrer(kuerzel)
                     )
                     """);
+
+            statement.execute("""
+                     CREATE TABLE IF NOT EXISTS schriftlicher_pruefungstag (
+                             id INTEGER PRIMARY KEY AUTOINCREMENT,
+                     datum TEXT NOT NULL UNIQUE
+                    )
+                    """);
+
+            statement.execute("""
+                    CREATE TABLE IF NOT EXISTS abiturklausur (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        pruefungstag_id INTEGER NOT NULL,
+                        fach TEXT NOT NULL,
+                        kursart TEXT NOT NULL,
+                        bearbeitungszeit INTEGER,
+                        auswahlzeit INTEGER,
+                        hilfsmittel TEXT,
+                        FOREIGN KEY (pruefungstag_id)
+                            REFERENCES schriftlicher_pruefungstag(id)
+                            ON DELETE CASCADE,
+                            UNIQUE(pruefungstag_id, fach, kursart)
+                    )
+                    """);
         }
     }
 
@@ -254,6 +276,7 @@ public class Datenbank {
         Map<String, Kurs> kursMap = new HashMap<>();
         Map<Long, Pruefungstag> pruefungstagMap = new HashMap<>();
         Map<Long, Pruefung> pruefungMap = new HashMap<>();
+        Map<Long, SchriftlicherPruefungstag> schriftlicherTagMap = new HashMap<>();
 
         try (Connection connection = getConnection()) {
             ladeFaecher(connection, abitur);
@@ -263,6 +286,8 @@ public class Datenbank {
             ladeRaeume(connection, abitur, raumMap);
             ladeKurse(connection, abitur, lehrerMap, kursMap);
             ladePruefungstage(connection, abitur, pruefungstagMap);
+            ladeSchriftlichePruefungstage(connection, abitur, schriftlicherTagMap);
+            ladeAbiturklausuren(connection, abitur, schriftlicherTagMap);
             ladePruefungen(connection, abitur, schuelerMap, kursMap, pruefungMap);
             ladePruefungsplanung(connection, pruefungMap, pruefungstagMap, raumMap, lehrerMap);
         }
@@ -572,6 +597,54 @@ public class Datenbank {
         }
     }
 
+    private void ladeSchriftlichePruefungstage(Connection connection, Abitur abitur, Map<Long, SchriftlicherPruefungstag> tagMap) throws SQLException {
+        String sql = "SELECT id, datum FROM schriftlicher_pruefungstag ORDER BY datum";
+
+        try (Statement statement = connection.createStatement(); ResultSet resultSet = statement.executeQuery(sql)) {
+            while (resultSet.next()) {
+                long id = resultSet.getLong("id");
+                LocalDate datum = LocalDate.parse(resultSet.getString("datum"));
+
+                SchriftlicherPruefungstag tag = new SchriftlicherPruefungstag(datum);
+                tag.setId(id);
+
+                abitur.addSchriftlicherPruefungstag(tag);
+                tagMap.put(id, tag);
+            }
+        }
+    }
+
+    private void ladeAbiturklausuren(Connection connection, Abitur abitur, Map<Long, SchriftlicherPruefungstag> tagMap) throws SQLException {
+        String sql = """
+            SELECT id, pruefungstag_id, fach, kursart, bearbeitungszeit, auswahlzeit, hilfsmittel
+            FROM abiturklausur
+            """;
+
+        try (Statement statement = connection.createStatement(); ResultSet resultSet = statement.executeQuery(sql)) {
+            while (resultSet.next()) {
+                long id = resultSet.getLong("id");
+                long tagId = resultSet.getLong("pruefungstag_id");
+
+                SchriftlicherPruefungstag tag = tagMap.get(tagId);
+                if (tag == null) throw new SQLException("Schriftlicher Prüfungstag nicht gefunden: " + tagId);
+
+                String fachKuerzel = resultSet.getString("fach");
+                Fach fach = abitur.findeFach(fachKuerzel);
+                if (fach == null) throw new SQLException("Fach für Abiturklausur nicht gefunden: " + fachKuerzel);
+
+                Kursart kursart = Kursart.valueOf(resultSet.getString("kursart"));
+
+                Abiturklausur klausur = new Abiturklausur(fach, kursart);
+                klausur.setId(id);
+                klausur.setBearbeitungszeit((Integer) resultSet.getObject("bearbeitungszeit"));
+                klausur.setAuswahlzeit((Integer) resultSet.getObject("auswahlzeit"));
+                klausur.setHilfsmittel(resultSet.getString("hilfsmittel"));
+
+                tag.addAbiturklausur(klausur);
+            }
+        }
+    }
+
     public void aktualisierePruefungsplanung(Pruefung pruefung) throws SQLException {
         if (pruefung.getPruefungId() == null) {
             throw new IllegalStateException("Prüfung wurde noch nicht in der Datenbank gespeichert.");
@@ -665,7 +738,7 @@ public class Datenbank {
 
     public void aktualisiereRaum(Raum raum) throws SQLException {
         String sql = "UPDATE Raum SET kapazitaet = ? WHERE bezeichnung = ?";
-        try (Connection connection = getConnection();PreparedStatement statement = connection.prepareStatement(sql);){
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql);) {
             statement.setInt(1, raum.getKapazitaet());
             statement.setString(2, raum.getBezeichnung());
             statement.executeUpdate();
@@ -835,7 +908,7 @@ public class Datenbank {
         }
     }
 
-    public void fuegeRaumHinzu(Raum raum) throws SQLException{
+    public void fuegeRaumHinzu(Raum raum) throws SQLException {
         String sql = """
                 INSERT INTO raum (bezeichnung, kapazitaet) Values (?, ?);
                 """;
@@ -858,12 +931,187 @@ public class Datenbank {
         }
     }
 
-    public void aktualisiereFach(Fach fach) throws SQLException{
+    public void fuegeSchriftlichenPruefungstagHinzu(SchriftlicherPruefungstag pruefungstag) throws SQLException {
+        String sqlTag = "INSERT INTO schriftlicher_pruefungstag (datum) VALUES (?)";
+        String sqlKlausur = """
+            INSERT INTO abiturklausur
+            (pruefungstag_id, fach, kursart, bearbeitungszeit, auswahlzeit, hilfsmittel)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """;
+
+        try (Connection connection = getConnection()) {
+            connection.setAutoCommit(false);
+
+            try {
+                long tagId;
+
+                try (PreparedStatement statement = connection.prepareStatement(sqlTag, Statement.RETURN_GENERATED_KEYS)) {
+                    statement.setString(1, pruefungstag.getDatum().toString());
+
+                    if (statement.executeUpdate() != 1) {
+                        throw new SQLException("Schriftlicher Prüfungstag konnte nicht gespeichert werden.");
+                    }
+
+                    try (ResultSet keys = statement.getGeneratedKeys()) {
+                        if (!keys.next()) throw new SQLException("Keine ID für den Prüfungstag erzeugt.");
+                        tagId = keys.getLong(1);
+                    }
+                }
+
+                Map<Abiturklausur, Long> klausurIds = new HashMap<>();
+
+                try (PreparedStatement statement = connection.prepareStatement(sqlKlausur, Statement.RETURN_GENERATED_KEYS)) {
+                    for (Abiturklausur klausur : pruefungstag.getAbiturklausuren()) {
+                        statement.setLong(1, tagId);
+                        statement.setString(2, klausur.getFach().getKuerzel());
+                        statement.setString(3, klausur.getKursart().name());
+                        setInteger(statement, 4, klausur.getBearbeitungszeit());
+                        setInteger(statement, 5, klausur.getAuswahlzeit());
+                        statement.setString(6, klausur.getHilfsmittel());
+
+                        if (statement.executeUpdate() != 1) {
+                            throw new SQLException("Abiturklausur konnte nicht gespeichert werden.");
+                        }
+
+                        try (ResultSet keys = statement.getGeneratedKeys()) {
+                            if (!keys.next()) throw new SQLException("Keine ID für die Abiturklausur erzeugt.");
+                            klausurIds.put(klausur, keys.getLong(1));
+                        }
+                    }
+                }
+
+                connection.commit();
+
+                pruefungstag.setId(tagId);
+                klausurIds.forEach(Abiturklausur::setId);
+
+            } catch (SQLException e) {
+                connection.rollback();
+                throw e;
+            }
+        }
+    }
+
+    public void loescheSchriftlichenPruefungstag(SchriftlicherPruefungstag tag) throws SQLException {
+        if (tag.getId() == null) throw new SQLException("Der Prüfungstag wurde noch nicht gespeichert.");
+
+        String sql = "DELETE FROM schriftlicher_pruefungstag WHERE id = ?";
+
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            statement.setLong(1, tag.getId());
+
+            if (statement.executeUpdate() != 1) {
+                throw new SQLException("Schriftlicher Prüfungstag nicht gefunden.");
+            }
+        }
+    }
+
+    public void aktualisiereSchriftlichenPruefungstag(SchriftlicherPruefungstag tag) throws SQLException {
+        if (tag.getId() == null) throw new SQLException("Der Prüfungstag wurde noch nicht gespeichert.");
+
+        String sqlTag = "UPDATE schriftlicher_pruefungstag SET datum = ? WHERE id = ?";
+        String sqlIds = "SELECT id FROM abiturklausur WHERE pruefungstag_id = ?";
+        String sqlDelete = "DELETE FROM abiturklausur WHERE id = ? AND pruefungstag_id = ?";
+        String sqlInsert = """
+            INSERT INTO abiturklausur
+            (pruefungstag_id, fach, kursart, bearbeitungszeit, auswahlzeit, hilfsmittel)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """;
+        String sqlUpdate = """
+            UPDATE abiturklausur
+            SET fach = ?, kursart = ?, bearbeitungszeit = ?, auswahlzeit = ?, hilfsmittel = ?
+            WHERE id = ? AND pruefungstag_id = ?
+            """;
+
+        try (Connection connection = getConnection()) {
+            connection.setAutoCommit(false);
+            Map<Abiturklausur, Long> neueIds = new HashMap<>();
+
+            try {
+                // 1. Datum aktualisieren
+                try (PreparedStatement statement = connection.prepareStatement(sqlTag)) {
+                    statement.setString(1, tag.getDatum().toString());
+                    statement.setLong(2, tag.getId());
+                    if (statement.executeUpdate() != 1) throw new SQLException("Schriftlicher Prüfungstag nicht gefunden.");
+                }
+
+                // 2. Bereits gespeicherte Klausur-IDs ermitteln
+                Set<Long> gespeicherteIds = new HashSet<>();
+
+                try (PreparedStatement statement = connection.prepareStatement(sqlIds)) {
+                    statement.setLong(1, tag.getId());
+                    try (ResultSet resultSet = statement.executeQuery()) {
+                        while (resultSet.next()) gespeicherteIds.add(resultSet.getLong("id"));
+                    }
+                }
+
+                // 3. Klausuren aktualisieren oder neu einfügen
+                try (PreparedStatement update = connection.prepareStatement(sqlUpdate);
+                     PreparedStatement insert = connection.prepareStatement(sqlInsert, Statement.RETURN_GENERATED_KEYS)) {
+
+                    for (Abiturklausur klausur : tag.getAbiturklausuren()) {
+                        if (klausur.getId() != null) {
+                            if (!gespeicherteIds.remove(klausur.getId())) {
+                                throw new SQLException("Abiturklausur gehört nicht zu diesem Prüfungstag: " + klausur.getId());
+                            }
+
+                            update.setString(1, klausur.getFach().getKuerzel());
+                            update.setString(2, klausur.getKursart().name());
+                            setInteger(update, 3, klausur.getBearbeitungszeit());
+                            setInteger(update, 4, klausur.getAuswahlzeit());
+                            update.setString(5, klausur.getHilfsmittel());
+                            update.setLong(6, klausur.getId());
+                            update.setLong(7, tag.getId());
+
+                            if (update.executeUpdate() != 1) throw new SQLException("Abiturklausur konnte nicht aktualisiert werden.");
+
+                        } else {
+                            insert.setLong(1, tag.getId());
+                            insert.setString(2, klausur.getFach().getKuerzel());
+                            insert.setString(3, klausur.getKursart().name());
+                            setInteger(insert, 4, klausur.getBearbeitungszeit());
+                            setInteger(insert, 5, klausur.getAuswahlzeit());
+                            insert.setString(6, klausur.getHilfsmittel());
+
+                            if (insert.executeUpdate() != 1) throw new SQLException("Abiturklausur konnte nicht eingefügt werden.");
+
+                            try (ResultSet keys = insert.getGeneratedKeys()) {
+                                if (!keys.next()) throw new SQLException("Keine ID für die Abiturklausur erzeugt.");
+                                neueIds.put(klausur, keys.getLong(1));
+                            }
+                        }
+                    }
+                }
+
+                // 4. Klausuren löschen, die nicht mehr in der Java-Liste stehen
+                try (PreparedStatement statement = connection.prepareStatement(sqlDelete)) {
+                    for (Long id : gespeicherteIds) {
+                        statement.setLong(1, id);
+                        statement.setLong(2, tag.getId());
+                        statement.executeUpdate();
+                    }
+                }
+
+                connection.commit();
+
+                // Erst nach erfolgreichem Commit die neuen IDs übernehmen
+                neueIds.forEach(Abiturklausur::setId);
+
+            } catch (SQLException | RuntimeException e) {
+                connection.rollback();
+                throw e;
+            }
+        }
+    }
+
+    public void aktualisiereFach(Fach fach) throws SQLException {
         String sql = """
                 UPDATE fach SET bezeichnung = ?, stammfach_kuerzel = ?, faechergruppe = ? WHERE kuerzel = ?;
                 """;
 
-        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)){
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, fach.getBezeichnung() == null ? null : fach.getBezeichnung());
             statement.setString(2, fach.getStammfach() == null ? null : fach.getStammfach().getKuerzel());
             statement.setString(3, fach.getFaechergruppe() == null ? null : fach.getFaechergruppe());

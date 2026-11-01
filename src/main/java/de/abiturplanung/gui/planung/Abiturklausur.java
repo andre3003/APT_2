@@ -1,32 +1,38 @@
 package de.abiturplanung.gui.planung;
 
+import de.abiturplanung.model.Fach;
+import de.abiturplanung.model.Kursart;
+
 import java.util.Objects;
 
 public class Abiturklausur {
 
-    private int id;
-    private String fach;
-    private String kursart;
+    private Long id;
+    private Fach fach;
+    private Kursart kursart;
     private Integer bearbeitungszeit;
     private Integer auswahlzeit;
     private String hilfsmittel;
     private SchriftlicherPruefungstag pruefungstag;
 
-    public Abiturklausur(int id, String fach, String kursart) {
-        this.id = id;
+    public Abiturklausur(Fach fach, Kursart kursart) {
         this.fach = Objects.requireNonNull(fach);
         this.kursart = Objects.requireNonNull(kursart);
     }
 
-    public int getId() {
+    public Long getId() {
         return id;
     }
 
-    public String getFach() {
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Fach getFach() {
         return fach;
     }
 
-    public String getKursart() {
+    public Kursart getKursart() {
         return kursart;
     }
 

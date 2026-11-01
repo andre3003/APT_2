@@ -1,6 +1,7 @@
 package de.abiturplanung.gui;
 
 import de.abiturplanung.formulare.FormularModulPanel;
+import de.abiturplanung.gui.dialogs.PruefungstagAnlegenDialog;
 import de.abiturplanung.gui.menue.Hauptmenue;
 import de.abiturplanung.gui.menue.HauptmenueAktionen;
 import de.abiturplanung.gui.planung.MuendlichePruefungenPanel;
@@ -8,6 +9,7 @@ import de.abiturplanung.gui.planung.SchriftlichePruefungenPanel;
 import de.abiturplanung.gui.stammdaten.StammdatenPanel;
 import de.abiturplanung.model.Abitur;
 import de.abiturplanung.model.Pruefung;
+import de.abiturplanung.model.Pruefungsform;
 import de.abiturplanung.persistence.Datenbank;
 import de.abiturplanung.service.ImportService;
 import de.abiturplanung.service.PruefungsfolgenExportService;
@@ -66,17 +68,15 @@ public class MainFrame extends JFrame implements HauptmenueAktionen {
         importMenue.setEnabled(true);
         modulPanel.removeAll();
         muendlichePruefungenPanel = new MuendlichePruefungenPanel(abitur, datenbank);
-
         stammdatenPanel = new StammdatenPanel(abitur, datenbank);
         stammdatenPanel.setNachStammdatenAenderung(this::ansichtenAktualisieren);
-
         formularPanel = new FormularModulPanel(abitur);
-        schriftlichePruefungenPanel = new SchriftlichePruefungenPanel();
+        schriftlichePruefungenPanel = new SchriftlichePruefungenPanel(abitur, datenbank);
         modulPanel.add(muendlichePruefungenPanel, Modul.MUENDLICH_AB4.name());
         modulPanel.add(stammdatenPanel, Modul.STAMMDATEN.name());
         modulPanel.add(formularPanel, Modul.FORMULARE.name());
         modulPanel.add(schriftlichePruefungenPanel, Modul.SCHRIFTLICH.name());
-        zeigeModul(Modul.FORMULARE);
+        zeigeModul(Modul.SCHRIFTLICH);
         statusleiste.setText("Datenbank: " + datenbank.getPfad().getFileName() + " | " + abitur.getPruefungen().size() + " Prüfungen geladen");
         add(modulPanel, BorderLayout.CENTER);
         add(statusleiste, BorderLayout.SOUTH);
@@ -97,11 +97,18 @@ public class MainFrame extends JFrame implements HauptmenueAktionen {
         modulPanel.repaint();
     }
 
-
-    private void zeigeModul(Modul modul){
+    private void zeigeModul(Modul modul) {
         if (abitur == null || datenbank == null) return;
         modulLayout.show(modulPanel, modul.name());
         aktivesModul = modul;
+    }
+
+    private List<PruefungstagAnlegenDialog.KlausurEingabe> ermittleVerfuegbareKlausuren() {
+        return abitur.getPruefungen().stream()
+                .filter(p -> p.getPruefungsform() == Pruefungsform.SCHRIFTLICH)
+                .map(p -> new PruefungstagAnlegenDialog.KlausurEingabe(p.getKurs().getFach(), p.getKurs().getKursart()))
+                .distinct()
+                .toList();
     }
 
 
@@ -216,23 +223,23 @@ public class MainFrame extends JFrame implements HauptmenueAktionen {
     }
 
     public void faecherImportAction() {
-            if (abitur == null || datenbank == null) {
-                return;
-            }
-            Path importPfad = AppPfade.getImportVerzeichnis().resolve("Faecher.csv");
-            if (!Files.exists(importPfad)) {
-                JOptionPane.showMessageDialog(this, "Die Importdatei wurde nicht gefunden:\n" + importPfad, "Importfehler", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-            try {
-                ImportService importService = new ImportService(abitur);
-                importService.importiereFaecher(importPfad);
-                datenbank.synchronisiereFaecher(abitur);
-                initialisierePlanung(abitur, datenbank);
-                JOptionPane.showMessageDialog(this, "Fächerdaten wurden erfolgreich importiert.", "Import abgeschlossen", JOptionPane.INFORMATION_MESSAGE);
-            } catch (IOException | SQLException | IllegalArgumentException exception) {
-                JOptionPane.showMessageDialog(this, "Die Fächerdaten konnten nicht importiert werden:\n" + exception.getMessage(), "Importfehler", JOptionPane.ERROR_MESSAGE);
-            }
+        if (abitur == null || datenbank == null) {
+            return;
+        }
+        Path importPfad = AppPfade.getImportVerzeichnis().resolve("Faecher.csv");
+        if (!Files.exists(importPfad)) {
+            JOptionPane.showMessageDialog(this, "Die Importdatei wurde nicht gefunden:\n" + importPfad, "Importfehler", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        try {
+            ImportService importService = new ImportService(abitur);
+            importService.importiereFaecher(importPfad);
+            datenbank.synchronisiereFaecher(abitur);
+            initialisierePlanung(abitur, datenbank);
+            JOptionPane.showMessageDialog(this, "Fächerdaten wurden erfolgreich importiert.", "Import abgeschlossen", JOptionPane.INFORMATION_MESSAGE);
+        } catch (IOException | SQLException | IllegalArgumentException exception) {
+            JOptionPane.showMessageDialog(this, "Die Fächerdaten konnten nicht importiert werden:\n" + exception.getMessage(), "Importfehler", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     @Override
@@ -290,7 +297,20 @@ public class MainFrame extends JFrame implements HauptmenueAktionen {
 
     @Override
     public void pruefungstagHinzufuegenAction() {
-        muendlichePruefungenPanel.pruefungstagHinzufuegen();
+        if (abitur == null) return;
+
+        var eingabe = PruefungstagAnlegenDialog.anzeigen(this, LocalDate.now(), ermittleVerfuegbareKlausuren(), aktivesModul);
+        if (eingabe == null) return;
+
+        if (eingabe.modul() == Modul.MUENDLICH_AB4) {
+            muendlichePruefungenPanel.pruefungstagHinzufuegen(eingabe.datum());
+            zeigeModul(Modul.MUENDLICH_AB4);
+        }
+
+        if (eingabe.modul() == Modul.SCHRIFTLICH) {
+            schriftlichePruefungenPanel.pruefungstagHinzufuegen(eingabe.datum(), eingabe.klausuren());
+            zeigeModul(Modul.SCHRIFTLICH);
+        }
     }
 
     @Override
@@ -382,6 +402,7 @@ public class MainFrame extends JFrame implements HauptmenueAktionen {
             JOptionPane.showMessageDialog(
                     this,
                     "Die neue Planung konnte nicht angelegt werden:\n" + exception.getMessage(), "Fehler", JOptionPane.ERROR_MESSAGE);
+            exception.printStackTrace();
         }
     }
 
@@ -462,11 +483,14 @@ public class MainFrame extends JFrame implements HauptmenueAktionen {
     }
 
     @Override
-    public void zeigeFormularmodul() {zeigeModul(Modul.FORMULARE);
+    public void zeigeFormularmodul() {
+        zeigeModul(Modul.FORMULARE);
     }
 
     @Override
-    public void zeigeSchriftlichePruefungen(){zeigeModul(Modul.SCHRIFTLICH);}
+    public void zeigeSchriftlichePruefungen() {
+        zeigeModul(Modul.SCHRIFTLICH);
+    }
 
     private void ansichtenAktualisieren() {
         stammdatenPanel.ansichtAktualisieren();

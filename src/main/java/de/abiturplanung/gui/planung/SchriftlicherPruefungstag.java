@@ -7,17 +7,20 @@ import java.util.Objects;
 
 public class SchriftlicherPruefungstag {
 
-    private int id;
+    private Long id;
     private LocalDate datum;
     private final List<Abiturklausur> abiturklausuren = new ArrayList<>();
 
-    public SchriftlicherPruefungstag(int id, LocalDate datum) {
-        this.id = id;
+    public SchriftlicherPruefungstag(LocalDate datum) {
         this.datum = Objects.requireNonNull(datum);
     }
 
-    public int getId() {
+    public Long getId() {
         return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public LocalDate getDatum() {

@@ -88,8 +88,7 @@ public class PruefungstagePanel extends JPanel implements PruefungsKartenAktione
         planungsvorratAnsichtAktualisieren.run();
     }
 
-    public void pruefungstagHinzufuegen() {
-        LocalDate datum = PruefungstagDatumDialog.anzeigen(this, "Prüfungstag hinzufügen", LocalDate.now());
+    public void pruefungstagHinzufuegen(LocalDate datum) {
         if (datum == null) return;
 
         for (Pruefungstag pruefungstag : abitur.getPruefungstage()) {
@@ -98,12 +97,13 @@ public class PruefungstagePanel extends JPanel implements PruefungsKartenAktione
                 return;
             }
         }
+
         Pruefungstag pruefungstag = new Pruefungstag(datum, AppEinstellungen.DEFAULT_STARTZEIT, AppEinstellungen.DEFAULT_ENDZEIT, AppEinstellungen.DEFAULT_ANZAHL_PLANUNGSSPALTEN);
+
         try {
             datenbank.fuegePruefungstagHinzu(pruefungstag);
             abitur.addPruefungstag(pruefungstag);
             ansichtAktualisieren();
-            ;
 
         } catch (SQLException exception) {
             JOptionPane.showMessageDialog(this, "Der Prüfungstag konnte nicht gespeichert werden:\n" + exception.getMessage(), "Datenbankfehler", JOptionPane.ERROR_MESSAGE);
