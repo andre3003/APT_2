@@ -25,7 +25,7 @@ public class SchriftlichePruefungstagePanel extends JPanel {
         planungsPanels.clear();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
         for (SchriftlicherPruefungstag pt : abitur.getSchriftlichePruefungstage()) {
-            SchriftlicherPruefungstagPlanungsPanel panel = new SchriftlicherPruefungstagPlanungsPanel(pt);
+            SchriftlicherPruefungstagPlanungsPanel panel = new SchriftlicherPruefungstagPlanungsPanel(abitur, pt);
             planungsPanels.add(panel);
             tabbedPane.add(pt.getDatum().format(formatter), panel);
         }

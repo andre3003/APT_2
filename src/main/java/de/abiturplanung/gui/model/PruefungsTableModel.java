@@ -16,9 +16,7 @@ public class PruefungsTableModel extends AbstractTableModel {
     public static final int SPALTE_PRUEFER = 3;
     public static final int SPALTE_FOLGE = 4;
     public static final int SPALTE_STATUS = 5;
-
     private static final String[] SPALTENNAMEN = {"Schüler", "Fach", "Kurs", "Prüfer", "Folge", "Status"};
-
     private final List<Pruefung> pruefungen = new ArrayList<>();
 
     public PruefungsTableModel(List<Pruefung> allePruefungen) {

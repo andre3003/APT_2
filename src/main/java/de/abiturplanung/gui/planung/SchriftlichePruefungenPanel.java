@@ -21,7 +21,7 @@ public class SchriftlichePruefungenPanel extends JPanel {
         this.datenbank = datenbank;
         this.setLayout(new BorderLayout());
         pruefungstagePanel = new SchriftlichePruefungstagePanel(abitur);
-        planungsvorratPanel = new SchriftlichePruefungenPlanungsVorratPanel();
+        planungsvorratPanel = new SchriftlichePruefungenPlanungsVorratPanel(abitur);
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, planungsvorratPanel, pruefungstagePanel);
         splitPane.setOneTouchExpandable(true);
         splitPane.setResizeWeight(0.32);
