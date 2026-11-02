@@ -11,9 +11,9 @@ import java.util.List;
 public class SchriftlichePruefungenTableModel extends AbstractTableModel {
     public static final int SPALTE_FACH = 0;
     public static final int SPALTE_KURS = 1;
-    public static final int SPALTE_PRUEFER = 2;
+    public static final int SPALTE_KURSLEHRKRAFT= 2;
     public static final int SPALTE_ABITURIENTEN = 3;
-    private static final String[] SPALTENNAMEN = {"Fach", "Kurs", "Prüfer", "Abiturienten"};
+    private static final String[] SPALTENNAMEN = {"Fach", "Kurs", "Kurslehrkraft", "Abiturienten"};
     private List<Kurs> kurse = new ArrayList<>();
     private final Abitur abitur;
 
@@ -61,7 +61,7 @@ public class SchriftlichePruefungenTableModel extends AbstractTableModel {
         return switch (columnIndex) {
             case SPALTE_FACH -> kurs.getFach();
             case SPALTE_KURS -> kurs.getBezeichnung();
-            case SPALTE_PRUEFER -> kurs.getFachlehrer() == null ? "---" : kurs.getFachlehrer().getKuerzel();
+            case SPALTE_KURSLEHRKRAFT -> kurs.getFachlehrer() == null ? "---" : kurs.getFachlehrer().getKuerzel();
             case SPALTE_ABITURIENTEN -> abitur.gibSchriftlichePruefungenEinesKurses(kurs).size();
             default -> "";
         };
