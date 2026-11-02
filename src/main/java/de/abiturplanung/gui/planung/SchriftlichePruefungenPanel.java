@@ -15,13 +15,12 @@ public class SchriftlichePruefungenPanel extends JPanel {
     private final Abitur abitur;
     private final Datenbank datenbank;
 
-
     public SchriftlichePruefungenPanel(Abitur abitur, Datenbank datenbank) {
         this.abitur = abitur;
         this.datenbank = datenbank;
         this.setLayout(new BorderLayout());
-        pruefungstagePanel = new SchriftlichePruefungstagePanel(abitur);
         planungsvorratPanel = new SchriftlichePruefungenPlanungsVorratPanel(abitur);
+        pruefungstagePanel = new SchriftlichePruefungstagePanel(abitur, this::setzePruefungstag);
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, planungsvorratPanel, pruefungstagePanel);
         splitPane.setOneTouchExpandable(true);
         splitPane.setResizeWeight(0.32);
@@ -43,5 +42,9 @@ public class SchriftlichePruefungenPanel extends JPanel {
         } catch (SQLException exception) {
             JOptionPane.showMessageDialog(this, "Der Prüfungstag konnte nicht gespeichert werden:\n" + exception.getMessage(), "Datenbankfehler", JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    public void setzePruefungstag(SchriftlicherPruefungstag pruefungstag) {
+            planungsvorratPanel.setzePruefungstag(pruefungstag);
     }
 }

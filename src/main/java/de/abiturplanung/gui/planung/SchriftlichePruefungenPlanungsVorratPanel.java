@@ -4,6 +4,7 @@ import de.abiturplanung.gui.model.PruefungsTableModel;
 import de.abiturplanung.gui.model.SchriftlichePruefungenTableModel;
 import de.abiturplanung.model.Abitur;
 import de.abiturplanung.model.Kurs;
+import de.abiturplanung.model.Pruefungstag;
 
 import javax.swing.*;
 import javax.swing.table.TableRowSorter;
@@ -14,7 +15,6 @@ public class SchriftlichePruefungenPlanungsVorratPanel extends JPanel {
    private final Abitur abitur;
     private SchriftlichePruefungenTableModel tableModel;
     private final List<SchriftlicherPruefungstag> pruefungstage;
-    private JComboBox<String> cmbPreufungstag;
     private TableRowSorter<SchriftlichePruefungenTableModel> sorter;
 
 
@@ -29,25 +29,9 @@ public class SchriftlichePruefungenPlanungsVorratPanel extends JPanel {
         kursTabelle.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         JScrollPane scrollPane = new JScrollPane(kursTabelle);
         this.add(scrollPane, BorderLayout.CENTER);
-        this.add(erstelleFilterPanel(), BorderLayout.NORTH);
     }
 
-    public JPanel erstelleFilterPanel() {
-        JPanel filterPanel = new JPanel(new FlowLayout());
-        JLabel label = new JLabel("Pruefungstag: ");
-        cmbPreufungstag = new JComboBox<>();
-
-        for (SchriftlicherPruefungstag pruefungstag : abitur.getSchriftlichePruefungstage()) {
-            cmbPreufungstag.addItem(pruefungstag.getDatum().toString());
-        }
-        filterPanel.add(label);
-        filterPanel.add(cmbPreufungstag);
-        return filterPanel;
+    public void setzePruefungstag(SchriftlicherPruefungstag pt) {
+        tableModel.kurseEinlesen(pt);
     }
-
-    public void filterAktualisieren() {
-        cmbPreufungstag.getSelectedIndex();
-        RowFilter.
-    }
-
 }

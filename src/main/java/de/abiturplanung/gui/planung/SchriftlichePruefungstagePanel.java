@@ -3,21 +3,32 @@ package de.abiturplanung.gui.planung;
 import de.abiturplanung.model.Abitur;
 
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
 import java.awt.*;
-import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.function.Consumer;
 
 public class SchriftlichePruefungstagePanel extends JPanel {
-    private JTabbedPane tabbedPane = new JTabbedPane();
-    private ArrayList<SchriftlicherPruefungstagPlanungsPanel> planungsPanels = new ArrayList<>();
+    private final JTabbedPane tabbedPane = new JTabbedPane();
+    private final ArrayList<SchriftlicherPruefungstagPlanungsPanel> planungsPanels = new ArrayList<>();
     private final Abitur abitur;
+    private final Consumer<SchriftlicherPruefungstag> nachTabWechsel;
 
-    public SchriftlichePruefungstagePanel(Abitur abitur) {
+    public SchriftlichePruefungstagePanel(Abitur abitur, Consumer<SchriftlicherPruefungstag> nachTabWechsel) {
         this.abitur = abitur;
+        this.nachTabWechsel = nachTabWechsel;
         setLayout(new BorderLayout());
         add(tabbedPane, BorderLayout.CENTER);
+        tabbedPane.addChangeListener(this::tabChangeAction);
         ansichtAktualisieren();
+    }
+
+    private void tabChangeAction(ChangeEvent changeEvent) {
+        SchriftlicherPruefungstagPlanungsPanel panel = (SchriftlicherPruefungstagPlanungsPanel) tabbedPane.getSelectedComponent();
+        if (panel != null) {
+            nachTabWechsel.accept(panel.getPruefungstag());
+        }
     }
 
     public void ansichtAktualisieren() {
@@ -29,6 +40,7 @@ public class SchriftlichePruefungstagePanel extends JPanel {
             planungsPanels.add(panel);
             tabbedPane.add(pt.getDatum().format(formatter), panel);
         }
+
     }
 
 

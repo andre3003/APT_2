@@ -48,6 +48,15 @@ public class Abitur {
         schriftlichePruefungstage.remove(pruefungstag);
     }
 
+    public List<Pruefung> gibSchriftlichePruefungenEinesKurses(Kurs kurs) {
+        List<Pruefung> result = new ArrayList<>();
+        for (Pruefung pruefung : pruefungen) {
+            if (pruefung.getKurs() == kurs && pruefung.getAbiturfach() != Abiturfach.AB4) {
+                result.add(pruefung);
+            }
+        }
+        return result;
+    }
 
     public void addPruefungstag(Pruefungstag pruefungstag) {
         pruefungstage.add(pruefungstag);
