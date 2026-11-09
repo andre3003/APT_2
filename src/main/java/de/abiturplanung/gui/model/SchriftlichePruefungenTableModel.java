@@ -45,6 +45,10 @@ public class SchriftlichePruefungenTableModel extends AbstractTableModel {
         return kurse.size();
     }
 
+    public Kurs getKurs(int zeile) {
+        return kurse.get(zeile);
+    }
+
     @Override
     public int getColumnCount() {
         return SPALTENNAMEN.length;

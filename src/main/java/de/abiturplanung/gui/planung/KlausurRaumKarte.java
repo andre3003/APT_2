@@ -4,6 +4,8 @@ import de.abiturplanung.model.Kurs;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.datatransfer.UnsupportedFlavorException;
+import java.io.IOException;
 
 public class KlausurRaumKarte extends JPanel {
 
@@ -26,6 +28,26 @@ public class KlausurRaumKarte extends JPanel {
             kursPanel = new JPanel();
             kursPanel.setLayout(new BoxLayout(kursPanel, BoxLayout.Y_AXIS));
             add(kursPanel, BorderLayout.CENTER);
+            this.setTransferHandler(new TransferHandler() {
+                @Override
+                public boolean canImport(TransferSupport support) {
+                    return support.isDrop()
+                            && support.isDataFlavorSupported(KursTransferable.KURS_FLAVOR);
+                }
+                @Override
+                public boolean importData(TransferSupport support) {
+                    if (!canImport(support)) return false;
+
+                    try {
+                        Kurs kurs = (Kurs) support.getTransferable().getTransferData(KursTransferable.KURS_FLAVOR);
+                        belegung.addKurs(kurs);
+                        aktualisiereAnzeige();
+                        return true;
+                    } catch (UnsupportedFlavorException | IOException e) {
+                        return false;
+                    }
+                }
+            });
             aktualisiereAnzeige();
         }
 
@@ -36,7 +58,7 @@ public class KlausurRaumKarte extends JPanel {
                 kursPanel.add(new JLabel("Noch keine Kurse zugeordnet"));
             } else {
                 for (Kurs kurs : belegung.getKurse()) {
-                    kursPanel.add(new JLabel(kurs.getBezeichnung()));
+                    kursPanel.add(new JLabel(kurs.getBezeichnung() + "-" + kurs.getFachlehrer().getKuerzel()));
                 }
             }
             kursPanel.revalidate();

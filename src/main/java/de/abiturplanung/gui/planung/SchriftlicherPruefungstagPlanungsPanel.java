@@ -6,6 +6,7 @@ import de.abiturplanung.model.Raum;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.datatransfer.Transferable;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -51,6 +52,8 @@ public class SchriftlicherPruefungstagPlanungsPanel extends JPanel {
                 mausKlickTabelle(e);
             }
         });
+
+
         JPanel klausurenPanel = new JPanel(new BorderLayout());
         JScrollPane scrollPane = new JScrollPane(klausurenTabelle);
         scrollPane.setPreferredSize(new Dimension(0, hoehe));

@@ -9,6 +9,7 @@ import de.abiturplanung.model.Pruefungstag;
 import javax.swing.*;
 import javax.swing.table.TableRowSorter;
 import java.awt.*;
+import java.awt.datatransfer.Transferable;
 import java.util.List;
 
 public class SchriftlichePruefungenPlanungsVorratPanel extends JPanel {
@@ -24,6 +25,23 @@ public class SchriftlichePruefungenPlanungsVorratPanel extends JPanel {
         this.pruefungstage = abitur.getSchriftlichePruefungstage();
         tableModel = new SchriftlichePruefungenTableModel(abitur);
         JTable kursTabelle = new JTable(tableModel);
+        kursTabelle.setTransferHandler(new TransferHandler() {
+            @Override
+            protected Transferable createTransferable(JComponent component) {
+                int viewZeile = kursTabelle.getSelectedRow();
+                if (viewZeile < 0) {
+                    return null;
+                }
+                int modelZeile = kursTabelle.convertRowIndexToModel(viewZeile);
+                return new KursTransferable(tableModel.getKurs(modelZeile));
+            }
+            @Override
+            public int getSourceActions(JComponent component) {
+                return COPY;
+            }
+        });
+        kursTabelle.setDragEnabled(true);
+        kursTabelle.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         sorter = new TableRowSorter<>(tableModel);
         kursTabelle.setRowSorter(sorter);
         kursTabelle.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);

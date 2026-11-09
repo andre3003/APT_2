@@ -1,5 +1,7 @@
 package de.abiturplanung.gui.planung;
 
+import de.abiturplanung.model.Kurs;
+
 import javax.swing.table.AbstractTableModel;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -18,7 +20,6 @@ public class AbiturklausurenTableModel extends AbstractTableModel {
     public AbiturklausurenTableModel(SchriftlicherPruefungstag pruefungstag){
         this.pruefungstag = pruefungstag;
         abiturklausuren = pruefungstag.getAbiturklausuren();
-
     }
 
     @Override
@@ -30,6 +31,8 @@ public class AbiturklausurenTableModel extends AbstractTableModel {
     public int getColumnCount() {
         return SPALTENNAMEN.length;
     }
+
+
 
     @Override
     public String getColumnName(int column) {
