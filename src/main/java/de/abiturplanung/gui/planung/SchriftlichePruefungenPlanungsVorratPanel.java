@@ -12,13 +12,13 @@ import java.awt.*;
 import java.util.List;
 
 public class SchriftlichePruefungenPlanungsVorratPanel extends JPanel {
-   private final Abitur abitur;
+    private final Abitur abitur;
     private SchriftlichePruefungenTableModel tableModel;
     private final List<SchriftlicherPruefungstag> pruefungstage;
     private TableRowSorter<SchriftlichePruefungenTableModel> sorter;
 
 
-    public  SchriftlichePruefungenPlanungsVorratPanel(Abitur abitur) {
+    public SchriftlichePruefungenPlanungsVorratPanel(Abitur abitur) {
         this.abitur = abitur;
         this.setLayout(new BorderLayout());
         this.pruefungstage = abitur.getSchriftlichePruefungstage();
@@ -29,6 +29,16 @@ public class SchriftlichePruefungenPlanungsVorratPanel extends JPanel {
         kursTabelle.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         JScrollPane scrollPane = new JScrollPane(kursTabelle);
         this.add(scrollPane, BorderLayout.CENTER);
+        JLabel titel = new JLabel("""
+                <html><center>
+                <span style='font-size:18px'><b>Prüfungen im 1. bis 3. Abiturfach</b></span>
+                <br><br>
+                <span style='font-size:14px'>Prüfungskurse des Tages:</span>
+                </center></html>
+                """, SwingConstants.CENTER);
+
+        titel.setBorder(BorderFactory.createEmptyBorder(12, 10, 12, 10));
+        this.add(titel, BorderLayout.NORTH);
     }
 
     public void setzePruefungstag(SchriftlicherPruefungstag pt) {

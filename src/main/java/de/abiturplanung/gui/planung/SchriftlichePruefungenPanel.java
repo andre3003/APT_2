@@ -1,5 +1,6 @@
 package de.abiturplanung.gui.planung;
 
+import de.abiturplanung.gui.dialogs.AbiturklausurDialog;
 import de.abiturplanung.gui.dialogs.PruefungstagAnlegenDialog;
 import de.abiturplanung.model.Abitur;
 import de.abiturplanung.persistence.Datenbank;
@@ -8,10 +9,12 @@ import javax.swing.*;
 import java.awt.*;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 public class SchriftlichePruefungenPanel extends JPanel {
     private final SchriftlichePruefungstagePanel pruefungstagePanel;
-    private final SchriftlichePruefungenPlanungsVorratPanel  planungsvorratPanel;
+    private final SchriftlichePruefungenPlanungsVorratPanel planungsvorratPanel;
     private final Abitur abitur;
     private final Datenbank datenbank;
 
@@ -20,7 +23,7 @@ public class SchriftlichePruefungenPanel extends JPanel {
         this.datenbank = datenbank;
         this.setLayout(new BorderLayout());
         planungsvorratPanel = new SchriftlichePruefungenPlanungsVorratPanel(abitur);
-        pruefungstagePanel = new SchriftlichePruefungstagePanel(abitur, this::setzePruefungstag);
+        pruefungstagePanel = new SchriftlichePruefungstagePanel(abitur, this::setzePruefungstag, this::aktualisiereAbiturklausur, this::speichereRaumbelegung);
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, planungsvorratPanel, pruefungstagePanel);
         splitPane.setOneTouchExpandable(true);
         splitPane.setResizeWeight(0.32);
@@ -45,6 +48,36 @@ public class SchriftlichePruefungenPanel extends JPanel {
     }
 
     public void setzePruefungstag(SchriftlicherPruefungstag pruefungstag) {
-            planungsvorratPanel.setzePruefungstag(pruefungstag);
+        planungsvorratPanel.setzePruefungstag(pruefungstag);
+    }
+
+    public void aktualisiereAbiturklausur(Abiturklausur klausur, AbiturklausurDialog.Eingaben eingabe) {
+        Integer alteBearbeitungszeit = klausur.getBearbeitungszeit();
+        Integer alteAuswahlzeit = klausur.getAuswahlzeit();
+        List<Hilfsmittel> alteHilfsmittel = new ArrayList<>(klausur.getHilfsmittel());
+
+        klausur.setBearbeitungszeit(eingabe.bearbeitungszeit());
+        klausur.setAuswahlzeit(eingabe.auswahlzeit());
+        klausur.getHilfsmittel().clear();
+        for (Hilfsmittel hilfsmittel : eingabe.hilfsmittel()) {
+            klausur.addHilfsmittel(hilfsmittel);
+        }
+        try {
+            datenbank.aktualisiereAbiturklausur(klausur);
+        } catch (SQLException | RuntimeException e) {
+            klausur.setBearbeitungszeit(alteBearbeitungszeit);
+            klausur.setAuswahlzeit(alteAuswahlzeit);
+            klausur.getHilfsmittel().clear();
+            alteHilfsmittel.forEach(klausur::addHilfsmittel);
+            JOptionPane.showMessageDialog(this, "Die Abiturklausur konnte nicht aktualisiert werden:\n" + e.getMessage(), "Datenbankfehler", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void speichereRaumbelegung(RaumbelegungAbiturklausuren belegung) {
+        try {
+            datenbank.speichereRaumbelegung(belegung);
+        } catch (SQLException e) {
+            throw new RuntimeException("Raumbelegung konnte nicht gespeichert werden.", e);
+        }
     }
 }

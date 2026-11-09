@@ -1,5 +1,6 @@
 package de.abiturplanung.model;
 
+import de.abiturplanung.gui.planung.Hilfsmittel;
 import de.abiturplanung.gui.planung.SchriftlicherPruefungstag;
 
 import java.time.LocalDate;
@@ -24,6 +25,8 @@ public class Abitur {
     private final List<Pruefungstag> pruefungstage = new ArrayList<>();
 
     private final List<SchriftlicherPruefungstag> schriftlichePruefungstage = new ArrayList<>();
+
+    private List<Hilfsmittel> hilfsmittel = new ArrayList<>();
 
     public List<Pruefungstag> getPruefungstage() {
         return Collections.unmodifiableList(pruefungstage);
@@ -56,6 +59,14 @@ public class Abitur {
             }
         }
         return result;
+    }
+
+    public void addHilfsmittel(Hilfsmittel hilfsmittel) {
+        this.hilfsmittel.add(hilfsmittel);
+    }
+
+    public List<Hilfsmittel> getHilfsmittel() {
+        return hilfsmittel;
     }
 
     public void addPruefungstag(Pruefungstag pruefungstag) {

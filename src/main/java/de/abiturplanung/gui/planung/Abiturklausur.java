@@ -3,6 +3,8 @@ package de.abiturplanung.gui.planung;
 import de.abiturplanung.model.Fach;
 import de.abiturplanung.model.Kursart;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 public class Abiturklausur {
@@ -12,7 +14,7 @@ public class Abiturklausur {
     private Kursart kursart;
     private Integer bearbeitungszeit;
     private Integer auswahlzeit;
-    private String hilfsmittel;
+    private List<Hilfsmittel> hilfsmittel = new ArrayList<>();
     private SchriftlicherPruefungstag pruefungstag;
 
     public Abiturklausur(Fach fach, Kursart kursart) {
@@ -54,12 +56,14 @@ public class Abiturklausur {
         this.auswahlzeit = auswahlzeit;
     }
 
-    public String getHilfsmittel() {
+    public List<Hilfsmittel>  getHilfsmittel() {
         return hilfsmittel;
     }
 
-    public void setHilfsmittel(String hilfsmittel) {
-        this.hilfsmittel = hilfsmittel;
+    public void addHilfsmittel(Hilfsmittel hilfsmittel) {
+        if (!this.hilfsmittel.contains(hilfsmittel)) {
+            this.hilfsmittel.add(hilfsmittel);
+        }
     }
 
     public SchriftlicherPruefungstag getPruefungstag() {

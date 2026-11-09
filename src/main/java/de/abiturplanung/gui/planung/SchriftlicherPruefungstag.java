@@ -10,6 +10,7 @@ public class SchriftlicherPruefungstag {
     private Long id;
     private LocalDate datum;
     private final List<Abiturklausur> abiturklausuren = new ArrayList<>();
+    private List<RaumbelegungAbiturklausuren> raumbelegungen = new ArrayList<>();
 
     public SchriftlicherPruefungstag(LocalDate datum) {
         this.datum = Objects.requireNonNull(datum);
@@ -52,5 +53,13 @@ public class SchriftlicherPruefungstag {
         if (abiturklausuren.remove(klausur)) {
             klausur.setPruefungstag(null);
         }
+    }
+
+    public void addRaumbelegung(RaumbelegungAbiturklausuren klausurRaum) {
+        if (!raumbelegungen.contains(klausurRaum)) raumbelegungen.add(klausurRaum);
+    }
+
+    public List<RaumbelegungAbiturklausuren> getRaumbelegungen() {
+        return raumbelegungen;
     }
 }
