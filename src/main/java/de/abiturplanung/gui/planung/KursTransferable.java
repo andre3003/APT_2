@@ -7,6 +7,7 @@ import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
 
 public class KursTransferable implements Transferable {
+    private final Kurs kurs;
 
     public static final DataFlavor KURS_FLAVOR;
     //Hier definieren wir den Datentyp, der transferiert werden soll; und zwar ausschließlich innerhalb der aktuellen JVM.
@@ -17,8 +18,6 @@ public class KursTransferable implements Transferable {
             throw new ExceptionInInitializerError(e);
         }
     }
-
-    private final Kurs kurs;
 
     public KursTransferable(Kurs kurs) {
         this.kurs = kurs;

@@ -2,6 +2,7 @@ package de.abiturplanung.gui.planung;
 
 import de.abiturplanung.gui.dialogs.AbiturklausurDialog;
 import de.abiturplanung.model.Abitur;
+import de.abiturplanung.model.Kurs;
 
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
@@ -18,12 +19,14 @@ public class SchriftlichePruefungstagePanel extends JPanel {
     private final Consumer<SchriftlicherPruefungstag> nachTabWechsel;
     private final BiConsumer<Abiturklausur, AbiturklausurDialog.Eingaben> aktualisierAbiturklausur;
     private final Consumer<RaumbelegungAbiturklausuren> speichereRaumbelegung;
+    private final BiConsumer<RaumbelegungAbiturklausuren, Kurs> speichereKursZuRaumZuordnnung;
 
     public SchriftlichePruefungstagePanel(Abitur abitur, Consumer<SchriftlicherPruefungstag> nachTabWechsel, BiConsumer<Abiturklausur, AbiturklausurDialog.Eingaben> aktualisiereAbiturklausur,
-                                          Consumer<RaumbelegungAbiturklausuren> speichereRaumbelegung) {
-        this.speichereRaumbelegung = speichereRaumbelegung;
+                                          Consumer<RaumbelegungAbiturklausuren> speichereRaumbelegung, BiConsumer<RaumbelegungAbiturklausuren, Kurs> speichereKursZuRaumZuordnnung) {
         this.abitur = abitur;
+        this.speichereRaumbelegung = speichereRaumbelegung;
         this.aktualisierAbiturklausur = aktualisiereAbiturklausur;
+        this.speichereKursZuRaumZuordnnung = speichereKursZuRaumZuordnnung;
         this.nachTabWechsel = nachTabWechsel;
         setLayout(new BorderLayout());
         add(tabbedPane, BorderLayout.CENTER);
@@ -43,7 +46,7 @@ public class SchriftlichePruefungstagePanel extends JPanel {
         planungsPanels.clear();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
         for (SchriftlicherPruefungstag pt : abitur.getSchriftlichePruefungstage()) {
-            SchriftlicherPruefungstagPlanungsPanel panel = new SchriftlicherPruefungstagPlanungsPanel(abitur, pt, aktualisierAbiturklausur, speichereRaumbelegung);
+            SchriftlicherPruefungstagPlanungsPanel panel = new SchriftlicherPruefungstagPlanungsPanel(abitur, pt, aktualisierAbiturklausur, speichereRaumbelegung, speichereKursZuRaumZuordnnung);
             planungsPanels.add(panel);
             tabbedPane.add(pt.getDatum().format(formatter), panel);
         }

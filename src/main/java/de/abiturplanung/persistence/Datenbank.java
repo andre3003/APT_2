@@ -218,10 +218,19 @@ public class Datenbank {
                         FOREIGN KEY (raum_bezeichnung) REFERENCES raum(bezeichnung)
                     );
                     """);
+
+            statement.execute("""
+                    CREATE TABLE IF NOT EXISTS raumbelegung_kurs (
+                        raumbelegung_id INTEGER NOT NULL,
+                        kurs_bezeichnung TEXT NOT NULL,
+                        PRIMARY KEY (raumbelegung_id, kurs_bezeichnung),
+                        FOREIGN KEY (raumbelegung_id) REFERENCES raumbelegung_abiturklausuren(id) ON DELETE CASCADE,
+                        FOREIGN KEY (kurs_bezeichnung) REFERENCES kurs(bezeichnung)
+                    );
+                    """);
+
         }
     }
-
-
 
     private void setLocalTime(PreparedStatement statement, int index, LocalTime wert) throws SQLException {
         if (wert == null) {
@@ -372,6 +381,18 @@ public class Datenbank {
                 RaumbelegungAbiturklausuren belegung = new RaumbelegungAbiturklausuren(id, pruefungstag, raum);
                 pruefungstag.addRaumbelegung(belegung);
             }
+        }
+    }
+
+    public void speichereKursRaumzuordnung(RaumbelegungAbiturklausuren belegung, Kurs kurs) throws SQLException {
+        String sql = "INSERT INTO raumbelegung_kurs (raumbelegung_id, kurs_bezeichnung) VALUES (?, ?)";
+
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            statement.setLong(1, belegung.getId());
+            statement.setString(2, kurs.getBezeichnung());
+            statement.executeUpdate();
         }
     }
 

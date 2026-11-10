@@ -2,6 +2,7 @@ package de.abiturplanung.gui.planung;
 
 import de.abiturplanung.gui.dialogs.AbiturklausurDialog;
 import de.abiturplanung.model.Abitur;
+import de.abiturplanung.model.Kurs;
 import de.abiturplanung.model.Raum;
 
 import javax.swing.*;
@@ -22,11 +23,14 @@ public class SchriftlicherPruefungstagPlanungsPanel extends JPanel {
     private AbiturklausurenTableModel model;
     private final BiConsumer<Abiturklausur, AbiturklausurDialog.Eingaben> aktualisiereKlausur;
     private final Consumer<RaumbelegungAbiturklausuren> speichereRaumbelegung;
+    private final BiConsumer<RaumbelegungAbiturklausuren, Kurs> speichereKursZuRaumZuordnnung;
+
     private RaumbelegungenPanel raumbelegungenPanel;
 
     public SchriftlicherPruefungstagPlanungsPanel(Abitur abitur, SchriftlicherPruefungstag pruefungstag, BiConsumer<Abiturklausur, AbiturklausurDialog.Eingaben> aktualisiereklausur,
-                                                  Consumer<RaumbelegungAbiturklausuren> speichereRaumbelegung) {
+                                                  Consumer<RaumbelegungAbiturklausuren> speichereRaumbelegung, BiConsumer<RaumbelegungAbiturklausuren, Kurs> speichereKursZuRaumZuordnnung) {
         this.speichereRaumbelegung = speichereRaumbelegung;
+        this.speichereKursZuRaumZuordnnung = speichereKursZuRaumZuordnnung;
         this.pruefungstag = pruefungstag;
         this.aktualisiereKlausur = aktualisiereklausur;
         this.abitur = abitur;
@@ -67,7 +71,7 @@ public class SchriftlicherPruefungstagPlanungsPanel extends JPanel {
         klausurenPanel.add(titel, BorderLayout.NORTH);
 
         this.add(klausurenPanel, BorderLayout.NORTH);
-        raumbelegungenPanel = new RaumbelegungenPanel(pruefungstag);
+        raumbelegungenPanel = new RaumbelegungenPanel(pruefungstag, speichereKursZuRaumZuordnnung);
         this.add(raumbelegungenPanel, BorderLayout.CENTER);
     }
 

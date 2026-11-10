@@ -3,11 +3,13 @@ package de.abiturplanung.gui.planung;
 import de.abiturplanung.gui.dialogs.AbiturklausurDialog;
 import de.abiturplanung.gui.dialogs.PruefungstagAnlegenDialog;
 import de.abiturplanung.model.Abitur;
+import de.abiturplanung.model.Kurs;
 import de.abiturplanung.persistence.Datenbank;
 
 import javax.swing.*;
 import java.awt.*;
 import java.sql.SQLException;
+import java.sql.SQLRecoverableException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,7 +25,7 @@ public class SchriftlichePruefungenPanel extends JPanel {
         this.datenbank = datenbank;
         this.setLayout(new BorderLayout());
         planungsvorratPanel = new SchriftlichePruefungenPlanungsVorratPanel(abitur);
-        pruefungstagePanel = new SchriftlichePruefungstagePanel(abitur, this::setzePruefungstag, this::aktualisiereAbiturklausur, this::speichereRaumbelegung);
+        pruefungstagePanel = new SchriftlichePruefungstagePanel(abitur, this::setzePruefungstag, this::aktualisiereAbiturklausur, this::speichereRaumbelegung, this::speichereKursZuRaumZuordnung);
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, planungsvorratPanel, pruefungstagePanel);
         splitPane.setOneTouchExpandable(true);
         splitPane.setResizeWeight(0.32);
@@ -78,6 +80,14 @@ public class SchriftlichePruefungenPanel extends JPanel {
             datenbank.speichereRaumbelegung(belegung);
         } catch (SQLException e) {
             throw new RuntimeException("Raumbelegung konnte nicht gespeichert werden.", e);
+        }
+    }
+
+    private void speichereKursZuRaumZuordnung(RaumbelegungAbiturklausuren belegung, Kurs kurs ) {
+        try {
+            datenbank.speichereKursRaumzuordnung(belegung, kurs);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
     }
 }
