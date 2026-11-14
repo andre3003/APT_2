@@ -25,6 +25,7 @@ public class SchriftlichePruefungenPlanungsVorratPanel extends JPanel {
         this.pruefungstage = abitur.getSchriftlichePruefungstage();
         tableModel = new SchriftlichePruefungenTableModel(abitur);
         JTable kursTabelle = new JTable(tableModel);
+
         kursTabelle.setTransferHandler(new TransferHandler() {
             @Override
             protected Transferable createTransferable(JComponent component) {
@@ -39,9 +40,9 @@ public class SchriftlichePruefungenPlanungsVorratPanel extends JPanel {
             public int getSourceActions(JComponent component) {
                 return COPY;
             }
+
         });
         kursTabelle.setDragEnabled(true);
-        kursTabelle.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         sorter = new TableRowSorter<>(tableModel);
         kursTabelle.setRowSorter(sorter);
         kursTabelle.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
