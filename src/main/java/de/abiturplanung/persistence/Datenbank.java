@@ -313,6 +313,7 @@ public class Datenbank {
             ladePruefungen(connection, abitur, schuelerMap, kursMap, pruefungMap);
             ladePruefungsplanung(connection, pruefungMap, pruefungstagMap, raumMap, lehrerMap);
             ladeRaumbelegungen(connection, abitur, schriftlicherTagMap);
+            ladeKursRaumZuordnung(connection, abitur);
         }
         return abitur;
     }
@@ -381,6 +382,28 @@ public class Datenbank {
                 RaumbelegungAbiturklausuren belegung = new RaumbelegungAbiturklausuren(id, pruefungstag, raum);
                 pruefungstag.addRaumbelegung(belegung);
             }
+        }
+    }
+
+    public void ladeKursRaumZuordnung(Connection connection, Abitur abitur) {
+        String sql = "SELECT raumbelegung_id, kurs_bezeichnung FROM raumbelegung_kurs";
+
+        try (Statement statement = connection.createStatement() ) {
+            ResultSet rs = statement.executeQuery(sql);
+            while (rs.next()) {
+                Long id = (long) rs.getInt("raumbelegung_id");
+                String  bezeichnung = rs.getString("kurs_bezeichnung");
+                List<SchriftlicherPruefungstag> pruefungstage = abitur.getSchriftlichePruefungstage();
+                for (SchriftlicherPruefungstag pt : pruefungstage) {
+                    List<RaumbelegungAbiturklausuren> belegungen = pt.getRaumbelegungen();
+                    for (RaumbelegungAbiturklausuren belegung : belegungen) {
+                       if (belegung.getId().equals(id))
+                        belegung.addKurs(abitur.findeKurs(bezeichnung));
+                    }
+                }
+            }
+        } catch (SQLException e){
+            e.printStackTrace();
         }
     }
 
