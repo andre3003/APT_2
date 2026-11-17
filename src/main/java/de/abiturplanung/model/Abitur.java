@@ -1,6 +1,7 @@
 package de.abiturplanung.model;
 
 import de.abiturplanung.gui.planung.Hilfsmittel;
+import de.abiturplanung.gui.planung.RaumbelegungAbiturklausuren;
 import de.abiturplanung.gui.planung.SchriftlicherPruefungstag;
 
 import java.time.LocalDate;
@@ -51,15 +52,7 @@ public class Abitur {
         schriftlichePruefungstage.remove(pruefungstag);
     }
 
-    public List<Pruefung> gibSchriftlichePruefungenEinesKurses(Kurs kurs) {
-        List<Pruefung> result = new ArrayList<>();
-        for (Pruefung pruefung : pruefungen) {
-            if (pruefung.getKurs() == kurs && pruefung.getAbiturfach() != Abiturfach.AB4) {
-                result.add(pruefung);
-            }
-        }
-        return result;
-    }
+
 
     public void addHilfsmittel(Hilfsmittel hilfsmittel) {
         this.hilfsmittel.add(hilfsmittel);
@@ -342,5 +335,30 @@ public class Abitur {
                 alsPruefer,
                 alsVorsitzender,
                 alsSchriftfuehrer);
+    }
+
+    public void setzeAnzahlAbiturientenProKurs(){
+        for (Kurs kurs : kurse) {
+            kurs.setAnzahlKlausurschreiber(ermittelechriftlichePruefungenEinesKurses(kurs).size());
+        }
+    }
+
+    public List<Pruefung> ermittelechriftlichePruefungenEinesKurses(Kurs kurs) {
+        List<Pruefung> result = new ArrayList<>();
+        for (Pruefung pruefung : pruefungen) {
+            if (pruefung.getKurs() == kurs && pruefung.getAbiturfach() != Abiturfach.AB4) {
+                result.add(pruefung);
+            }
+        }
+        return result;
+    }
+
+    public List<Pruefung> gibSchriftlichePruefungenEinerRaumbelegung(RaumbelegungAbiturklausuren belegung) {
+        List<Pruefung> result = new ArrayList<>();
+        for (Kurs kurs : belegung.getKurse()){
+            result.addAll(ermittelechriftlichePruefungenEinesKurses(kurs));
+        }
+        result.sort(Comparator.comparing((Pruefung p) -> p.getSchueler().getNachname()).thenComparing(p -> p.getSchueler().getVorname()));
+        return result;
     }
 }

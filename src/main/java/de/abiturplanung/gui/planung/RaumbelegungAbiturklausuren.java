@@ -12,15 +12,24 @@ public class RaumbelegungAbiturklausuren {
     private Raum raum;
     private List<Kurs> kurse = new ArrayList<>();
 
-        public RaumbelegungAbiturklausuren(Long id, SchriftlicherPruefungstag pruefungstag, Raum raum) {
-            this.id = id;
-            this.pruefungstag = pruefungstag;
-            this.raum = raum;
-        }
+    public RaumbelegungAbiturklausuren(Long id, SchriftlicherPruefungstag pruefungstag, Raum raum) {
+        this.id = id;
+        this.pruefungstag = pruefungstag;
+        this.raum = raum;
+    }
 
     public void setId(Long id) {
         this.id = id;
     }
+
+    public int getAktuelleBelegung() {
+        int anzahl = 0;
+        for (Kurs kurs : kurse) {
+            anzahl += kurs.getAnzahlKlausurschreiber();
+        }
+        return anzahl;
+    }
+
     public void addKurs(Kurs kurs) {
         if (!kurse.contains(kurs)) kurse.add(kurs);
     }

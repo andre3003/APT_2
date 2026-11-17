@@ -314,6 +314,7 @@ public class Datenbank {
             ladePruefungsplanung(connection, pruefungMap, pruefungstagMap, raumMap, lehrerMap);
             ladeRaumbelegungen(connection, abitur, schriftlicherTagMap);
             ladeKursRaumZuordnung(connection, abitur);
+            abitur.setzeAnzahlAbiturientenProKurs();
         }
         return abitur;
     }
@@ -341,8 +342,7 @@ public class Datenbank {
     public void speichereRaumbelegung(RaumbelegungAbiturklausuren belegung) throws SQLException {
         String sql = "INSERT INTO raumbelegung_abiturklausuren (pruefungstag_id, raum_bezeichnung) VALUES (?, ?)";
 
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             statement.setLong(1, belegung.getPruefungstag().getId());
             statement.setString(2, belegung.getRaum().getBezeichnung());
@@ -388,38 +388,74 @@ public class Datenbank {
     public void ladeKursRaumZuordnung(Connection connection, Abitur abitur) {
         String sql = "SELECT raumbelegung_id, kurs_bezeichnung FROM raumbelegung_kurs";
 
-        try (Statement statement = connection.createStatement() ) {
+        try (Statement statement = connection.createStatement()) {
             ResultSet rs = statement.executeQuery(sql);
             while (rs.next()) {
                 Long id = (long) rs.getInt("raumbelegung_id");
-                String  bezeichnung = rs.getString("kurs_bezeichnung");
+                String bezeichnung = rs.getString("kurs_bezeichnung");
                 List<SchriftlicherPruefungstag> pruefungstage = abitur.getSchriftlichePruefungstage();
                 for (SchriftlicherPruefungstag pt : pruefungstage) {
                     List<RaumbelegungAbiturklausuren> belegungen = pt.getRaumbelegungen();
                     for (RaumbelegungAbiturklausuren belegung : belegungen) {
-                       if (belegung.getId().equals(id))
-                        belegung.addKurs(abitur.findeKurs(bezeichnung));
+                        if (belegung.getId().equals(id))
+                            belegung.addKurs(abitur.findeKurs(bezeichnung));
                     }
                 }
             }
-        } catch (SQLException e){
+        } catch (SQLException e) {
             e.printStackTrace();
         }
     }
 
-    public void speichereKursRaumzuordnung(RaumbelegungAbiturklausuren belegung, Kurs kurs) throws SQLException {
-        String sql = "INSERT INTO raumbelegung_kurs (raumbelegung_id, kurs_bezeichnung) VALUES (?, ?)";
+    public void aktualisiereKursZuordnung(RaumbelegungAbiturklausuren ziel, Kurs kurs, RaumbelegungAbiturklausuren alt) throws SQLException {
+        String delete = "DELETE FROM raumbelegung_kurs WHERE raumbelegung_id = ? AND kurs_bezeichnung = ?";
+        String insert = "INSERT INTO raumbelegung_kurs (raumbelegung_id, kurs_bezeichnung) VALUES (?,?)";
 
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (Connection connection = getConnection()) {
+            connection.setAutoCommit(false);
+            try {
+                if (alt != null) {
+                    try (PreparedStatement statement = connection.prepareStatement(delete)) {
+                        statement.setLong(1, alt.getId());
+                        statement.setString(2, kurs.getBezeichnung());
+                        statement.executeUpdate();
+                    }
+                }
+                try (PreparedStatement statement = connection.prepareStatement(insert)) {
+                    statement.setLong(1, ziel.getId());
+                    statement.setString(2, kurs.getBezeichnung());
+                    statement.executeUpdate();
+                }
+                connection.commit();
+            } catch (SQLException e) {
+                connection.rollback();
+                throw e;
+            }
+        }
+    }
 
+    public void entferneKursRaumZuordnung(RaumbelegungAbiturklausuren belegung, Kurs kurs) throws SQLException{
+        String sql = "DELETE FROM raumbelegung_kurs WHERE raumbelegung_id = ? AND kurs_Bezeichnung = ?";
+
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)){
             statement.setLong(1, belegung.getId());
             statement.setString(2, kurs.getBezeichnung());
             statement.executeUpdate();
         }
     }
 
-    private void ladeSchueler(Connection connection, Abitur abitur, Map<String, Schueler> schuelerMap) throws SQLException {
+    public void loescheRaumbelgungAbiturklausuen(RaumbelegungAbiturklausuren belegung)  throws SQLException {
+        String sql = "DELETE FROM raumbelegung_abiturklausuren WHERE id = ?";
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)){
+            statement.setLong(1, belegung.getPruefungstag().getId());
+            if (statement.executeUpdate() == 0) {
+                throw new SQLException("Raumbelegung konnte nicht eindeutig gelöscht werden: " + belegung.getId());
+            }
+        }
+    }
+
+    private void ladeSchueler(Connection connection, Abitur abitur, Map<String, Schueler> schuelerMap) throws
+            SQLException {
         String sql = "SELECT schild_id, nachname, vorname, geburtsdatum, geschlecht FROM schueler";
 
         try (Statement statement = connection.createStatement(); ResultSet resultSet = statement.executeQuery(sql)) {
@@ -451,7 +487,8 @@ public class Datenbank {
         }
     }
 
-    private void ladeLehrer(Connection connection, Abitur abitur, Map<String, Lehrer> lehrerMap) throws SQLException {
+    private void ladeLehrer(Connection connection, Abitur abitur, Map<String, Lehrer> lehrerMap) throws
+            SQLException {
         String sql = "SELECT kuerzel, anrede, nachname, vorname, amtsbezeichnung FROM lehrer";
         try (Statement statement = connection.createStatement(); ResultSet resultSet = statement.executeQuery(sql)) {
             while (resultSet.next()) {
@@ -516,7 +553,8 @@ public class Datenbank {
         abitur.sortiereFaecher();
     }
 
-    private void ladeFakultas(Connection connection, Abitur abitur, Map<String, Lehrer> lehrerMap) throws SQLException {
+    private void ladeFakultas(Connection connection, Abitur abitur, Map<String, Lehrer> lehrerMap) throws
+            SQLException {
         String sql = "SELECT lehrer_kuerzel, fach FROM lehrer_fakultaet";
         Map<Lehrer, List<Fach>> fakultas = new HashMap<>();
 
@@ -542,7 +580,8 @@ public class Datenbank {
         }
     }
 
-    private void ladeRaeume(Connection connection, Abitur abitur, Map<String, Raum> raumMap) throws SQLException {
+    private void ladeRaeume(Connection connection, Abitur abitur, Map<String, Raum> raumMap) throws
+            SQLException {
         String sql = "SELECT bezeichnung, kapazitaet FROM raum";
 
         try (Statement statement = connection.createStatement(); ResultSet resultSet = statement.executeQuery(sql)) {
@@ -559,7 +598,8 @@ public class Datenbank {
         abitur.sortiereRaeume();
     }
 
-    private void ladeKurse(Connection connection, Abitur abitur, Map<String, Lehrer> lehrerMap, Map<String, Kurs> kursMap) throws SQLException {
+    private void ladeKurse(Connection connection, Abitur
+            abitur, Map<String, Lehrer> lehrerMap, Map<String, Kurs> kursMap) throws SQLException {
         String sql = "SELECT bezeichnung, fach, fachlehrer_kuerzel FROM kurs";
 
         try (Statement statement = connection.createStatement(); ResultSet resultSet = statement.executeQuery(sql)) {
@@ -584,7 +624,8 @@ public class Datenbank {
         }
     }
 
-    private void ladePruefungstage(Connection connection, Abitur abitur, Map<Long, Pruefungstag> pruefungstagMap) throws SQLException {
+    private void ladePruefungstage(Connection connection, Abitur
+            abitur, Map<Long, Pruefungstag> pruefungstagMap) throws SQLException {
         String sql = "SELECT pruefungstag_id, datum, startzeit, endzeit, anzahl_planungsspalten FROM pruefungstag ORDER BY datum";
 
         try (Statement statement = connection.createStatement(); ResultSet resultSet = statement.executeQuery(sql)) {
@@ -601,7 +642,9 @@ public class Datenbank {
         }
     }
 
-    private void ladePruefungen(Connection connection, Abitur abitur, Map<String, Schueler> schuelerMap, Map<String, Kurs> kursMap, Map<Long, Pruefung> pruefungMap) throws SQLException {
+    private void ladePruefungen(Connection connection, Abitur
+            abitur, Map<String, Schueler> schuelerMap, Map<String, Kurs> kursMap, Map<Long, Pruefung> pruefungMap) throws
+            SQLException {
         String sql = "SELECT pruefung_id, schueler_id, kurs_bezeichnung, abiturfach, pruefungsform, pruefungsfolge FROM pruefung";
 
         try (Statement statement = connection.createStatement(); ResultSet resultSet = statement.executeQuery(sql)) {
@@ -632,7 +675,9 @@ public class Datenbank {
         }
     }
 
-    private void ladePruefungsplanung(Connection connection, Map<Long, Pruefung> pruefungMap, Map<Long, Pruefungstag> pruefungstagMap, Map<String, Raum> raumMap, Map<String, Lehrer> lehrerMap) throws SQLException {
+    private void ladePruefungsplanung(Connection
+                                              connection, Map<Long, Pruefung> pruefungMap, Map<Long, Pruefungstag> pruefungstagMap, Map<String, Raum> raumMap, Map<String, Lehrer> lehrerMap) throws
+            SQLException {
 
         String sql = """
                 SELECT pruefung_id, pruefungstag_id, beginn, planungsspalte, raum_bezeichnung, pruefer_kuerzel, schriftfuehrer_kuerzel, vorsitz_kuerzel FROM pruefungsplanung
@@ -722,7 +767,8 @@ public class Datenbank {
         }
     }
 
-    private void ladeSchriftlichePruefungstage(Connection connection, Abitur abitur, Map<Long, SchriftlicherPruefungstag> tagMap) throws SQLException {
+    private void ladeSchriftlichePruefungstage(Connection connection, Abitur
+            abitur, Map<Long, SchriftlicherPruefungstag> tagMap) throws SQLException {
         String sql = "SELECT id, datum FROM schriftlicher_pruefungstag ORDER BY datum";
 
         try (Statement statement = connection.createStatement(); ResultSet resultSet = statement.executeQuery(sql)) {
@@ -739,7 +785,9 @@ public class Datenbank {
         }
     }
 
-    private void ladeAbiturklausuren(Connection connection, Abitur abitur, Map<Long, SchriftlicherPruefungstag> tagMap, Map<Long, Hilfsmittel> hilfsmittelMap) throws SQLException {
+    private void ladeAbiturklausuren(Connection connection, Abitur
+            abitur, Map<Long, SchriftlicherPruefungstag> tagMap, Map<Long, Hilfsmittel> hilfsmittelMap) throws
+            SQLException {
         String sql = """
                 SELECT k.id, k.pruefungstag_id, k.fach, k.kursart,
                 k.bearbeitungszeit, k.auswahlzeit, kh.hilfsmittel_id
@@ -758,11 +806,13 @@ public class Datenbank {
                 if (klausur == null) {
                     long tagId = resultSet.getLong("pruefungstag_id");
                     SchriftlicherPruefungstag tag = tagMap.get(tagId);
-                    if (tag == null) throw new SQLException("Schriftlicher Prüfungstag nicht gefunden: " + tagId);
+                    if (tag == null)
+                        throw new SQLException("Schriftlicher Prüfungstag nicht gefunden: " + tagId);
 
                     String fachKuerzel = resultSet.getString("fach");
                     Fach fach = abitur.findeFach(fachKuerzel);
-                    if (fach == null) throw new SQLException("Fach für Abiturklausur nicht gefunden: " + fachKuerzel);
+                    if (fach == null)
+                        throw new SQLException("Fach für Abiturklausur nicht gefunden: " + fachKuerzel);
                     Kursart kursart = Kursart.valueOf(resultSet.getString("kursart"));
                     klausur = new Abiturklausur(fach, kursart);
                     klausur.setId(id);
@@ -776,7 +826,8 @@ public class Datenbank {
 
                 if (!resultSet.wasNull()) {
                     Hilfsmittel hilfsmittel = hilfsmittelMap.get(hilfsmittelId);
-                    if (hilfsmittel == null) throw new SQLException("Hilfsmittel nicht gefunden: " + hilfsmittelId);
+                    if (hilfsmittel == null)
+                        throw new SQLException("Hilfsmittel nicht gefunden: " + hilfsmittelId);
                     klausur.addHilfsmittel(hilfsmittel);
                 }
             }

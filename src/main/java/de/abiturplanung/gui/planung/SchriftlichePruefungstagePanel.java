@@ -20,13 +20,20 @@ public class SchriftlichePruefungstagePanel extends JPanel {
     private final BiConsumer<Abiturklausur, AbiturklausurDialog.Eingaben> aktualisierAbiturklausur;
     private final Consumer<RaumbelegungAbiturklausuren> speichereRaumbelegung;
     private final BiConsumer<RaumbelegungAbiturklausuren, Kurs> speichereKursZuRaumZuordnnung;
+    private final BiConsumer<RaumbelegungAbiturklausuren, Kurs> entferneKursRaumZuordnung;
+    private final Consumer<RaumbelegungAbiturklausuren> loescheRaumbelegungAbiturklausuren;
+    private final Consumer<RaumbelegungAbiturklausuren> zeigeKlausurraumDetails;
 
     public SchriftlichePruefungstagePanel(Abitur abitur, Consumer<SchriftlicherPruefungstag> nachTabWechsel, BiConsumer<Abiturklausur, AbiturklausurDialog.Eingaben> aktualisiereAbiturklausur,
-                                          Consumer<RaumbelegungAbiturklausuren> speichereRaumbelegung, BiConsumer<RaumbelegungAbiturklausuren, Kurs> speichereKursZuRaumZuordnnung) {
+                                          Consumer<RaumbelegungAbiturklausuren> speichereRaumbelegung, BiConsumer<RaumbelegungAbiturklausuren, Kurs> speichereKursZuRaumZuordnnung,
+                                          BiConsumer<RaumbelegungAbiturklausuren, Kurs> entferneKursRaumzuordnung, Consumer<RaumbelegungAbiturklausuren> loescheRaumbelegungAbiturklausuren, Consumer<RaumbelegungAbiturklausuren> zeigeKlausurraumDetails) {
         this.abitur = abitur;
         this.speichereRaumbelegung = speichereRaumbelegung;
         this.aktualisierAbiturklausur = aktualisiereAbiturklausur;
         this.speichereKursZuRaumZuordnnung = speichereKursZuRaumZuordnnung;
+        this.entferneKursRaumZuordnung = entferneKursRaumzuordnung;
+        this.loescheRaumbelegungAbiturklausuren = loescheRaumbelegungAbiturklausuren;
+        this.zeigeKlausurraumDetails = zeigeKlausurraumDetails;
         this.nachTabWechsel = nachTabWechsel;
         setLayout(new BorderLayout());
         add(tabbedPane, BorderLayout.CENTER);
@@ -46,9 +53,19 @@ public class SchriftlichePruefungstagePanel extends JPanel {
         planungsPanels.clear();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
         for (SchriftlicherPruefungstag pt : abitur.getSchriftlichePruefungstage()) {
-            SchriftlicherPruefungstagPlanungsPanel panel = new SchriftlicherPruefungstagPlanungsPanel(abitur, pt, aktualisierAbiturklausur, speichereRaumbelegung, speichereKursZuRaumZuordnnung);
+            SchriftlicherPruefungstagPlanungsPanel panel = new SchriftlicherPruefungstagPlanungsPanel(abitur, pt, aktualisierAbiturklausur, speichereRaumbelegung,
+                    speichereKursZuRaumZuordnnung, entferneKursRaumZuordnung, loescheRaumbelegungAbiturklausuren, zeigeKlausurraumDetails);
             planungsPanels.add(panel);
             tabbedPane.add(pt.getDatum().format(formatter), panel);
+        }
+    }
+
+    public void ansichtAktualisieren(SchriftlicherPruefungstag pruefungstag) {
+        for (SchriftlicherPruefungstagPlanungsPanel p : planungsPanels) {
+            if(p.getPruefungstag().equals(pruefungstag)) {
+                p.aktualisiereAnzeige();
+                break;
+            }
         }
     }
 

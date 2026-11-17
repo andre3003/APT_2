@@ -12,40 +12,53 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
 import java.io.IOException;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 public class KlausurRaumKarte extends JPanel {
 
     private final RaumbelegungAbiturklausuren belegung;
     private final JPanel kursePanel;
-    private final BiConsumer<RaumbelegungAbiturklausuren, Kurs> speichereKursZuRaumZuordnung;
-    JPopupMenu popupMenu;
+    private final BiConsumer<RaumbelegungAbiturklausuren, Kurs> speichereKursRaumZuordnung;
+    private final BiConsumer<RaumbelegungAbiturklausuren, Kurs> entferneKursRaumzuordnung;
+    private final Consumer<RaumbelegungAbiturklausuren> loescheRaumbelegungAbiturklausuren;
+    private final Consumer<RaumbelegungAbiturklausuren> zeigeKlausurraumDetails;
 
-    public KlausurRaumKarte(RaumbelegungAbiturklausuren belegung, BiConsumer<RaumbelegungAbiturklausuren, Kurs> speichereKursZuRaumZuordnung) {
-        this.speichereKursZuRaumZuordnung = speichereKursZuRaumZuordnung;
+
+    public KlausurRaumKarte(RaumbelegungAbiturklausuren belegung, BiConsumer<RaumbelegungAbiturklausuren, Kurs> speichereKursRaumZuordnung, BiConsumer<RaumbelegungAbiturklausuren, Kurs>
+            entferneKursRaumzuordnung, Consumer<RaumbelegungAbiturklausuren> loescheRaumbelegungAbiturklausuren, Consumer<RaumbelegungAbiturklausuren> zeigeKlausurraumDetails) {
+        this.speichereKursRaumZuordnung = speichereKursRaumZuordnung;
+        this.entferneKursRaumzuordnung = entferneKursRaumzuordnung;
+        this.loescheRaumbelegungAbiturklausuren = loescheRaumbelegungAbiturklausuren;
+        this.zeigeKlausurraumDetails = zeigeKlausurraumDetails;
         this.belegung = belegung;
-//        this.addMouseListener(new MouseAdapter() {
-//            @Override
-//            public void mouseClicked(MouseEvent e) {
-//                super.mouseClicked(e);
-////                Component c = e.
-////                System.out.println(c.toString());
-//                System.out.println(e.getSource().toString());
-//
-//            }
-//        });
 
         setLayout(new BorderLayout(5, 10));
-        setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(Color.GRAY),
-                BorderFactory.createEmptyBorder(10, 12, 10, 12)
-        ));
+        setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(Color.GRAY), BorderFactory.createEmptyBorder(10, 12, 10, 12)));
+        setBackground(new Color(237, 242, 247));
 
-        JLabel titel = new JLabel("Raum " + belegung.getRaum().getBezeichnung());
-        titel.setFont(titel.getFont().deriveFont(Font.BOLD, 15f));
-        add(titel, BorderLayout.NORTH);
+        JPanel kopfPanel = new JPanel(new BorderLayout(10, 0));
+        kopfPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Color.LIGHT_GRAY));
+        kopfPanel.setOpaque(false);
+        JLabel lbRaum = new JLabel("Raum: " + belegung.getRaum().getBezeichnung());
+        lbRaum.setFont(lbRaum.getFont().deriveFont(Font.BOLD, 15f));
+        kopfPanel.add(lbRaum, BorderLayout.CENTER);
+        kopfPanel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (SwingUtilities.isLeftMouseButton(e) && e.getClickCount() == 2) {
+                    zeigeKlausurraumDetails.accept(belegung);
+                }
+            }
+        });
+
+        JLabel lbBelegung = new JLabel(belegung.getAktuelleBelegung() + " / " + belegung.getRaum().getKapazitaet());
+        lbBelegung.setFont(lbRaum.getFont().deriveFont(Font.BOLD, 15f));
+        kopfPanel.add(lbBelegung, BorderLayout.EAST);
+        add(kopfPanel, BorderLayout.NORTH);
 
         kursePanel = new JPanel();
         kursePanel.setLayout(new BoxLayout(kursePanel, BoxLayout.Y_AXIS));
+        kursePanel.setOpaque(false);
         add(kursePanel, BorderLayout.CENTER);
         this.setTransferHandler(new TransferHandler() {
             @Override
@@ -56,19 +69,26 @@ public class KlausurRaumKarte extends JPanel {
             @Override
             public boolean importData(TransferSupport support) {
                 if (!canImport(support)) return false;
-
                 try {
                     Kurs kurs = (Kurs) support.getTransferable().getTransferData(KursTransferable.KURS_FLAVOR);
-                    speichereKursZuRaumZuordnung.accept(belegung, kurs);
-                    belegung.addKurs(kurs);
-                    aktualisiereAnzeige();
+                    speichereKursRaumZuordnung.accept(belegung, kurs);
                     return true;
                 } catch (UnsupportedFlavorException | IOException e) {
                     return false;
                 }
             }
         });
+        JPopupMenu popupMenu = new JPopupMenu();
+        JMenuItem entfernen = new JMenuItem("Klausurraum entfernen");
+        entfernen.addActionListener(this::raumkarteLoeschenAction);
+        popupMenu.add(entfernen);
+        setComponentPopupMenu(popupMenu);
+
         aktualisiereAnzeige();
+    }
+
+    private void raumkarteLoeschenAction(ActionEvent event) {
+        loescheRaumbelegungAbiturklausuren.accept(belegung);
     }
 
     public void aktualisiereAnzeige() {
@@ -80,88 +100,77 @@ public class KlausurRaumKarte extends JPanel {
                 kursePanel.add(new KursPanel(kurs));
             }
         }
-
         kursePanel.revalidate();
         kursePanel.repaint();
     }
 
 
     private class KursPanel extends JPanel {
-        JLabel lbText = new JLabel();
+        JLabel lbKursbezeichnung = new JLabel();
+        JLabel lbAnzahl = new JLabel();
         Kurs kurs;
 
         public KursPanel(Kurs kurs) {
+            this.setLayout(new BorderLayout(10, 0));
             this.kurs = kurs;
-            this.setBorder(BorderFactory.createLineBorder(Color.BLACK));
             this.setPreferredSize(new Dimension(400, 30));
-            this.add(lbText);
+            this.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+            this.setAlignmentX(Component.LEFT_ALIGNMENT);
+            this.setOpaque(false);
+            this.add(lbKursbezeichnung, BorderLayout.CENTER);
+            this.add(lbAnzahl, BorderLayout.EAST);
             if (kurs == null) {
-                lbText.setText("Noch kein Kurs zugeordnet");
+                lbKursbezeichnung.setText("Noch kein Kurs zugeordnet");
             } else {
-                lbText.setText(kurs.getBezeichnung() + "-" + kurs.getFachlehrer().getKuerzel());
+                lbKursbezeichnung.setText(kurs.getBezeichnung() + "-" + kurs.getFachlehrer().getKuerzel());
+                lbAnzahl.setText(String.valueOf(kurs.getAnzahlKlausurschreiber()));
             }
-//            this.addMouseListener(new MouseAdapter() {
-//                public void mouseClicked(MouseEvent e) {
-//                    System.out.println(e.getSource().toString());
-//                }
-//            });
+
             this.setTransferHandler(new TransferHandler() {
-                                        @Override
-                                        protected Transferable createTransferable(JComponent component) {
-                                            return new KursTransferable(kurs);
-                                        }
+                @Override
+                protected Transferable createTransferable(JComponent component) {
+                    return new KursTransferable(kurs);
+                }
 
-                                        @Override
-                                        public int getSourceActions(JComponent component) {
-                                            return MOVE;
-                                        }
+                @Override
+                public int getSourceActions(JComponent component) {
+                    return COPY;
+                }
 
-                                        @Override
-                                        protected void exportDone(JComponent source, Transferable data, int action) {
-                                            super.exportDone(source, data, action);
-                                            System.out.println(kurs.getBezeichnung());
-                                            belegung.removeKurs(kurs);
-                                            aktualisiereAnzeige();
-                                        }
-                                    }
-            );
+                @Override
+                public boolean canImport(TransferSupport support) {
+                    return support.isDrop() && support.isDataFlavorSupported(KursTransferable.KURS_FLAVOR);
+                }
 
-            MouseMotionAdapter dragListener = new MouseMotionAdapter() {
+                @Override
+                public boolean importData(TransferSupport support) {
+                    if (!canImport(support)) return false;
+
+                    try {
+                        Kurs neuerKurs = (Kurs) support.getTransferable().getTransferData(KursTransferable.KURS_FLAVOR);
+                        speichereKursRaumZuordnung.accept(belegung, neuerKurs);
+                        return true;
+                    } catch (UnsupportedFlavorException | IOException e) {
+                        return false;
+                    }
+                }
+            });
+
+            this.addMouseMotionListener(new MouseMotionAdapter() {
                 @Override
                 public void mouseDragged(MouseEvent e) {
-                    getTransferHandler().exportAsDrag(KursPanel.this, e, TransferHandler.MOVE);
-
+                    getTransferHandler().exportAsDrag(KursPanel.this, e, TransferHandler.COPY);
                 }
-            };
-            this.addMouseMotionListener(dragListener);
-
-            popupMenu = new JPopupMenu();
+            });
+            JPopupMenu popupMenu = new JPopupMenu();
             JMenuItem entfernen = new JMenuItem("Kurs entfernen");
             entfernen.addActionListener(this::kursEntfernenAction);
             popupMenu.add(entfernen);
-            this.add(popupMenu);
-
-            MouseAdapter mausListener = new MouseAdapter() {
-                @Override
-                public void mouseReleased(MouseEvent e) {
-                    if (e.isPopupTrigger()) {  //Ginge auch so: SwingUtilities.isRightMouseButton(e)
-                        zeigePopup(e);
-                    }
-                }
-            };
-            this.addMouseListener(mausListener);
-
-        }
-
-        private void zeigePopup(MouseEvent e) {
-            if (e.isPopupTrigger()) {
-                popupMenu.show(e.getComponent(), e.getX() + 10, e.getY());
-            }
+            setComponentPopupMenu(popupMenu);
         }
 
         private void kursEntfernenAction(ActionEvent actionEvent) {
-            belegung.removeKurs(kurs);
-            aktualisiereAnzeige();
+            entferneKursRaumzuordnung.accept(belegung, kurs);
         }
     }
 }

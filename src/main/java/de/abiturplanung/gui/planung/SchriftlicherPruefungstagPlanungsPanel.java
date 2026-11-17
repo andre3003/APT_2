@@ -7,7 +7,6 @@ import de.abiturplanung.model.Raum;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.datatransfer.Transferable;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -23,14 +22,21 @@ public class SchriftlicherPruefungstagPlanungsPanel extends JPanel {
     private AbiturklausurenTableModel model;
     private final BiConsumer<Abiturklausur, AbiturklausurDialog.Eingaben> aktualisiereKlausur;
     private final Consumer<RaumbelegungAbiturklausuren> speichereRaumbelegung;
-    private final BiConsumer<RaumbelegungAbiturklausuren, Kurs> speichereKursZuRaumZuordnnung;
-
+    private final BiConsumer<RaumbelegungAbiturklausuren, Kurs> speichereKursZuRaumZuordnung;
+    private final BiConsumer<RaumbelegungAbiturklausuren, Kurs> entferneKursRaumZuordnung;
+    private final Consumer<RaumbelegungAbiturklausuren> loescheRaumbelegungAbiturklausuren;
+    private final Consumer<RaumbelegungAbiturklausuren> zeigeKlausurraumDetails;
     private RaumbelegungenPanel raumbelegungenPanel;
 
     public SchriftlicherPruefungstagPlanungsPanel(Abitur abitur, SchriftlicherPruefungstag pruefungstag, BiConsumer<Abiturklausur, AbiturklausurDialog.Eingaben> aktualisiereklausur,
-                                                  Consumer<RaumbelegungAbiturklausuren> speichereRaumbelegung, BiConsumer<RaumbelegungAbiturklausuren, Kurs> speichereKursZuRaumZuordnnung) {
+                                                  Consumer<RaumbelegungAbiturklausuren> speichereRaumbelegung, BiConsumer<RaumbelegungAbiturklausuren, Kurs> speichereKursZuRaumZuordnnung,
+                                                  BiConsumer<RaumbelegungAbiturklausuren, Kurs> entferneKursRaumZuordnung, Consumer<RaumbelegungAbiturklausuren> loescheRaumbelegungAbiturklausuren,
+                                                  Consumer<RaumbelegungAbiturklausuren> zeigeKlausurraumDetails) {
         this.speichereRaumbelegung = speichereRaumbelegung;
-        this.speichereKursZuRaumZuordnnung = speichereKursZuRaumZuordnnung;
+        this.speichereKursZuRaumZuordnung = speichereKursZuRaumZuordnnung;
+        this.entferneKursRaumZuordnung = entferneKursRaumZuordnung;
+        this.loescheRaumbelegungAbiturklausuren = loescheRaumbelegungAbiturklausuren;
+        this.zeigeKlausurraumDetails = zeigeKlausurraumDetails;
         this.pruefungstag = pruefungstag;
         this.aktualisiereKlausur = aktualisiereklausur;
         this.abitur = abitur;
@@ -56,8 +62,6 @@ public class SchriftlicherPruefungstagPlanungsPanel extends JPanel {
                 mausKlickTabelle(e);
             }
         });
-
-
         JPanel klausurenPanel = new JPanel(new BorderLayout());
         JScrollPane scrollPane = new JScrollPane(klausurenTabelle);
         scrollPane.setPreferredSize(new Dimension(0, hoehe));
@@ -71,7 +75,7 @@ public class SchriftlicherPruefungstagPlanungsPanel extends JPanel {
         klausurenPanel.add(titel, BorderLayout.NORTH);
 
         this.add(klausurenPanel, BorderLayout.NORTH);
-        raumbelegungenPanel = new RaumbelegungenPanel(pruefungstag, speichereKursZuRaumZuordnnung);
+        raumbelegungenPanel = new RaumbelegungenPanel(pruefungstag, speichereKursZuRaumZuordnung, entferneKursRaumZuordnung, loescheRaumbelegungAbiturklausuren, zeigeKlausurraumDetails);
         this.add(raumbelegungenPanel, BorderLayout.CENTER);
     }
 
@@ -120,9 +124,8 @@ public class SchriftlicherPruefungstagPlanungsPanel extends JPanel {
             }
             if (!bereitsVerwendet) freieRaeume.add(raum);
         }
-        return  freieRaeume.toArray(new Raum[0]);
+        return freieRaeume.toArray(new Raum[0]);
     }
-
 
     public void mausKlickTabelle(MouseEvent e) {
         if (e.getClickCount() == 2 && SwingUtilities.isLeftMouseButton(e)) {
@@ -138,6 +141,10 @@ public class SchriftlicherPruefungstagPlanungsPanel extends JPanel {
             aktualisiereKlausur.accept(klausur, eingaben);
             model.fireTableRowsUpdated(modelZeile, modelZeile);
         }
+    }
+
+    public void aktualisiereAnzeige() {
+        raumbelegungenPanel.aktualisiereAnzeige();
     }
 }
 

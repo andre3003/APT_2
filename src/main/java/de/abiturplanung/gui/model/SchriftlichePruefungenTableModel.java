@@ -31,7 +31,7 @@ public class SchriftlichePruefungenTableModel extends AbstractTableModel {
         List<Kurs> result = new ArrayList<>();
         for (Kurs kurs : alleKurse) {
             for (Abiturklausur klausur : pt.getAbiturklausuren()) {
-                if (kurs.getFach() == klausur.getFach() && kurs.getKursart() == klausur.getKursart() && !abitur.gibSchriftlichePruefungenEinesKurses(kurs).isEmpty()) {
+                if (kurs.getFach() == klausur.getFach() && kurs.getKursart() == klausur.getKursart() && kurs.getAnzahlKlausurschreiber() != 0) {
                     result.add(kurs);
                     break;
                 }
@@ -66,7 +66,7 @@ public class SchriftlichePruefungenTableModel extends AbstractTableModel {
             case SPALTE_FACH -> kurs.getFach();
             case SPALTE_KURS -> kurs.getBezeichnung();
             case SPALTE_KURSLEHRKRAFT -> kurs.getFachlehrer() == null ? "---" : kurs.getFachlehrer().getKuerzel();
-            case SPALTE_ABITURIENTEN -> abitur.gibSchriftlichePruefungenEinesKurses(kurs).size();
+            case SPALTE_ABITURIENTEN -> kurs.getAnzahlKlausurschreiber();
             default -> "";
         };
     }

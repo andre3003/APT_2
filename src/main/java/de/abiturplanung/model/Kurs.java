@@ -7,11 +7,20 @@ public class Kurs {
     private final String bezeichnung;
     private Fach fach;
     private Lehrer fachlehrer;
+    private int anzahlKlausurschreiber;
 
     public Kurs(String bezeichnung, Fach fach, Lehrer fachlehrer) {
         this.bezeichnung = bezeichnung;
         this.fach = fach;
         this.fachlehrer = fachlehrer;
+    }
+
+    public int getAnzahlKlausurschreiber() {
+        return anzahlKlausurschreiber;
+    }
+
+    public void setAnzahlKlausurschreiber(int anzahlKlausurschreiber) {
+        this.anzahlKlausurschreiber = anzahlKlausurschreiber;
     }
 
     public String getBezeichnung() {

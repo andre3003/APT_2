@@ -4,12 +4,12 @@ import de.abiturplanung.gui.dialogs.AbiturklausurDialog;
 import de.abiturplanung.gui.dialogs.PruefungstagAnlegenDialog;
 import de.abiturplanung.model.Abitur;
 import de.abiturplanung.model.Kurs;
+import de.abiturplanung.model.Pruefung;
 import de.abiturplanung.persistence.Datenbank;
 
 import javax.swing.*;
 import java.awt.*;
 import java.sql.SQLException;
-import java.sql.SQLRecoverableException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +25,8 @@ public class SchriftlichePruefungenPanel extends JPanel {
         this.datenbank = datenbank;
         this.setLayout(new BorderLayout());
         planungsvorratPanel = new SchriftlichePruefungenPlanungsVorratPanel(abitur);
-        pruefungstagePanel = new SchriftlichePruefungstagePanel(abitur, this::setzePruefungstag, this::aktualisiereAbiturklausur, this::speichereRaumbelegung, this::speichereKursZuRaumZuordnung);
+        pruefungstagePanel = new SchriftlichePruefungstagePanel(abitur, this::setzePruefungstag, this::aktualisiereAbiturklausur, this::speichereRaumbelegung, this::speichereKursRaumZuordnung,
+                this::entferneKursRaumZuordnung, this::loescheRaumbelegungAbiturklausueren, this::zeigeKlausurraumDetails);
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, planungsvorratPanel, pruefungstagePanel);
         splitPane.setOneTouchExpandable(true);
         splitPane.setResizeWeight(0.32);
@@ -83,11 +84,69 @@ public class SchriftlichePruefungenPanel extends JPanel {
         }
     }
 
-    private void speichereKursZuRaumZuordnung(RaumbelegungAbiturklausuren belegung, Kurs kurs ) {
+    private void loescheRaumbelegungAbiturklausueren(RaumbelegungAbiturklausuren belegung) {
+        if (!belegung.getKurse().isEmpty()) {
+            int antwort = JOptionPane.showConfirmDialog(this,
+                    "Dem Raum " + belegung.getRaum().getBezeichnung() + " sind noch "
+                            + belegung.getKurse().size() + " Kurse zugeordnet.\n"
+                            + "Beim Löschen werden diese Raumzuordnungen aufgehoben.\n\n"
+                            + "Raumbelegung trotzdem löschen?",
+                    "Raumbelegung löschen",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE);
+
+            if (antwort != JOptionPane.YES_OPTION) return;
+        }
+
         try {
-            datenbank.speichereKursRaumzuordnung(belegung, kurs);
+            datenbank.loescheRaumbelgungAbiturklausuen(belegung);
+            SchriftlicherPruefungstag pt = belegung.getPruefungstag();
+            pt.getRaumbelegungen().remove(belegung);
+            pruefungstagePanel.ansichtAktualisieren(pt);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private void speichereKursRaumZuordnung(RaumbelegungAbiturklausuren ziel, Kurs kurs) {
+        RaumbelegungAbiturklausuren alt = null;
+        if (ziel.getKurse().contains(kurs)) {
+            return;
+        }
+        List<RaumbelegungAbiturklausuren> belegungen = ziel.getPruefungstag().getRaumbelegungen();
+        for (RaumbelegungAbiturklausuren belegung : belegungen) {
+            if (belegung.getKurse().contains(kurs)) {
+                alt = belegung;
+                break;
+            }
+        }
+        try {
+            datenbank.aktualisiereKursZuordnung(ziel, kurs, alt);
+            if (alt != null) {
+                alt.removeKurs(kurs);
+            }
+            ziel.addKurs(kurs);
+            pruefungstagePanel.ansichtAktualisieren(ziel.getPruefungstag());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void entferneKursRaumZuordnung(RaumbelegungAbiturklausuren belegung, Kurs kurs) {
+        try {
+            datenbank.entferneKursRaumZuordnung(belegung, kurs);
+            belegung.removeKurs(kurs);
+            pruefungstagePanel.ansichtAktualisieren();
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void zeigeKlausurraumDetails(RaumbelegungAbiturklausuren belegung) {
+        List<Pruefung> pruefungen = abitur.gibSchriftlichePruefungenEinerRaumbelegung(belegung);
+        Window owner = SwingUtilities.getWindowAncestor(this);
+        KlausurraumDetailAnsicht ansicht = new KlausurraumDetailAnsicht(owner, belegung, pruefungen);
+        ansicht.setVisible(true);
     }
 }

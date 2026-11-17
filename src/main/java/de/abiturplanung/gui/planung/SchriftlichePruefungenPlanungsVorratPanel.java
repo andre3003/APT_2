@@ -7,6 +7,7 @@ import de.abiturplanung.model.Kurs;
 import de.abiturplanung.model.Pruefungstag;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.awt.datatransfer.Transferable;
@@ -17,6 +18,8 @@ public class SchriftlichePruefungenPlanungsVorratPanel extends JPanel {
     private SchriftlichePruefungenTableModel tableModel;
     private final List<SchriftlicherPruefungstag> pruefungstage;
     private TableRowSorter<SchriftlichePruefungenTableModel> sorter;
+    private SchriftlicherPruefungstag aktuellerPruefungstag;
+    private JTable kursTabelle;
 
 
     public SchriftlichePruefungenPlanungsVorratPanel(Abitur abitur) {
@@ -42,6 +45,28 @@ public class SchriftlichePruefungenPlanungsVorratPanel extends JPanel {
             }
 
         });
+
+        DefaultTableCellRenderer statusRenderer = new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                Component component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
+                if (!isSelected) {
+                    int modelZeile = table.convertRowIndexToModel(row);
+                    Kurs kurs = tableModel.getKurs(modelZeile);
+
+                    if (istKursZugeordnet(kurs)) {
+                        component.setBackground(new Color(230, 245, 230));
+                    } else {
+                        component.setBackground(table.getBackground());
+                    }
+                    component.setForeground(table.getForeground());
+                }
+
+                return component;
+            }
+        };
+        kursTabelle.setDefaultRenderer(Object.class, statusRenderer);
         kursTabelle.setDragEnabled(true);
         sorter = new TableRowSorter<>(tableModel);
         kursTabelle.setRowSorter(sorter);
@@ -61,6 +86,18 @@ public class SchriftlichePruefungenPlanungsVorratPanel extends JPanel {
     }
 
     public void setzePruefungstag(SchriftlicherPruefungstag pt) {
+        aktuellerPruefungstag = pt;
         tableModel.kurseEinlesen(pt);
+    }
+
+
+    private boolean istKursZugeordnet(Kurs kurs) {
+        if (aktuellerPruefungstag == null) return false;
+        for (RaumbelegungAbiturklausuren belegung : aktuellerPruefungstag.getRaumbelegungen()) {
+            if (belegung.getKurse().contains(kurs)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
