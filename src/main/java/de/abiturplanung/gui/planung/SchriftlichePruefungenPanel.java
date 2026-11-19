@@ -2,8 +2,10 @@ package de.abiturplanung.gui.planung;
 
 import de.abiturplanung.gui.dialogs.AbiturklausurDialog;
 import de.abiturplanung.gui.dialogs.PruefungstagAnlegenDialog;
+import de.abiturplanung.gui.model.ZweitkorrekturTableModel;
 import de.abiturplanung.model.Abitur;
 import de.abiturplanung.model.Kurs;
+import de.abiturplanung.model.Lehrer;
 import de.abiturplanung.model.Pruefung;
 import de.abiturplanung.persistence.Datenbank;
 
@@ -17,6 +19,7 @@ import java.util.List;
 public class SchriftlichePruefungenPanel extends JPanel {
     private final SchriftlichePruefungstagePanel pruefungstagePanel;
     private final SchriftlichePruefungenPlanungsVorratPanel planungsvorratPanel;
+    private final ZweitkorrekturPlanungPanel zweitkorrekturPlanungPanel;
     private final Abitur abitur;
     private final Datenbank datenbank;
 
@@ -31,7 +34,11 @@ public class SchriftlichePruefungenPanel extends JPanel {
         splitPane.setOneTouchExpandable(true);
         splitPane.setResizeWeight(0.32);
         splitPane.setDividerLocation(480);
-        this.add(splitPane, BorderLayout.CENTER);
+        JTabbedPane tabbedPane = new JTabbedPane();
+        tabbedPane.add("Raumplanung", splitPane);
+        zweitkorrekturPlanungPanel = new ZweitkorrekturPlanungPanel(abitur, this::aktualisiereZweitkorrektur);
+        tabbedPane.add("Zweitkorrektur", zweitkorrekturPlanungPanel);
+        this.add(tabbedPane, BorderLayout.CENTER);
     }
 
     public void pruefungstagHinzufuegen(LocalDate datum, java.util.List<PruefungstagAnlegenDialog.KlausurEingabe> klausuren) {
@@ -74,6 +81,25 @@ public class SchriftlichePruefungenPanel extends JPanel {
             alteHilfsmittel.forEach(klausur::addHilfsmittel);
             JOptionPane.showMessageDialog(this, "Die Abiturklausur konnte nicht aktualisiert werden:\n" + e.getMessage(), "Datenbankfehler", JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    public void aktualisiereZweitkorrektur(ZweitkorrekturTableModel.ZweitKorrekturAenderung aenderung) {
+        try {
+            switch (aenderung.spalte()) {
+                case ZweitkorrekturTableModel.SPALTE_ZWEITKORREKTOR_1 -> {
+                    datenbank.aktualisiereZweitkorrektur(aenderung.kurs(), aenderung.zweitkorrektor(), aenderung.kurs().getZweitkorrektor2());
+                    aenderung.kurs().setZweitkorrektor1(aenderung.zweitkorrektor());
+                }
+                case ZweitkorrekturTableModel.SPALTE_ZWEITKORREKTOR_2 -> {
+                    datenbank.aktualisiereZweitkorrektur(aenderung.kurs(), aenderung.kurs().getZweitkorrektor1(), aenderung.zweitkorrektor());
+                    aenderung.kurs().setZweitkorrektor2(aenderung.zweitkorrektor());
+                }
+                default -> throw new IllegalArgumentException("Ungültige Spalte: " + aenderung.spalte());
+            }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Die Änderung der Zweitkorrektur konnte nicht gespeichert werden:\n" + e.getMessage(), "Datenbankfehler", JOptionPane.ERROR_MESSAGE);
+        }
+        zweitkorrekturPlanungPanel.aktualisiereAnsicht();
     }
 
     private void speichereRaumbelegung(RaumbelegungAbiturklausuren belegung) {

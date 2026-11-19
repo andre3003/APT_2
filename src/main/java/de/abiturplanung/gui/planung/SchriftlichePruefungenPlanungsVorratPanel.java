@@ -1,10 +1,7 @@
 package de.abiturplanung.gui.planung;
-
-import de.abiturplanung.gui.model.PruefungsTableModel;
 import de.abiturplanung.gui.model.SchriftlichePruefungenTableModel;
 import de.abiturplanung.model.Abitur;
 import de.abiturplanung.model.Kurs;
-import de.abiturplanung.model.Pruefungstag;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -27,7 +24,7 @@ public class SchriftlichePruefungenPlanungsVorratPanel extends JPanel {
         this.setLayout(new BorderLayout());
         this.pruefungstage = abitur.getSchriftlichePruefungstage();
         tableModel = new SchriftlichePruefungenTableModel(abitur);
-        JTable kursTabelle = new JTable(tableModel);
+        kursTabelle = new JTable(tableModel);
 
         kursTabelle.setTransferHandler(new TransferHandler() {
             @Override

@@ -361,4 +361,14 @@ public class Abitur {
         result.sort(Comparator.comparing((Pruefung p) -> p.getSchueler().getNachname()).thenComparing(p -> p.getSchueler().getVorname()));
         return result;
     }
+
+    public List<Kurs> gibSchriftlicheAbiturkurse() {
+        List<Kurs> result = new ArrayList<>();
+        for (Kurs kurs : kurse) {
+            if (kurs.getAnzahlKlausurschreiber() > 0) {
+                result.add(kurs);
+            }
+        }
+        return result;
+    }
 }

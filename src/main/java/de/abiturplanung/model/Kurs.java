@@ -8,11 +8,30 @@ public class Kurs {
     private Fach fach;
     private Lehrer fachlehrer;
     private int anzahlKlausurschreiber;
+    private Lehrer zweitkorrektor1;
+    private Lehrer zweitkorrektor2;
+
 
     public Kurs(String bezeichnung, Fach fach, Lehrer fachlehrer) {
         this.bezeichnung = bezeichnung;
         this.fach = fach;
         this.fachlehrer = fachlehrer;
+    }
+
+    public Lehrer getZweitkorrektor1() {
+        return zweitkorrektor1;
+    }
+
+    public void setZweitkorrektor1(Lehrer zweitkorrektor1) {
+        this.zweitkorrektor1 = zweitkorrektor1;
+    }
+
+    public Lehrer getZweitkorrektor2() {
+        return zweitkorrektor2;
+    }
+
+    public void setZweitkorrektor2(Lehrer zweitkorrektor2) {
+        this.zweitkorrektor2 = zweitkorrektor2;
     }
 
     public int getAnzahlKlausurschreiber() {

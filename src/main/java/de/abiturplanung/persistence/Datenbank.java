@@ -103,7 +103,8 @@ public class Datenbank {
                         bezeichnung TEXT PRIMARY KEY,
                         fach TEXT NOT NULL,
                         fachlehrer_kuerzel TEXT,
-                    
+                        zweitkorrektor1 TEXT REFERENCES lehrer(kuerzel),
+                        zweitkorrektor2 TEXT REFERENCES lehrer(kuerzel),
                         FOREIGN KEY (fachlehrer_kuerzel)
                             REFERENCES lehrer(kuerzel)
                     )
@@ -434,6 +435,18 @@ public class Datenbank {
         }
     }
 
+    public void aktualisiereZweitkorrektur(Kurs kurs, Lehrer zk1, Lehrer zk2) throws SQLException{
+        String sql = "UPDATE kurs SET zweitkorrektor1 = ?, zweitkorrektor2 = ? WHERE bezeichnung = ?";
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, zk1 == null ? null : zk1.getKuerzel());
+            statement.setString(2, zk2 == null ? null : zk2.getKuerzel());
+            statement.setString(3, kurs.getBezeichnung());
+            if (statement.executeUpdate() != 1) {
+                throw new SQLException("Zweitkorrektur für Kurs " + kurs.getBezeichnung() + " konnte nicht aktualisiert werden.");
+            }
+        }
+    }
+
     public void entferneKursRaumZuordnung(RaumbelegungAbiturklausuren belegung, Kurs kurs) throws SQLException{
         String sql = "DELETE FROM raumbelegung_kurs WHERE raumbelegung_id = ? AND kurs_Bezeichnung = ?";
 
@@ -600,24 +613,36 @@ public class Datenbank {
 
     private void ladeKurse(Connection connection, Abitur
             abitur, Map<String, Lehrer> lehrerMap, Map<String, Kurs> kursMap) throws SQLException {
-        String sql = "SELECT bezeichnung, fach, fachlehrer_kuerzel FROM kurs";
+        String sql = "SELECT bezeichnung, fach, fachlehrer_kuerzel, zweitkorrektor1, zweitkorrektor2 FROM kurs";
 
         try (Statement statement = connection.createStatement(); ResultSet resultSet = statement.executeQuery(sql)) {
             while (resultSet.next()) {
                 String bezeichnung = resultSet.getString("bezeichnung");
                 String fach = resultSet.getString("fach");
                 String fachlehrerKuerzel = resultSet.getString("fachlehrer_kuerzel");
+                String zweitkorrektor_1_Kuerzel = resultSet.getString("zweitkorrektor1");
+                String zweitkorrektor_2_Kuerzel = resultSet.getString("zweitkorrektor2");
 
                 Lehrer fachlehrer = fachlehrerKuerzel == null ? null : lehrerMap.get(fachlehrerKuerzel);
+                Lehrer zweitkorrektor1 = zweitkorrektor_1_Kuerzel == null ? null : lehrerMap.get( zweitkorrektor_1_Kuerzel);
+                Lehrer zweitkorrektor2 = zweitkorrektor_2_Kuerzel == null ? null : lehrerMap.get( zweitkorrektor_2_Kuerzel);
 
                 if (fachlehrerKuerzel != null && fachlehrer == null) {
                     throw new SQLException("Fachlehrer für Kurs " + bezeichnung + " nicht gefunden: " + fachlehrerKuerzel);
+                }
+                if (zweitkorrektor_1_Kuerzel != null && zweitkorrektor1 == null) {
+                    throw new SQLException("Erster Zweitkorrektor für Kurs " + bezeichnung + " nicht gefunden: " + zweitkorrektor_1_Kuerzel);
+                }
+                if (zweitkorrektor_2_Kuerzel != null && zweitkorrektor2 == null) {
+                    throw new SQLException("Zweiter Zweitkorrektor für Kurs " + bezeichnung + " nicht gefunden: " + zweitkorrektor_2_Kuerzel);
                 }
                 Fach kursFach = abitur.findeFach(fach);
                 if (kursFach == null) {
                     throw new SQLException("Fach für Kurs nicht gefunden: " + fach);
                 }
                 Kurs kurs = new Kurs(bezeichnung, kursFach, fachlehrer);
+                kurs.setZweitkorrektor1(zweitkorrektor1);
+                kurs.setZweitkorrektor2(zweitkorrektor2);
                 abitur.addKurs(kurs);
                 kursMap.put(bezeichnung, kurs);
             }
