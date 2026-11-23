@@ -82,9 +82,7 @@ public class Datenbank {
                     CREATE TABLE IF NOT EXISTS lehrer_fakultaet (
                         lehrer_kuerzel TEXT NOT NULL,
                         fach TEXT NOT NULL,
-                    
                         PRIMARY KEY (lehrer_kuerzel, fach),
-                    
                         FOREIGN KEY (lehrer_kuerzel)
                             REFERENCES lehrer(kuerzel)
                             ON DELETE CASCADE
@@ -103,6 +101,7 @@ public class Datenbank {
                         bezeichnung TEXT PRIMARY KEY,
                         fach TEXT NOT NULL,
                         fachlehrer_kuerzel TEXT,
+                        kursart TEXT,
                         zweitkorrektor1 TEXT REFERENCES lehrer(kuerzel),
                         zweitkorrektor2 TEXT REFERENCES lehrer(kuerzel),
                         FOREIGN KEY (fachlehrer_kuerzel)
@@ -229,7 +228,6 @@ public class Datenbank {
                         FOREIGN KEY (kurs_bezeichnung) REFERENCES kurs(bezeichnung)
                     );
                     """);
-
         }
     }
 
@@ -301,6 +299,7 @@ public class Datenbank {
         Map<Long, Hilfsmittel> hilfsmittelMap;
 
         try (Connection connection = getConnection()) {
+            ladeAppInfo(connection, abitur);
             ladeFaecher(connection, abitur);
             ladeSchueler(connection, abitur, schuelerMap);
             ladeLehrer(connection, abitur, lehrerMap);
@@ -435,7 +434,7 @@ public class Datenbank {
         }
     }
 
-    public void aktualisiereZweitkorrektur(Kurs kurs, Lehrer zk1, Lehrer zk2) throws SQLException{
+    public void aktualisiereZweitkorrektur(Kurs kurs, Lehrer zk1, Lehrer zk2) throws SQLException {
         String sql = "UPDATE kurs SET zweitkorrektor1 = ?, zweitkorrektor2 = ? WHERE bezeichnung = ?";
         try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, zk1 == null ? null : zk1.getKuerzel());
@@ -447,19 +446,19 @@ public class Datenbank {
         }
     }
 
-    public void entferneKursRaumZuordnung(RaumbelegungAbiturklausuren belegung, Kurs kurs) throws SQLException{
+    public void entferneKursRaumZuordnung(RaumbelegungAbiturklausuren belegung, Kurs kurs) throws SQLException {
         String sql = "DELETE FROM raumbelegung_kurs WHERE raumbelegung_id = ? AND kurs_Bezeichnung = ?";
 
-        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)){
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setLong(1, belegung.getId());
             statement.setString(2, kurs.getBezeichnung());
             statement.executeUpdate();
         }
     }
 
-    public void loescheRaumbelgungAbiturklausuen(RaumbelegungAbiturklausuren belegung)  throws SQLException {
+    public void loescheRaumbelgungAbiturklausuen(RaumbelegungAbiturklausuren belegung) throws SQLException {
         String sql = "DELETE FROM raumbelegung_abiturklausuren WHERE id = ?";
-        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)){
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setLong(1, belegung.getPruefungstag().getId());
             if (statement.executeUpdate() == 0) {
                 throw new SQLException("Raumbelegung konnte nicht eindeutig gelöscht werden: " + belegung.getId());
@@ -522,6 +521,18 @@ public class Datenbank {
             statement.setString(1, kuerzel);
             if (statement.executeUpdate() != 1) {
                 throw new SQLException("Schüler mit Schild-ID " + kuerzel + " konnte nicht gelöscht werden.");
+            }
+        }
+    }
+
+    private void ladeAppInfo(Connection connection, Abitur abitur) throws SQLException {
+        String sql = "SELECT schluessel, wert FROM app_info";
+        try (Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                switch (rs.getString("schluessel")) {
+                    case "abiturjahrgang" -> abitur.setAbiturjahrgang(Integer.parseInt(rs.getString("wert")));
+                }
             }
         }
     }
@@ -611,21 +622,21 @@ public class Datenbank {
         abitur.sortiereRaeume();
     }
 
-    private void ladeKurse(Connection connection, Abitur
-            abitur, Map<String, Lehrer> lehrerMap, Map<String, Kurs> kursMap) throws SQLException {
-        String sql = "SELECT bezeichnung, fach, fachlehrer_kuerzel, zweitkorrektor1, zweitkorrektor2 FROM kurs";
+    private void ladeKurse(Connection connection, Abitur abitur, Map<String, Lehrer> lehrerMap, Map<String, Kurs> kursMap) throws SQLException {
+        String sql = "SELECT bezeichnung, fach, fachlehrer_kuerzel, kursart, zweitkorrektor1, zweitkorrektor2 FROM kurs";
 
         try (Statement statement = connection.createStatement(); ResultSet resultSet = statement.executeQuery(sql)) {
             while (resultSet.next()) {
                 String bezeichnung = resultSet.getString("bezeichnung");
                 String fach = resultSet.getString("fach");
                 String fachlehrerKuerzel = resultSet.getString("fachlehrer_kuerzel");
+                String kursart = resultSet.getString("kursart");
                 String zweitkorrektor_1_Kuerzel = resultSet.getString("zweitkorrektor1");
                 String zweitkorrektor_2_Kuerzel = resultSet.getString("zweitkorrektor2");
 
                 Lehrer fachlehrer = fachlehrerKuerzel == null ? null : lehrerMap.get(fachlehrerKuerzel);
-                Lehrer zweitkorrektor1 = zweitkorrektor_1_Kuerzel == null ? null : lehrerMap.get( zweitkorrektor_1_Kuerzel);
-                Lehrer zweitkorrektor2 = zweitkorrektor_2_Kuerzel == null ? null : lehrerMap.get( zweitkorrektor_2_Kuerzel);
+                Lehrer zweitkorrektor1 = zweitkorrektor_1_Kuerzel == null ? null : lehrerMap.get(zweitkorrektor_1_Kuerzel);
+                Lehrer zweitkorrektor2 = zweitkorrektor_2_Kuerzel == null ? null : lehrerMap.get(zweitkorrektor_2_Kuerzel);
 
                 if (fachlehrerKuerzel != null && fachlehrer == null) {
                     throw new SQLException("Fachlehrer für Kurs " + bezeichnung + " nicht gefunden: " + fachlehrerKuerzel);
@@ -641,6 +652,11 @@ public class Datenbank {
                     throw new SQLException("Fach für Kurs nicht gefunden: " + fach);
                 }
                 Kurs kurs = new Kurs(bezeichnung, kursFach, fachlehrer);
+                try {
+                    kurs.setKursart(Kursart.valueOf(kursart));
+                } catch (IllegalArgumentException | NullPointerException e) {
+                    throw new SQLException("Ungültige Kursart für Kurs " + bezeichnung + ": " + kursart, e);
+                }
                 kurs.setZweitkorrektor1(zweitkorrektor1);
                 kurs.setZweitkorrektor2(zweitkorrektor2);
                 abitur.addKurs(kurs);
@@ -700,8 +716,7 @@ public class Datenbank {
         }
     }
 
-    private void ladePruefungsplanung(Connection
-                                              connection, Map<Long, Pruefung> pruefungMap, Map<Long, Pruefungstag> pruefungstagMap, Map<String, Raum> raumMap, Map<String, Lehrer> lehrerMap) throws
+    private void ladePruefungsplanung(Connection connection, Map<Long, Pruefung> pruefungMap, Map<Long, Pruefungstag> pruefungstagMap, Map<String, Raum> raumMap, Map<String, Lehrer> lehrerMap) throws
             SQLException {
 
         String sql = """
@@ -1006,12 +1021,13 @@ public class Datenbank {
 
     public void aktualisiereKurs(Kurs kurs) throws SQLException {
         String sql = """
-                UPDATE kurs SET fach = ?, fachlehrer_kuerzel = ? WHERE bezeichnung = ?
+                UPDATE kurs SET fach = ?, fachlehrer_kuerzel = ?, kursart = ? WHERE bezeichnung = ?
                 """;
         try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, kurs.getFach().getKuerzel());
             statement.setString(2, kurs.getFachlehrer().getKuerzel());
-            statement.setString(3, kurs.getBezeichnung());
+            statement.setString(3, kurs.getKursart().name());
+            statement.setString(4, kurs.getBezeichnung());
             statement.executeUpdate();
         }
     }
@@ -1386,13 +1402,13 @@ public class Datenbank {
 //        }
 //    }
 
-    public void aktualisiereSchriftlichenPruefungstag(SchriftlicherPruefungstag tag) throws SQLException {
+    public void aktualisiereSchriftlichenPruefungstag(SchriftlicherPruefungstag tag, LocalDate neuesDatum) throws SQLException {
         if (tag.getId() == null) throw new SQLException("Der Prüfungstag wurde noch nicht gespeichert.");
 
         String sql = "UPDATE schriftlicher_pruefungstag SET datum = ? WHERE id = ?";
 
         try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, tag.getDatum().toString());
+            statement.setString(1, neuesDatum.toString());
             statement.setLong(2, tag.getId());
 
             if (statement.executeUpdate() != 1)
@@ -1492,6 +1508,17 @@ public class Datenbank {
         }
     }
 
+    private void synchronisiereFehlendeLehrer(Connection connection, Abitur abitur) throws SQLException {
+        String sql = "INSERT INTO lehrer (kuerzel, nachname, vorname) VALUES (?, '','') ON CONFLICT(kuerzel) DO NOTHING";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            for (Lehrer lehrer : abitur.getLehrer()) {
+                statement.setString(1, lehrer.getKuerzel());
+                statement.addBatch();
+            }
+            statement.executeBatch();
+        }
+    }
+
     public void synchronisiereFaecher(Abitur abitur) throws SQLException {
         String fachSql = """
                 INSERT INTO fach
@@ -1502,13 +1529,11 @@ public class Datenbank {
                     stammfach_kuerzel = NULL,
                     faechergruppe = excluded.faechergruppe
                 """;
-
         String stammfachSql = """
                 UPDATE fach
                 SET stammfach_kuerzel = ?
                 WHERE kuerzel = ?
                 """;
-
         try (Connection connection = getConnection()) {
             connection.setAutoCommit(false);
 
@@ -1543,6 +1568,24 @@ public class Datenbank {
         }
     }
 
+    private void synchronisiereFehlendeFaecher(Connection connection, Abitur abitur) throws SQLException {
+        String sql = """
+                INSERT INTO fach (kuerzel, bezeichnung, faechergruppe)
+                VALUES (?, ?, ?)
+                ON CONFLICT(kuerzel) DO NOTHING
+                """;
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            for (Fach fach : abitur.getFaecher()) {
+                statement.setString(1, fach.getKuerzel());
+                statement.setString(2, fach.getBezeichnung());
+                statement.setString(3, fach.getFaechergruppe());
+                statement.addBatch();
+            }
+            statement.executeBatch();
+        }
+    }
+
     public void synchronisiereRaeume(Abitur abitur) throws SQLException {
         String raeumeSql = """
                 INSERT INTO raum (bezeichnung, kapazitaet) VALUES (?, ?) ON CONFLICT(bezeichnung) DO UPDATE SET
@@ -1561,21 +1604,22 @@ public class Datenbank {
 
     private void synchronisiereKurse(Connection connection, Abitur abitur) throws SQLException {
         String sql = """
-                INSERT INTO kurs (bezeichnung, fach, fachlehrer_kuerzel) VALUES (?, ?, ?) ON CONFLICT(bezeichnung) DO UPDATE SET
+                INSERT INTO kurs (bezeichnung, fach, fachlehrer_kuerzel, kursart) VALUES (?, ?, ?, ?) ON CONFLICT(bezeichnung) DO UPDATE SET
                     fach = excluded.fach,
-                    fachlehrer_kuerzel = excluded.fachlehrer_kuerzel
+                    fachlehrer_kuerzel = excluded.fachlehrer_kuerzel,
+                    kursart = excluded.kursart
                 """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             for (Kurs kurs : abitur.getKurse()) {
                 statement.setString(1, kurs.getBezeichnung());
                 statement.setString(2, kurs.getFach().getKuerzel());
-
                 if (kurs.getFachlehrer() == null) {
                     statement.setNull(3, Types.VARCHAR);
                 } else {
                     statement.setString(3, kurs.getFachlehrer().getKuerzel());
                 }
+                statement.setString(4, kurs.getKursart().name());
                 statement.addBatch();
             }
             statement.executeBatch();
@@ -1596,9 +1640,7 @@ public class Datenbank {
                     updateStatement.setString(4, pruefung.getPruefungsform().name());
                     updateStatement.setString(5, pruefung.getPruefungsFolge());
                     updateStatement.setLong(6, pruefung.getPruefungId());
-
                     updateStatement.executeUpdate();
-
                 } else {
                     fuegePruefungHinzu(connection, pruefung);
                 }
@@ -1610,6 +1652,8 @@ public class Datenbank {
         try (Connection connection = getConnection()) {
             connection.setAutoCommit(false);
             try {
+                synchronisiereFehlendeFaecher(connection, abitur);
+                synchronisiereFehlendeLehrer(connection, abitur);
                 synchronisiereKurse(connection, abitur);
                 synchronisierePruefungen(connection, abitur);
                 connection.commit();
@@ -1739,6 +1783,18 @@ public class Datenbank {
             if (statement.executeUpdate() != 1) {
                 throw new SQLException("Die Prüfungsplanung konnte nicht zurückgesetzt werden.");
             }
+        }
+    }
+
+    public void speichereAbiturjahrgang(int abiturjahrgang) throws SQLException {
+        String sql = """
+                INSERT INTO app_info (schluessel, wert) VALUES ('abiturjahrgang', ?)
+                ON CONFLICT(schluessel) DO UPDATE SET wert = excluded.wert
+                """;
+
+        try (Connection connection = getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, String.valueOf(abiturjahrgang));
+            statement.executeUpdate();
         }
     }
 

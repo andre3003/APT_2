@@ -1,9 +1,7 @@
 package de.abiturplanung.gui.stammdaten;
 
 import de.abiturplanung.gui.dialogs.KursStammdatenDialog;
-import de.abiturplanung.model.Abitur;
-import de.abiturplanung.model.Fach;
-import de.abiturplanung.model.Lehrer;
+import de.abiturplanung.model.*;
 
 import javax.swing.*;
 import java.awt.*;
@@ -57,6 +55,12 @@ public class KursStammdatenPanel extends JPanel {
             lehrerComboBox.addItem(lehrer);
         }
         tabelle.getColumnModel().getColumn(2).setCellEditor(new DefaultCellEditor(lehrerComboBox));
+
+        JComboBox<Kursart> kursartJComboBox = new JComboBox<>();
+        kursartJComboBox.addItem(Kursart.LEISTUNGSKURS);
+        kursartJComboBox.addItem(Kursart.GRUNDKURS);
+        kursartJComboBox.addItem(Kursart.NICHT_DEFINIERT);
+        tabelle.getColumnModel().getColumn(3).setCellEditor(new DefaultCellEditor(kursartJComboBox));
     }
 
     public void setNachAenderung(Consumer<KursTableModel.KursAenderung> aenderung) {

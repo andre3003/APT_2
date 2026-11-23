@@ -73,7 +73,10 @@ public class Lehrer {
     }
 
     public String gibVollstaendigenNamen() {
-        return anrede + " " + nachname + (amtsbezeichnung != null ? ", " + amtsbezeichnung : "");
+        if (nachname == null || nachname.isBlank()) return kuerzel;
+        return (anrede == null || anrede.isBlank() ? "" : anrede + " ")
+                + nachname
+                + (amtsbezeichnung == null ? "" : ", " + amtsbezeichnung);
     }
 
     @Override

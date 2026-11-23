@@ -57,10 +57,13 @@ public class Hauptmenue {
         JMenuItem pruefungstagEntfernen = new JMenuItem("Prüfungstag entfernen");
         pruefungstagEntfernen.addActionListener(e -> aktionen.pruefungstagEntfernenAction());
 
+
+
         planungMenue.add(pruefungstagHinzufuegen);
         planungMenue.addSeparator();
         planungMenue.add(pruefungstagEntfernen);
         planungMenue.addSeparator();
+
 
         JMenuItem datumAendern = new JMenuItem("Datum des aktuellen PT ändern");
         datumAendern.addActionListener(e -> aktionen.datumPruefungstagAendern());
@@ -77,6 +80,11 @@ public class Hauptmenue {
         pruefungsfolge.add(folgenimportieren);
         planungMenue.add(pruefungsfolge);
         menueleiste.add(planungMenue);
+
+        JMenuItem notizen = new JMenuItem("Notizen");
+        notizen.addActionListener(e -> aktionen.zeigeNotizen());
+        planungMenue.addSeparator();
+        planungMenue.add(notizen);
 
         JMenu module = new JMenu("Module");
 

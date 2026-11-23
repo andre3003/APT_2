@@ -7,7 +7,7 @@ import java.util.function.Consumer;
 
 public class KursTableModel extends AbstractTableModel {
     private final Abitur abitur;
-    private static final String[] SPALTEN= {"Bezeichnung", "Fach", "Fachlehrer" };
+    private static final String[] SPALTEN= {"Bezeichnung", "Fach", "Fachlehrer", "Kursart"};
     private List<Kurs> kurse;
     private Consumer<KursTableModel.KursAenderung> nachAenderung;
 
@@ -49,6 +49,7 @@ public class KursTableModel extends AbstractTableModel {
             case 0 -> kurs.getBezeichnung();
             case 1 -> kurs.getFach();
             case 2 -> kurs.getFachlehrer();
+            case 3 -> kurs.getKursart();
             default -> null;
         };
     }
@@ -72,6 +73,7 @@ public class KursTableModel extends AbstractTableModel {
             case 0 -> String.class;
             case 1 -> Fach.class;
             case 2 -> Lehrer.class;
+            case 3 -> Kursart.class;
             default -> Object.class;
         };
     }

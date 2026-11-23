@@ -3,8 +3,10 @@ package de.abiturplanung.service;
 import de.abiturplanung.importer.*;
 import de.abiturplanung.model.*;
 
+import javax.swing.*;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 
 public class ImportService {
@@ -97,28 +99,70 @@ public class ImportService {
         abitur.sortiereFaecher();
     }
 
-
-
-    private void importiereLeistungsdatensatz(SchuelerleistungsDatensatz ds) {
+    private void importiereLeistungsdatensatz(SchuelerleistungsDatensatz ds, LeistungsdatenImportbericht bericht) {
         Schueler schueler = abitur.findeSchueler(ds.getNachname(), ds.getVorname(), ds.getGeburtsdatum());
+        if (schueler == null) {
+            bericht.schuelerNichtGefunden(ds);
+            return;
+        }
         Lehrer lehrer = abitur.findeLehrer(ds.getLehrerkuerzel());
-        Kurs kurs = abitur.findeOderErzeugeKurs(ds.getKursbezeichnung(), ds.getFach(), lehrer);
+
+        if (lehrer == null && !ds.getLehrerkuerzel().isBlank()) {
+            lehrer = new Lehrer(ds.getLehrerkuerzel());
+            abitur.addLehrer(lehrer);
+            bericht.neuerLehrer(lehrer.getKuerzel());
+        }
+
+        Fach fach = abitur.findeFach(ds.getFach());
+        if (fach == null) {
+            fach = new Fach(ds.getFach());
+            abitur.addFach(fach);
+            bericht.neuesFach(fach.getKuerzel());
+        }
+
+        Kurs kurs = abitur.findeKurs(ds.getKursbezeichnung());
+            if (kurs == null) {
+                kurs = new Kurs(ds.getKursbezeichnung(), fach, lehrer);
+                if (ds.getAbiturfach() == Abiturfach.AB1 || ds.getAbiturfach() == Abiturfach.AB2) {
+                    kurs.setKursart(Kursart.LEISTUNGSKURS);
+                } else if (ds.getAbiturfach() == Abiturfach.AB3 || ds.getAbiturfach() == Abiturfach.AB4) {
+                    kurs.setKursart(Kursart.GRUNDKURS);
+                } else {
+                    kurs.setKursart(Kursart.NICHT_DEFINIERT);
+                }
+                abitur.addKurs(kurs);
+            }
+
         Pruefung pruefung = abitur.findePruefung(schueler, ds.getAbiturfach());
 
         if (pruefung == null) {
            pruefung = new Pruefung(schueler, kurs, lehrer, ds.getAbiturfach());
             abitur.addPruefung(pruefung);
+            bericht.neuePruefung(ds.getAbiturfach());
         } else {
             pruefung.setKurs(kurs);
+            bericht.vorhandenePruefung();
         }
     }
 
-    public void importiereLeistungsdaten(Path datei) throws IOException {
+    public LeistungsdatenImportbericht importiereLeistungsdaten(Path datei) throws IOException {
         LeistungsdatenImporter importer = new LeistungsdatenImporter();
-        List<SchuelerleistungsDatensatz> datensaetze = importer.lese(datei);
+        List<SchuelerleistungsDatensatz> datensaetze = importer.lese(datei, abitur.getAbiturjahrgang());
+        LeistungsdatenImportbericht bericht = new LeistungsdatenImportbericht();
 
         for (SchuelerleistungsDatensatz datensatz : datensaetze) {
-            importiereLeistungsdatensatz(datensatz);
+            importiereLeistungsdatensatz(datensatz, bericht);
+        }
+        pruefeFehlendeDatensaetzeNachImport(bericht);
+        return bericht;
+    }
+
+    public void pruefeFehlendeDatensaetzeNachImport(LeistungsdatenImportbericht bericht) {
+        for (Schueler schueler : abitur.getSchuelerList()) {
+            for (Abiturfach abiturfach : new Abiturfach[]{Abiturfach.AB1, Abiturfach.AB2, Abiturfach.AB3, Abiturfach.AB4}) {
+                if (schueler.getPruefung(abiturfach) == null)
+                    bericht.keinenDatensatzZuSchuelerGefunden(schueler, abiturfach);
+            }
         }
     }
 

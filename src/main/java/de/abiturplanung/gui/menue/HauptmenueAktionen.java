@@ -40,6 +40,5 @@ public interface HauptmenueAktionen {
 
     void zeigeSchriftlichePruefungen();
 
-
-
+    void zeigeNotizen();
 }

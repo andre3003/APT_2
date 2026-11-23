@@ -27,17 +27,13 @@ public class AppEinstellungen {
 
     public Path getLetzteDatenbank() {
         String gespeichert = preferences.get(KEY_LETZTE_DATENBANK, null);
-
         if (gespeichert == null) {
             return null;
         }
-
         Path pfad = Path.of(gespeichert);
-
         if (pfad.isAbsolute()) {
             return pfad;
         }
-
         return AppPfade.getAppVerzeichnis().resolve(pfad).normalize();
     }
 }

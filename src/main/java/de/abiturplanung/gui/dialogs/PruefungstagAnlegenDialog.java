@@ -20,8 +20,8 @@ public final class PruefungstagAnlegenDialog {
 
     public record KlausurEingabe(Fach fach, Kursart kursart) {
         public KlausurEingabe {
-            Objects.requireNonNull(fach);
-            Objects.requireNonNull(kursart);
+            Objects.requireNonNull(fach, "Fach darf nicht null sein");
+            Objects.requireNonNull(kursart, "Kursart darf nicht null sein");
         }
 
         @Override

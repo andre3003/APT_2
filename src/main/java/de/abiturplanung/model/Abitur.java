@@ -9,7 +9,7 @@ import java.util.*;
 
 public class Abitur {
 
-    private int abiturjahrgang = 2027;
+    private int abiturjahrgang;
 
     private final List<Schueler> schuelerList = new ArrayList<>();
 
@@ -52,7 +52,9 @@ public class Abitur {
         schriftlichePruefungstage.remove(pruefungstag);
     }
 
-
+    public void setAbiturjahrgang(int jahrgang) {
+        this.abiturjahrgang = jahrgang;
+    }
 
     public void addHilfsmittel(Hilfsmittel hilfsmittel) {
         this.hilfsmittel.add(hilfsmittel);
@@ -227,26 +229,6 @@ public class Abitur {
             }
         }
         return null;
-    }
-
-    public Kurs findeOderErzeugeKurs(String bezeichnung, String fachKuerzel, Lehrer fachlehrer) {
-        Fach fach = findeFach(fachKuerzel);
-
-        if (fach == null) {
-            throw new IllegalArgumentException("Fach nicht gefunden: " + fachKuerzel);
-        }
-
-        Kurs kurs = findeKurs(bezeichnung);
-
-        if (kurs != null) {
-            kurs.setFach(fach);
-            kurs.setFachlehrer(fachlehrer);
-            return kurs;
-        }
-
-        kurs = new Kurs(normalisiere(bezeichnung), fach, fachlehrer);
-        kurse.add(kurs);
-        return kurs;
     }
 
     public Raum findeRaum(String bezeichnung) {

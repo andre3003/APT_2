@@ -69,11 +69,15 @@ public class SchriftlichePruefungstagePanel extends JPanel {
         }
     }
 
-
     public void zeigePruefungstag(SchriftlicherPruefungstag pruefungstag) {
         int index = abitur.getSchriftlichePruefungstage().indexOf(pruefungstag);
         if (index >= 0 && index < tabbedPane.getTabCount()) {
             tabbedPane.setSelectedIndex(index);
         }
+    }
+
+    public SchriftlicherPruefungstag gibAktuellenPruefungstag() {
+        SchriftlicherPruefungstagPlanungsPanel panel = (SchriftlicherPruefungstagPlanungsPanel) tabbedPane.getSelectedComponent();
+        return panel == null ? null : panel.getPruefungstag();
     }
 }

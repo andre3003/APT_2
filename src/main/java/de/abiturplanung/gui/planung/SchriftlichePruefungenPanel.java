@@ -1,7 +1,9 @@
 package de.abiturplanung.gui.planung;
 
+import de.abiturplanung.Utilities;
 import de.abiturplanung.gui.dialogs.AbiturklausurDialog;
 import de.abiturplanung.gui.dialogs.PruefungstagAnlegenDialog;
+import de.abiturplanung.gui.dialogs.PruefungstagDatumDialog;
 import de.abiturplanung.gui.model.ZweitkorrekturTableModel;
 import de.abiturplanung.model.Abitur;
 import de.abiturplanung.model.Kurs;
@@ -174,5 +176,42 @@ public class SchriftlichePruefungenPanel extends JPanel {
         Window owner = SwingUtilities.getWindowAncestor(this);
         KlausurraumDetailAnsicht ansicht = new KlausurraumDetailAnsicht(owner, belegung, pruefungen);
         ansicht.setVisible(true);
+    }
+
+    public void pruefungstagEntfernen() {
+        SchriftlicherPruefungstag tag = pruefungstagePanel.gibAktuellenPruefungstag();
+        if (tag == null) return;
+
+        int auswahl = JOptionPane.showConfirmDialog(this, "Klausurtag " + Utilities.formatiereDatumKurz(tag.getDatum()) + " mit allen Klausuren und Raumbelegungen löschen?", "Prüfungstag löschen", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+
+        if (auswahl != JOptionPane.YES_OPTION) return;
+
+        try {
+            datenbank.loescheSchriftlichenPruefungstag(tag);
+            abitur.loescheSchriftlicherPruefungstag(tag);
+            pruefungstagePanel.ansichtAktualisieren();
+            planungsvorratPanel.setzePruefungstag(pruefungstagePanel.gibAktuellenPruefungstag());
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Prüfungstag konnte nicht gelöscht werden:\n" + e.getMessage(),
+                    "Datenbankfehler", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    public void datumPruefungstagAendern() {
+        SchriftlicherPruefungstag tag = pruefungstagePanel.gibAktuellenPruefungstag();
+        if (tag == null) return;
+
+        LocalDate neuesDatum = PruefungstagDatumDialog.anzeigen(this, "Datum des Klausurtages ändern", tag.getDatum());
+        if (neuesDatum == null || neuesDatum.equals(tag.getDatum())) return;
+
+        try {
+            datenbank.aktualisiereSchriftlichenPruefungstag(tag, neuesDatum);
+            tag.setDatum(neuesDatum);
+            pruefungstagePanel.ansichtAktualisieren();
+            pruefungstagePanel.zeigePruefungstag(tag);
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Das Datum konnte nicht geändert werden:\n" + e.getMessage(),
+                    "Datenbankfehler", JOptionPane.ERROR_MESSAGE);
+        }
     }
 }

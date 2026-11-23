@@ -162,6 +162,7 @@ public class StammdatenPanel extends JPanel {
        switch (aenderung.spalte()){
            case 1 -> kurs.setFach((Fach) aenderung.wert());
            case 2 -> kurs.setFachlehrer((Lehrer) aenderung.wert());
+           case 3 -> kurs.setKursart((Kursart) aenderung.wert());
        }
        try {
            datenbank.aktualisiereKurs(kurs);

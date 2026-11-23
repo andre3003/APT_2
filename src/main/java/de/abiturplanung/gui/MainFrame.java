@@ -1,12 +1,15 @@
 package de.abiturplanung.gui;
 
 import de.abiturplanung.formulare.FormularModulPanel;
+import de.abiturplanung.gui.dialogs.LeistungsdatenImportberichtDialog;
+import de.abiturplanung.gui.dialogs.PlanungsnotizenDialog;
 import de.abiturplanung.gui.dialogs.PruefungstagAnlegenDialog;
 import de.abiturplanung.gui.menue.Hauptmenue;
 import de.abiturplanung.gui.menue.HauptmenueAktionen;
 import de.abiturplanung.gui.planung.MuendlichePruefungenPanel;
 import de.abiturplanung.gui.planung.SchriftlichePruefungenPanel;
 import de.abiturplanung.gui.stammdaten.StammdatenPanel;
+import de.abiturplanung.importer.LeistungsdatenImportbericht;
 import de.abiturplanung.model.Abitur;
 import de.abiturplanung.model.Pruefung;
 import de.abiturplanung.model.Pruefungsform;
@@ -44,6 +47,7 @@ public class MainFrame extends JFrame implements HauptmenueAktionen {
     private FormularModulPanel formularPanel;
     private SchriftlichePruefungenPanel schriftlichePruefungenPanel;
     private Modul aktivesModul;
+    PlanungsnotizenDialog notizenDialog;
 
     public MainFrame(Abitur abitur, Datenbank datenbank) {
         this();
@@ -76,12 +80,12 @@ public class MainFrame extends JFrame implements HauptmenueAktionen {
         modulPanel.add(stammdatenPanel, Modul.STAMMDATEN.name());
         modulPanel.add(formularPanel, Modul.FORMULARE.name());
         modulPanel.add(schriftlichePruefungenPanel, Modul.SCHRIFTLICH.name());
-        zeigeModul(Modul.SCHRIFTLICH);
+        zeigeModul(Modul.MUENDLICH_AB4);
         statusleiste.setText("Datenbank: " + datenbank.getPfad().getFileName() + " | " + abitur.getPruefungen().size() + " Prüfungen geladen");
         add(modulPanel, BorderLayout.CENTER);
         add(statusleiste, BorderLayout.SOUTH);
+        this.setTitle("Abiturplanung - Abiturjahrgang " + abitur.getAbiturjahrgang());
     }
-
 
     private void zeigeKeinePlanung() {
         abitur = null;
@@ -127,15 +131,14 @@ public class MainFrame extends JFrame implements HauptmenueAktionen {
         }
         try {
             ImportService importService = new ImportService(abitur);
-            importService.importiereLeistungsdaten(importPfad);
+            LeistungsdatenImportbericht bericht = importService.importiereLeistungsdaten(importPfad);
             datenbank.synchronisiereLeistungsdaten(abitur);
             initialisierePlanung(abitur, datenbank);
-            JOptionPane.showMessageDialog(this, "Die Leistungsdaten wurden erfolgreich importiert.", "Import abgeschlossen", JOptionPane.INFORMATION_MESSAGE);
-
+            LeistungsdatenImportberichtDialog dialog = new LeistungsdatenImportberichtDialog(this, bericht);
+            dialog.setVisible(true);
         } catch (IOException | SQLException exception) {
             JOptionPane.showMessageDialog(this, "Die Leistungsdaten konnten nicht importiert werden:\n" + exception.getMessage(), "Importfehler", JOptionPane.ERROR_MESSAGE);
         }
-
     }
 
     @Override
@@ -315,13 +318,27 @@ public class MainFrame extends JFrame implements HauptmenueAktionen {
 
     @Override
     public void pruefungstagEntfernenAction() {
-        muendlichePruefungenPanel.pruefungstagEntfernen();
+        if (abitur == null) return;
+
+        if (aktivesModul == Modul.MUENDLICH_AB4) {
+            muendlichePruefungenPanel.pruefungstagEntfernen();
+        }
+        if (aktivesModul == Modul.SCHRIFTLICH) {
+            schriftlichePruefungenPanel.pruefungstagEntfernen();
+        }
     }
 
     @Override
     public void datumPruefungstagAendern() {
-        muendlichePruefungenPanel.datumPreufungstagAendern();
+        if (abitur == null) return;
 
+        if (aktivesModul == Modul.MUENDLICH_AB4) {
+            muendlichePruefungenPanel.datumPreufungstagAendern();
+        }
+
+        if (aktivesModul == Modul.SCHRIFTLICH) {
+            schriftlichePruefungenPanel.datumPruefungstagAendern();
+        }
     }
 
     @Override
@@ -344,11 +361,10 @@ public class MainFrame extends JFrame implements HauptmenueAktionen {
         try {
             Datenbank neueDatenbank = new Datenbank(pfad);
             Abitur neuesAbitur = neueDatenbank.ladeAbitur();
-
             initialisierePlanung(neuesAbitur, neueDatenbank);
-
             AppEinstellungen einstellungen = new AppEinstellungen();
             einstellungen.setLetzteDatenbank(pfad);
+            this.setTitle("Abiturplaung - Abiturjahrgang " + abitur.getAbiturjahrgang());
 
         } catch (SQLException exception) {
             JOptionPane.showMessageDialog(
@@ -359,20 +375,23 @@ public class MainFrame extends JFrame implements HauptmenueAktionen {
 
     @Override
     public void neuePlanungAction() {
+        int jahr = LocalDate.now().getYear();
+        Integer[] jahrgaenge = {jahr, jahr + 1, jahr + 2, jahr + 3};
+        JComboBox<Integer> jahrgangCombo = new JComboBox<>(jahrgaenge);
+        jahrgangCombo.setSelectedItem(jahr + 1);
+        int ergebnis = JOptionPane.showConfirmDialog(this, jahrgangCombo, "Abiturjahrgang auswählen", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+        if (ergebnis != JOptionPane.OK_OPTION) return;
+        int abiturjahrgang = (Integer) jahrgangCombo.getSelectedItem();
         JFileChooser fileChooser = new JFileChooser(AppPfade.getDatenVerzeichnis().toFile());
         fileChooser.setDialogTitle("Neue Planung anlegen");
         fileChooser.setFileFilter(new FileNameExtensionFilter("APT-Datenbanken (*.db)", "db"));
-
         if (fileChooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) {
             return;
         }
-
         Path pfad = fileChooser.getSelectedFile().toPath().toAbsolutePath().normalize();
-
         if (!pfad.getFileName().toString().toLowerCase().endsWith(".db")) {
             pfad = pfad.resolveSibling(pfad.getFileName() + ".db");
         }
-
         if (Files.exists(pfad)) {
             int auswahl = JOptionPane.showConfirmDialog(
                     this, "Die Datei existiert bereits.\nSoll sie überschrieben werden?", "Datei überschreiben", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE
@@ -382,22 +401,19 @@ public class MainFrame extends JFrame implements HauptmenueAktionen {
                 return;
             }
         }
-
         try {
             if (Files.exists(pfad)) {
                 Files.delete(pfad);
             }
-
             Datenbank neueDatenbank = new Datenbank(pfad);
             neueDatenbank.initialisieren();
-
+            neueDatenbank.speichereAbiturjahrgang(abiturjahrgang);
             Abitur neuesAbitur = new Abitur();
-
+            neuesAbitur.setAbiturjahrgang(abiturjahrgang);
             initialisierePlanung(neuesAbitur, neueDatenbank);
-
             AppEinstellungen einstellungen = new AppEinstellungen();
+            this.setTitle("Abiturplaung - Abiturjahrgang " + abitur.getAbiturjahrgang());
             einstellungen.setLetzteDatenbank(pfad);
-
         } catch (IOException | SQLException exception) {
             JOptionPane.showMessageDialog(
                     this,
@@ -490,6 +506,18 @@ public class MainFrame extends JFrame implements HauptmenueAktionen {
     @Override
     public void zeigeSchriftlichePruefungen() {
         zeigeModul(Modul.SCHRIFTLICH);
+    }
+
+    @Override
+    public void zeigeNotizen(){
+        if (datenbank == null) {
+            JOptionPane.showMessageDialog(this, "Es wurde noch keine Planungsdatei angelegt. Funktion nicht möglich.");
+            return;
+        }
+        if (notizenDialog == null || !notizenDialog.isDisplayable())
+            notizenDialog = new PlanungsnotizenDialog(this, datenbank.getPfad());
+        notizenDialog.setVisible(true);
+        notizenDialog.toFront();
     }
 
     private void ansichtenAktualisieren() {
