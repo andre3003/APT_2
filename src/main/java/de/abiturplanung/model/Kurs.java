@@ -66,25 +66,10 @@ public class Kurs {
     public void setKursart(Kursart kursart){
         this.kursart = kursart;
     }
-//
-//    public Kursart getKursart() {
-//        String[] teile = bezeichnung.trim().split("\\s+");
-//
-//        if (teile.length < 2) {
-//            throw new IllegalStateException("Ungültige Kursbezeichnung: " + bezeichnung);
-//        }
-//
-//        return switch (teile[1].charAt(0)) {
-//            case 'L' -> Kursart.LEISTUNGSKURS;
-//            case 'G' -> Kursart.GRUNDKURS;
-//            default -> throw new IllegalStateException("Unbekannte Kursart in Kursbezeichnung: " + bezeichnung);
-//        };
-//    }
 
     public Kursart getKursart() {
         return kursart;
     }
-
 
     @Override
     public boolean equals(Object o) {

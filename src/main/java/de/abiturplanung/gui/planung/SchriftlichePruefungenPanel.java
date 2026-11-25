@@ -174,7 +174,7 @@ public class SchriftlichePruefungenPanel extends JPanel {
     private void zeigeKlausurraumDetails(RaumbelegungAbiturklausuren belegung) {
         List<Pruefung> pruefungen = abitur.gibSchriftlichePruefungenEinerRaumbelegung(belegung);
         Window owner = SwingUtilities.getWindowAncestor(this);
-        KlausurraumDetailAnsicht ansicht = new KlausurraumDetailAnsicht(owner, belegung, pruefungen);
+        KlausurraumDetailAnsicht ansicht = new KlausurraumDetailAnsicht(owner, belegung, pruefungen, abitur);
         ansicht.setVisible(true);
     }
 

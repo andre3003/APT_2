@@ -202,25 +202,19 @@ public class MainFrame extends JFrame implements HauptmenueAktionen {
         if (abitur == null || datenbank == null) {
             return;
         }
-
         Path importPfad = AppPfade.getImportVerzeichnis().resolve("Schueler.csv");
-
         if (!Files.exists(importPfad)) {
             JOptionPane.showMessageDialog(this, "Die Importdatei wurde nicht gefunden:\n" + importPfad, "Importfehler", JOptionPane.ERROR_MESSAGE);
             return;
         }
-
         try {
             ImportService importService = new ImportService(abitur);
             importService.importiereSchueler(importPfad);
-
             datenbank.synchronisiereSchueler(abitur);
-
             initialisierePlanung(abitur, datenbank);
-
             JOptionPane.showMessageDialog(this, "Schülerdaten wurden erfolgreich importiert.", "Import abgeschlossen", JOptionPane.INFORMATION_MESSAGE);
-
         } catch (IOException | SQLException exception) {
+            exception.printStackTrace();
             JOptionPane.showMessageDialog(this, "Die Schülerdaten konnten nicht importiert werden:\n" + exception.getMessage(), "Importfehler", JOptionPane.ERROR_MESSAGE);
         }
     }

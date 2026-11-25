@@ -58,8 +58,7 @@ public class AbiturformularPanel extends JPanel {
         if (formularTyp == FormularTyp.LISTE_FPA) {
             List<Fachpruefungsausschuss> fpas = AbiturfomulareDatenService.gibFachpruefungsausschuesseAB4(abitur);
             PdfErsteller.erstelle(this, "Liste der FPAs.pdf", cbPdfOeffnen.isSelected(),
-                    datei -> PdfErsteller.erstelleFormularDokument(datei,
-                            dokument -> PdfListeFPAs.erstelle(dokument, abitur, fpas)));
+                    datei -> PdfErsteller.erstelleFormularDokument(datei, dokument -> PdfListeFPAs.erstelle(dokument, abitur, fpas)));
         }
         if (formularTyp == FormularTyp.INFORMATIONEN_VORSITZ_FPA_AB4) {
             PruefungsplanDatenService datenService = new PruefungsplanDatenService();

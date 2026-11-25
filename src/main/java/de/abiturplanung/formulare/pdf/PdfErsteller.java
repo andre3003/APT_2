@@ -22,17 +22,14 @@ public class PdfErsteller {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setCurrentDirectory(AppPfade.getPdfVerzeichnis().toFile());
         fileChooser.setSelectedFile(new File(dateiname));
-
         if (fileChooser.showSaveDialog(parent) != JFileChooser.APPROVE_OPTION) {
             return null;
         }
-
         File datei = fileChooser.getSelectedFile();
 
         if (!datei.getName().toLowerCase().endsWith(".pdf")) {
             datei = new File(datei.getParentFile(), datei.getName() + ".pdf");
         }
-
         return datei;
     }
 

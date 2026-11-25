@@ -1,5 +1,9 @@
 package de.abiturplanung.gui.planung;
 
+import de.abiturplanung.Utilities;
+import de.abiturplanung.formulare.klausurraum.PdfSitzplanKlausurraum;
+import de.abiturplanung.formulare.pdf.PdfErsteller;
+import de.abiturplanung.model.Abitur;
 import de.abiturplanung.model.Pruefung;
 
 import javax.swing.*;
@@ -8,12 +12,17 @@ import javax.swing.*;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.awt.event.ActionEvent;
 import java.util.List;
 
 public class KlausurraumDetailAnsicht extends JDialog {
+    Abitur abitur;
+    RaumbelegungAbiturklausuren belegung;
 
-    public KlausurraumDetailAnsicht(Window owner, RaumbelegungAbiturklausuren belegung, List<Pruefung> pruefungen) {
+    public KlausurraumDetailAnsicht(Window owner, RaumbelegungAbiturklausuren belegung, List<Pruefung> pruefungen, Abitur abitur) {
         super(owner, "Klausurraum " + belegung.getRaum().getBezeichnung(), ModalityType.MODELESS);
+        this.abitur = abitur;
+        this.belegung = belegung;
         setLayout(new BorderLayout(10, 10));
 
         // Kopfbereich
@@ -60,9 +69,10 @@ public class KlausurraumDetailAnsicht extends JDialog {
         // Schaltflächen
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JButton btDrucken = new JButton("Drucken");
+        btDrucken.addActionListener(this::btDruckenAction);
         JButton btSchliessen = new JButton("Schließen");
 
-        btDrucken.setEnabled(false); // PDF-Anbindung folgt später
+        btDrucken.setEnabled(true); // PDF-Anbindung folgt später
         btSchliessen.addActionListener(e -> dispose());
 
         buttonPanel.add(btDrucken);
@@ -73,6 +83,12 @@ public class KlausurraumDetailAnsicht extends JDialog {
         ((JPanel) getContentPane()).setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         setSize(750, 550);
         setLocationRelativeTo(owner);
+    }
+
+    private void btDruckenAction(ActionEvent actionEvent) {
+        String datum = Utilities.formatiereDatumKurz(belegung.getPruefungstag().getDatum());
+        String dateiname = "Sitzplan " + datum + "pdf";
+        PdfErsteller.erstelle(this, dateiname, true, zieldatei -> PdfSitzplanKlausurraum.erstelle(abitur, belegung, zieldatei));
     }
 }
 
