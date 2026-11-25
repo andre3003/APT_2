@@ -4,10 +4,7 @@ import de.abiturplanung.formulare.FormularTyp;
 import de.abiturplanung.formulare.pdf.PdfErsteller;
 import de.abiturplanung.formulare.pruefungsplan.KommissionsGruppe;
 import de.abiturplanung.formulare.pruefungsplan.PruefungsplanDatenService;
-import de.abiturplanung.model.Abitur;
-import de.abiturplanung.model.Fachpruefungsausschuss;
-import de.abiturplanung.model.Pruefung;
-import de.abiturplanung.model.Pruefungstag;
+import de.abiturplanung.model.*;
 import de.config.AppPfade;
 
 import javax.swing.*;
@@ -52,7 +49,7 @@ public class AbiturformularPanel extends JPanel {
             for (Pruefungstag tag : abitur.getPruefungstage()) {
                 gruppen.addAll(datenService.gibSortierteKommissionsGruppen(abitur, tag));
             }
-            PdfErsteller.erstelle(this, "Niedrschriften Konferenz FPA_AB4.pdf", cbPdfOeffnen.isSelected(),
+            PdfErsteller.erstelle(this, "Niederschriften Konferenz FPA_AB4.pdf", cbPdfOeffnen.isSelected(),
                     datei -> PdfErsteller.erstelleMehrseitigesFormularDokument(datei, gruppen, (dokument, gruppe) -> PdfNiederschriftFPA_AB4.erstelle(dokument, abitur, gruppe)));
         }
         if (formularTyp == FormularTyp.LISTE_FPA) {
@@ -68,6 +65,12 @@ public class AbiturformularPanel extends JPanel {
             }
             PdfErsteller.erstelle(this, "Informationen Vorsitz FPA_AB$.pdf", cbPdfOeffnen.isSelected(),
                     datei -> PdfErsteller.erstelleMehrseitigesFormularDokument(datei, gruppen, (dokument, gruppe) -> PdfHinweiseVorsitzFPA_AB4.erstelle(dokument, abitur, gruppe)));
+        }
+
+        if (formularTyp == FormularTyp.AKTENDECKELABITURKLAUSUR) {
+            List<Kurs> klausurkurse = new ArrayList<>(abitur.gibSchriftlicheAbiturkurse());
+            PdfErsteller.erstelle(this, "Aktendeckel Abiturklausur", cbPdfOeffnen.isSelected(),
+                    datei -> PdfErsteller.erstelleMehrseitigesFormularDokument(datei, klausurkurse, (dokument, kurs) -> PdfAkteSchriftlichePruefungen.erstelle(dokument, abitur, kurs)));
         }
     }
 }

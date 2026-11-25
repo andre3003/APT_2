@@ -53,6 +53,7 @@ public class FormularModulPanel extends JPanel {
         muendlich.add(new DefaultMutableTreeNode(new FormularTreeEintrag(FormularTyp.LISTE_FPA, "Liste der FPAs")));
         muendlich.add(new DefaultMutableTreeNode(new FormularTreeEintrag(FormularTyp.INFORMATIONEN_VORSITZ_FPA_AB4, "Informationen Vorsitz FPA_Ab4")));
 
+        schriftlich.add(new DefaultMutableTreeNode(new FormularTreeEintrag(FormularTyp.AKTENDECKELABITURKLAUSUR, "Aktendeckel Abiturklausur")));
         abiturFormulare.add(schriftlich);
         abiturFormulare.add(zaa);
 
@@ -96,6 +97,10 @@ public class FormularModulPanel extends JPanel {
             if (formular.getTyp() == FormularTyp.INFORMATIONEN_VORSITZ_FPA_AB4){
                 zeigeFormularVorschau(FormularTyp.INFORMATIONEN_VORSITZ_FPA_AB4);
                 return;
+            }
+
+            if (formular.getTyp() == FormularTyp.AKTENDECKELABITURKLAUSUR){
+                zeigeFormularVorschau(FormularTyp.AKTENDECKELABITURKLAUSUR);
             }
         }
     }
