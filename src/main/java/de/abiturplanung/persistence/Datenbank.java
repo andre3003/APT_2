@@ -314,6 +314,7 @@ public class Datenbank {
             ladePruefungsplanung(connection, pruefungMap, pruefungstagMap, raumMap, lehrerMap);
             ladeRaumbelegungen(connection, abitur, schriftlicherTagMap);
             ladeKursRaumZuordnung(connection, abitur);
+            ladeSchuldaten(connection, abitur);
             abitur.setzeAnzahlAbiturientenProKurs();
         }
         return abitur;
@@ -532,6 +533,21 @@ public class Datenbank {
             while (rs.next()) {
                 switch (rs.getString("schluessel")) {
                     case "abiturjahrgang" -> abitur.setAbiturjahrgang(Integer.parseInt(rs.getString("wert")));
+                }
+            }
+        }
+    }
+
+    private void ladeSchuldaten(Connection connection, Abitur abitur) throws SQLException {
+        String sql = "SELECT schluessel, wert FROM app_info";
+        try (Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                switch (rs.getString("schluessel")) {
+                    case "zaa_vorsitz" -> {
+                        Lehrer lehrer = abitur.findeLehrer(rs.getString("wert"));
+                        abitur.getSchuldaten().setZaaVorsitzender(lehrer);
+                    }
                 }
             }
         }

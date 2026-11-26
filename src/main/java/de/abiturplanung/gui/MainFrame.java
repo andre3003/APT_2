@@ -358,7 +358,7 @@ public class MainFrame extends JFrame implements HauptmenueAktionen {
             initialisierePlanung(neuesAbitur, neueDatenbank);
             AppEinstellungen einstellungen = new AppEinstellungen();
             einstellungen.setLetzteDatenbank(pfad);
-            this.setTitle("Abiturplaung - Abiturjahrgang " + abitur.getAbiturjahrgang());
+            this.setTitle("Abiturplanung - Abiturjahrgang " + abitur.getAbiturjahrgang());
 
         } catch (SQLException exception) {
             JOptionPane.showMessageDialog(

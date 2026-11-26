@@ -1,4 +1,4 @@
-package de.abiturplanung.formulare.abiturfomulare;
+package de.abiturplanung.formulare.abiturformulare;
 
 import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.layout.Document;

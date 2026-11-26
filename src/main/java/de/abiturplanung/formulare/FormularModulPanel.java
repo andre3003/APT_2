@@ -1,6 +1,6 @@
 package de.abiturplanung.formulare;
 
-import de.abiturplanung.formulare.abiturfomulare.AbiturformularPanel;
+import de.abiturplanung.formulare.abiturformulare.AbiturformularPanel;
 import de.abiturplanung.formulare.pruefungsplan.KommissionenUebersichtPanel;
 import de.abiturplanung.formulare.schueleruebersicht.SchueleruebersichtPanel;
 import de.abiturplanung.formulare.pruefungsplan.PruefungsplanPanel;

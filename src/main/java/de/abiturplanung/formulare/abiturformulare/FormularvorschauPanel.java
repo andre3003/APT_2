@@ -1,4 +1,4 @@
-package de.abiturplanung.formulare.abiturfomulare;
+package de.abiturplanung.formulare.abiturformulare;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;

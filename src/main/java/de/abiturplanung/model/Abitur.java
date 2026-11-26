@@ -3,6 +3,7 @@ package de.abiturplanung.model;
 import de.abiturplanung.gui.planung.Hilfsmittel;
 import de.abiturplanung.gui.planung.RaumbelegungAbiturklausuren;
 import de.abiturplanung.gui.planung.SchriftlicherPruefungstag;
+import de.config.Schuldaten;
 
 import java.time.LocalDate;
 import java.util.*;
@@ -10,6 +11,8 @@ import java.util.*;
 public class Abitur {
 
     private int abiturjahrgang;
+
+    private final Schuldaten schuldaten = new Schuldaten();
 
     private final List<Schueler> schuelerList = new ArrayList<>();
 
@@ -352,5 +355,9 @@ public class Abitur {
             }
         }
         return result;
+    }
+
+    public de.config.Schuldaten getSchuldaten() {
+        return schuldaten;
     }
 }

@@ -1,4 +1,4 @@
-package de.abiturplanung.formulare.abiturfomulare;
+package de.abiturplanung.formulare.abiturformulare;
 
 import de.abiturplanung.model.Abitur;
 import de.abiturplanung.model.Abiturfach;
